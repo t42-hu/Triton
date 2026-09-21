@@ -1,3 +1,52 @@
+@import '../../palette.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+:root {
+  --background: 75 6% 87%;
+  --foreground: 211 53% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 211 53% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 211 53% 11%;
+  --primary: 212 29% 36%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 214 23% 56%;
+  --secondary-foreground: 211 53% 11%;
+  --muted: 75 6% 92%;
+  --muted-foreground: 212 29% 36%;
+  --accent: 214 23% 80%;
+  --accent-foreground: 211 53% 11%;
+  --destructive: 0 64% 40%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 214 23% 70%;
+  --input: 214 23% 70%;
+  --ring: 212 29% 36%;
+}
+.dark:root {
+  --background: 211 53% 11%;
+  --foreground: 75 6% 87%;
+  --card: 219 37% 17%;
+  --card-foreground: 75 6% 87%;
+  --popover: 219 37% 17%;
+  --popover-foreground: 75 6% 87%;
+  --primary: 214 23% 56%;
+  --primary-foreground: 211 53% 11%;
+  --secondary: 212 29% 36%;
+  --secondary-foreground: 75 6% 87%;
+  --muted: 219 37% 17%;
+  --muted-foreground: 214 23% 70%;
+  --accent: 212 29% 36%;
+  --accent-foreground: 75 6% 87%;
+  --destructive: 0 64% 40%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 212 29% 36%;
+  --input: 212 29% 36%;
+  --ring: 214 23% 56%;
+}
+}
 :root {
   --font-display:
     Spline Sans, Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,

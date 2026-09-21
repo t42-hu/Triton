@@ -1,0 +1,4 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "paths": { "expo-sqlite": ["./tests/sqlite-adapter.ts"], "@/*": ["./src/*"] } }
+}
