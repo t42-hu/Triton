@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "events": [
+    { "id": "consultation", "title": "Konzultáció", "kind": "timed", "start": "2026-09-22T13:00:00+02:00", "end": "2026-09-22T14:00:00+02:00", "location": "A.101" },
+    { "id": "lecture", "title": "Analízis előadás", "kind": "timed", "start": "2026-09-21T08:00:00+02:00", "end": "2026-09-21T09:30:00+02:00", "location": "B.202", "recurrence": { "frequency": "weekly", "weeks": "all", "until": "2026-12-18" } },
+    { "id": "lab-a", "title": "Labor A", "kind": "timed", "start": "2026-09-21T10:00:00+02:00", "end": "2026-09-21T11:30:00+02:00", "location": "C.303", "recurrence": { "frequency": "weekly", "weeks": "A", "until": "2026-12-18" } },
+    { "id": "lab-b", "title": "Labor B", "kind": "timed", "start": "2026-09-21T10:00:00+02:00", "end": "2026-09-21T11:30:00+02:00", "location": "C.303", "recurrence": { "frequency": "weekly", "weeks": "B", "until": "2026-12-18" } },
+    { "id": "break", "title": "Őszi szünet", "kind": "allDay", "start": "2026-10-26", "end": "2026-10-31" }
+  ]
+}

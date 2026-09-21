@@ -1,0 +1,17 @@
+:root {
+  --color-1: #0D1B2A;
+  --color-1-rgb: 13, 27, 42;
+  --color-1-hsl: 211, 53%, 11%;
+  --color-2: #1B263B;
+  --color-2-rgb: 27, 38, 59;
+  --color-2-hsl: 219, 37%, 17%;
+  --color-3: #415A77;
+  --color-3-rgb: 65, 90, 119;
+  --color-3-hsl: 212, 29%, 36%;
+  --color-4: #778DA9;
+  --color-4-rgb: 119, 141, 169;
+  --color-4-hsl: 214, 23%, 56%;
+  --color-5: #E0E1DD;
+  --color-5-rgb: 224, 225, 221;
+  --color-5-hsl: 75, 6%, 87%;
+}
