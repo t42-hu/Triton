@@ -1,0 +1,1 @@
+https://neptun.uni-obuda.hu/ujhallgato/api/Calendar/CalendarExportFileToSyncronization?id=FECF454CD9AF143427A8DAC00B17EA7E776E6AE0EADA0005.ics
