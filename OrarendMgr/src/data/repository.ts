@@ -11,7 +11,7 @@ export async function saveProfile(name: string, id?: number): Promise<void> {
   if (!name.trim()) throw new Error('Adj nevet a profilnak.');
   await write(async db => {
     if (id) { await db.runAsync('UPDATE profiles SET name=? WHERE id=?', name.trim(), id); return; }
-    await db.runAsync('INSERT INTO profiles(name) VALUES (?)', name.trim());
+    await db.runAsync('INSERT INTO profiles(name,isOwn) SELECT ?,CASE WHEN EXISTS(SELECT 1 FROM profiles) THEN 0 ELSE 1 END', name.trim());
   });
 }
 export async function ownProfile(id: number): Promise<void> {

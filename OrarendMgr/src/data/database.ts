@@ -28,7 +28,11 @@ async function initialize(): Promise<SQLiteDatabase> {
     CREATE INDEX IF NOT EXISTS event_window ON events(sourceId,revision,start,end);
     CREATE INDEX IF NOT EXISTS event_title ON events(sourceId,revision,originalTitle,start);
     CREATE INDEX IF NOT EXISTS source_profile ON sources(profileId);
-    PRAGMA user_version=1;`);
+    CREATE TABLE IF NOT EXISTS source_sync(sourceId TEXT PRIMARY KEY REFERENCES sources(id) ON DELETE CASCADE,
+      url TEXT, autoSync INTEGER NOT NULL DEFAULT 0, importedAt REAL NOT NULL,
+      lastAttempt REAL NOT NULL DEFAULT 0, lastSuccess REAL NOT NULL DEFAULT 0,
+      lastError TEXT NOT NULL DEFAULT '', lastChange TEXT NOT NULL DEFAULT '');
+    PRAGMA user_version=2;`);
   await db.runAsync("DELETE FROM events WHERE revision<? AND NOT EXISTS (SELECT 1 FROM sources WHERE sources.id=events.sourceId AND sources.revision=events.revision)", (Date.now() - 86400000).toString(36));
   return db;
 }

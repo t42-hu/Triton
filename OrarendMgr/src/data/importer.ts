@@ -6,7 +6,8 @@ import { validateRange } from '../domain/time';
 import { getDatabase, write, transaction } from './database';
 
 export type SourceInput = Omit<Source, 'revision'>;
-export type StagedSource = { input: SourceInput; revision: string; count: number; removed: number; added: number; lostOverrides: number };
+export type Connection = { url: string; autoSync: number; fetchedAt: number };
+export type StagedSource = { input: SourceInput; revision: string; previousRevision: string | null; count: number; removed: number; added: number; changed: number; lostOverrides: number; connection?: Connection | null; syncAttempt?: number };
 const insertSql = 'INSERT INTO events VALUES (?,?,?,?,?,?,?,?,?,?,?)';
 export function uniqueId(): string { return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`; }
 
@@ -18,6 +19,7 @@ export async function stageSource(input: SourceInput, anchor: Anchor, control: I
 }
 async function buildStage(db: SQLiteDatabase, input: SourceInput, anchor: Anchor, control: ImportControl): Promise<StagedSource> {
   const revision = uniqueId();
+  const previous = await db.getFirstAsync<{ revision: string }>('SELECT revision FROM sources WHERE id=?', input.id);
   const range = { from: input.fromDate, to: input.toDate };
   const generator = input.format === 'ics' ? expandIcs(input.content, range, control) : expandJson(input.content, range, anchor, control);
   const statement = await db.prepareAsync(insertSql);
@@ -30,17 +32,18 @@ async function buildStage(db: SQLiteDatabase, input: SourceInput, anchor: Anchor
     }
     await insertBatch(db, statement, input.id, revision, batch);
     await checkpoint(control, count);
-    return { input, revision, count, ...await stageDifference(db, input.id, revision) };
+    return { input, revision, previousRevision: previous?.revision ?? null, count, ...await stageDifference(db, input.id, revision) };
   } catch (error) {
     await db.runAsync('DELETE FROM events WHERE sourceId=? AND revision=?', input.id, revision);
     throw error;
   } finally { await statement.finalizeAsync(); }
 }
-async function stageDifference(db: SQLiteDatabase, id: string, revision: string): Promise<{ removed: number; added: number; lostOverrides: number }> {
+async function stageDifference(db: SQLiteDatabase, id: string, revision: string): Promise<{ removed: number; added: number; changed: number; lostOverrides: number }> {
   const removed = await db.getFirstAsync<{ count: number }>(`SELECT count(*) count FROM events old JOIN sources s ON s.id=old.sourceId AND s.revision=old.revision WHERE s.id=? AND NOT EXISTS(SELECT 1 FROM events n WHERE n.sourceId=s.id AND n.revision=? AND n.key=old.key)`, id, revision);
   const added = await db.getFirstAsync<{ count: number }>(`SELECT count(*) count FROM events n WHERE n.sourceId=? AND n.revision=? AND NOT EXISTS(SELECT 1 FROM events old JOIN sources s ON s.id=old.sourceId AND s.revision=old.revision WHERE old.sourceId=n.sourceId AND old.key=n.key)`, id, revision);
   const lost = await db.getFirstAsync<{ count: number }>('SELECT count(*) count FROM overrides o WHERE o.sourceId=? AND NOT EXISTS(SELECT 1 FROM events e WHERE e.sourceId=o.sourceId AND e.key=o.key AND e.revision=?)', id, revision);
-  return { removed: removed?.count ?? 0, added: added?.count ?? 0, lostOverrides: lost?.count ?? 0 };
+  const changed = await db.getFirstAsync<{ count: number }>(`SELECT count(*) count FROM events n JOIN sources s ON s.id=n.sourceId JOIN events old ON old.sourceId=s.id AND old.revision=s.revision AND old.key=n.key WHERE n.sourceId=? AND n.revision=? AND n.base<>old.base`, id, revision);
+  return { removed: removed?.count ?? 0, added: added?.count ?? 0, changed: changed?.count ?? 0, lostOverrides: lost?.count ?? 0 };
 }
 /** Publishes multiple rebuilt sources and an optional A/B anchor atomically. */
 export async function publishStages(stages: StagedSource[], anchor?: Anchor): Promise<void> {
@@ -51,11 +54,36 @@ export async function publishStages(stages: StagedSource[], anchor?: Anchor): Pr
 }
 async function publishOne(db: SQLiteDatabase, stage: StagedSource): Promise<void> {
   const { input, revision } = stage;
+  await validatePublication(db, stage);
   await db.runAsync(`INSERT INTO sources VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET content=excluded.content,format=excluded.format,name=excluded.name,revision=excluded.revision,fromDate=excluded.fromDate,toDate=excluded.toDate`, input.id, input.profileId, input.format, input.content, input.name, revision, input.fromDate, input.toDate, input.isManual);
   await db.runAsync('DELETE FROM overrides WHERE sourceId=? AND key NOT IN (SELECT key FROM events WHERE sourceId=? AND revision=?)', input.id, input.id, revision);
   const patches = await db.getAllAsync<{ key: string; patch: string }>('SELECT key,patch FROM overrides WHERE sourceId=?', input.id);
   for (const patch of patches) await applyStoredPatch(db, input.id, revision, patch);
   await db.runAsync('DELETE FROM events WHERE sourceId=? AND revision<>?', input.id, revision);
+  await publishConnection(db, stage);
+}
+/** Rejects stale imports and a sync whose subscription or owner changed while downloading. */
+async function validatePublication(db: SQLiteDatabase, stage: StagedSource): Promise<void> {
+  const current = await db.getFirstAsync<{ revision: string }>('SELECT revision FROM sources WHERE id=?', stage.input.id);
+  if ((current?.revision ?? null) !== stage.previousRevision) throw new Error('A forrás időközben megváltozott. Készíts új előnézetet.');
+  if (!stage.connection) return;
+  const own = await db.getFirstAsync<{ isOwn: number }>('SELECT isOwn FROM profiles WHERE id=?', stage.input.profileId);
+  if (!own?.isOwn) throw new Error('Naptárlink csak a saját profilhoz kapcsolható.');
+  if (stage.syncAttempt === undefined) return;
+  const active = await db.getFirstAsync<{ url: string; lastAttempt: number }>('SELECT url,lastAttempt FROM source_sync WHERE sourceId=?', stage.input.id);
+  if (active?.url !== stage.connection.url || active.lastAttempt !== stage.syncAttempt) throw new Error('A kapcsolat időközben megváltozott.');
+}
+async function publishConnection(db: SQLiteDatabase, stage: StagedSource): Promise<void> {
+  if (stage.connection === undefined) return;
+  const time = stage.connection?.fetchedAt ?? Date.now();
+  const summary = stage.syncAttempt === undefined ? '' : changeSummary(stage);
+  await db.runAsync(`INSERT INTO source_sync(sourceId,url,autoSync,importedAt,lastAttempt,lastSuccess,lastError,lastChange) VALUES (?,?,?,?,?,?,?,?)
+    ON CONFLICT(sourceId) DO UPDATE SET url=excluded.url,autoSync=excluded.autoSync,importedAt=excluded.importedAt,lastAttempt=excluded.lastAttempt,lastSuccess=excluded.lastSuccess,lastError='',lastChange=excluded.lastChange`,
+  stage.input.id, stage.connection?.url ?? null, stage.connection?.autoSync ?? 0, time, stage.syncAttempt ?? time, time, '', summary);
+}
+export function changeSummary(stage: Pick<StagedSource, 'added' | 'changed' | 'removed'>): string {
+  if (!stage.added && !stage.changed && !stage.removed) return '';
+  return `Új: ${stage.added}, módosult: ${stage.changed}, törölt: ${stage.removed} alkalom.`;
 }
 async function applyStoredPatch(db: SQLiteDatabase, id: string, revision: string, row: { key: string; patch: string }): Promise<void> {
   const event = await db.getFirstAsync<{ base: string }>('SELECT base FROM events WHERE sourceId=? AND revision=? AND key=?', id, revision, row.key);
