@@ -1,4 +1,4 @@
-# Órarend alkalmazás – használat és fejlesztés
+# Triton – használat és fejlesztés
 
 ## Indítás
 
@@ -20,7 +20,7 @@ Az előnézet alapértelmezett címe `http://localhost:8082`. A tesztekhez és a
 
 ## Használat
 
-1. Hozz létre egy profilt, és szükség szerint jelöld sajátként. A profil átnevezhető és megerősítés után törölhető.
+1. Hozz létre egy profilt; az első automatikusan saját lesz. A profil átnevezhető és megerősítés után törölhető.
 2. Az Import műveletben válassz ICS- vagy JSON-fájlt, illetve illeszd be a tartalmát. Add meg a feldolgozandó dátumtartományt, ellenőrizd az alkalomszámokat, majd hagyd jóvá a cserét.
 3. Üres forrásszöveggel a korábban tárolt forrás újra feldolgozható, így a tartomány internet nélkül is bővíthető. A korábbi és az új tartomány unióját őrizzük meg.
 4. A Kézi óra művelet egyszeri, heti, A vagy B heti, véges sorozatot hoz létre. A megadott helyi idő Budapest szerinti; egész napos eseménynél a végdátum kizáró.
@@ -42,7 +42,9 @@ Expo 57, React Native Reusables, NativeWind 4.2.7 és Tailwind 3.4. A meglévő 
 - `src/app/_layout.tsx`: egyetlen globális CSS-import, közös téma, gesztuskezelés és PortalHost.
 - `src/lib/theme.ts`, a témasegédek és NativeWind ugyanazt a rendszer/kézi témát követik.
 
-A paletta sötétkék, szürkéskék és törtfehér színei kapják a háttér, kártya, szöveg, keret és művelet szerepeket. A hibajelzés szemantikus vörös színt is használ. A rács egyedi komponens; az általános kezelőszervek Reusables elemek.
+A fő szín az Óbudai Egyetem [publikált pecsétlogójából](https://uni-obuda.hu/wp-content/uploads/2023/01/oe_pecsetlogo.png) mintavett `#122347` (RGB 18, 35, 71). Világos módban fehér felületek és `#F4F6FA` háttér, sötét módban `#101827` alap és `#192438` felületek társulnak hozzá. A sötét témában a műveletek olvashatóságát világosabb, `#A9C3F5` kék biztosítja. A hibajelzés szemantikus vörös. A rendszerbetű, a tabuláris időszámok és a mai nap kiemelése az órarend gyors áttekintését szolgálják.
+
+Az elrendezés közös weben, iOS-en és Androidon: 44 pontos fő kezelőszervek, tördelődő eszköztár, mobilon egymás alatti összehasonlítás. A panel 180 ms-os belépése és 120 ms-os kilépése, illetve a dialógusok rövid áttűnése követi a rendszer csökkentett mozgás beállítását. Nincs automatikus, ismétlődő díszanimáció.
 
 Dokumentáció: [NativeWind telepítés](https://www.nativewind.dev/docs/getting-started/installation), [Reusables kézi telepítés](https://reactnativereusables.com/docs/installation/manual), [Expo SQLite](https://docs.expo.dev/versions/v57.0.0/sdk/sqlite/).
 
@@ -55,6 +57,22 @@ Az import inaktív forrásverzióba ír, 100 alkalmas tranzakciókban. A forrás
 Az azonosság forráshely + eseményazonosító + eredeti előfordulás. Az egyező alkalmak csak módosított mezői maradnak felülírva forráscsere után. Az eltűnt alkalmak felülírása törlődik; visszatérésük új, felülírás nélküli alkalom. Az A/B referencia átállítása az érintett JSON-forrásokkal együtt, egy tranzakcióban történik.
 
 A lekérdezés csak a kiválasztott profilok látható időszakára fut. A helyi felülírások hatályos időpontjai is indexeltek, így az áthelyezett alkalmak a megfelelő napon jelennek meg.
+
+## Saját naptárlink és frissítés
+
+A saját profil Importálás ablakában a „Saját naptárlink” lehetőséggel HTTPS vagy webcal link adható meg. A webcal cím HTTPS-re alakul; beágyazott felhasználónév/jelszó nem használható. A letöltés legfeljebb 30 másodperc és 5 MB. A forrás teljes validálása és az első import jóváhagyása után a kapcsolat és a naptár egyetlen tranzakcióban mentődik. A link helyi SQLite-adat, nem kerül alkalmazáskódba, naplóba vagy Triton-szerverre; az alkalmazás nem használ cookie-t vagy Neptun-bejelentkezést.
+
+Mobilon megnyitáskor és előtérben 15 percenként ellenőrizzük az esedékességet. A legutóbbi próbálkozás időpontja SQLite-ban tárolódik, így a kézi gomb, a háttérfeladat és az újraindítás ugyanazt a legalább 15 perces cooldown-t követi. A sikertelen kísérlet sem indít azonnali ismétlést. Háttérben az Expo BackgroundTask az operációs rendszer lehetőségei szerint fut; 15 perces háttérfrissítés nem garantálható. iOS-szimulátoron ez nem támogatott, fizikai eszköz kell az ütemezés teszteléséhez.
+
+Sikeres frissítés csak a teljes új naptár feldolgozása után publikálható. Hálózati, formátum- vagy felülírási hiba esetén a korábbi naptár megmarad; a felület mutatja a legutóbbi sikert és a hibát. A felhasználó külön engedélyezheti az órarendváltozás helyi értesítését. Az értesítés csak az új, módosult és törölt alkalmak számát tartalmazza; nincs push token vagy külső értesítési szolgáltatás. Változatlan naptár nem értesít. Az összehasonlítás a tárolt importtartományban történik, a nyers eseményadatokon, így a helyi felülírás nem számít távoli változásnak.
+
+Más profilokhoz fájl importálható, automatikus frissítés nélkül. Új fájl jóváhagyása lecseréli az adott profil importforrását, megőrzi a kézi órákat, és leválasztja a korábbi linket. A „Link leválasztása” megtartja az aktuális offline naptárt. Az üres tartalmú offline tartománybővítés megőrzi a kapcsolatot. Letöltés közben lecserélt forrást, leválasztott linket vagy megváltozott saját profilt egy késői válasz nem írhat felül.
+
+Weben a link kizárólag egyszeri letöltés: nincs automatikus vagy háttérfrissítés. Ha a forrás CORS-beállítása tiltja a hozzáférést, az importablak letöltési és fájlválasztási gombot mutat. Nincs proxy és nincs böngészős biztonságikorlátozás-kikapcsolás. A hibás letöltést a fájlimport sem javítja meg: ilyenkor korábban mentett ICS szükséges.
+
+Natív azonosító: `hu.t42.triton`, megjelenő név: `Triton`, URI-séma: `triton`. Az adatbázis neve kompatibilitásból `orarend.db` marad; a 2. séma hozzáadja a `source_sync` táblát. Az Expo Go és egy másik bundle/package azonosítójú alkalmazás külön sandboxot használ: azok helyi adatai nem kerülnek át automatikusan az önálló Triton buildbe.
+
+Dokumentáció: [BackgroundTask](https://docs.expo.dev/versions/v57.0.0/sdk/background-task/), [helyi értesítések](https://docs.expo.dev/versions/v57.0.0/sdk/notifications/). NativeWind Babel-feloldáshoz a `@babel/plugin-transform-react-jsx` 7-es ága közvetlen függőség; a Babel 8 nem illeszkedik ehhez a konfigurációhoz.
 
 ## Webes SQLite
 
@@ -85,4 +103,4 @@ A mérés és az elvégzett kézi ellenőrzések részletei: [validation.md](val
 
 ## Későbbi fázis
 
-URL-import és frissítés, térképek és teremkiemelés, időalapú kezdőképernyő. Nincs bejelentkezés, felhős szinkron vagy beépített LLM. Az URL-frissítés megvalósítása előtt tisztázni kell a tényleges ICS-elérést és a böngészős hozzáférést; a jóváhagyott automatikus/kézi frissítési szabályokat akkor kell bekötni.
+Térképek és teremkiemelés, időalapú kezdőképernyő. Nincs bejelentkezés, felhős szinkron vagy beépített LLM.
