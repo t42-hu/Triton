@@ -4,7 +4,7 @@ import { Platform, TextInput } from 'react-native';
 function Textarea({
   className,
   multiline = true,
-  numberOfLines = Platform.select({ web: 2, native: 8 }), // On web, numberOfLines also determines initial height. On native, it determines the maximum height.
+  numberOfLines = Platform.select({ web: 2, native: 8 }),
   placeholderClassName,
   ...props
 }: React.ComponentProps<typeof TextInput> & React.RefAttributes<TextInput>) {

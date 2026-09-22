@@ -81,6 +81,12 @@ function ContextMenuSubContent({
 
 const FullWindowOverlay = Platform.OS === 'ios' ? RNFullWindowOverlay : React.Fragment;
 
+function resolveOverlayStyle(style?: StyleProp<ViewStyle>) {
+  if (Platform.OS === 'web') return style;
+  if (!style) return StyleSheet.absoluteFill;
+  return StyleSheet.flatten([StyleSheet.absoluteFill, style]);
+}
+
 function ContextMenuContent({
   className,
   overlayClassName,
@@ -92,37 +98,21 @@ function ContextMenuContent({
     overlayClassName?: string;
     portalHost?: string;
   }) {
+  const contentClassName = cn(
+    'bg-popover border-border min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-lg shadow-black/5',
+    Platform.select({ web: cn('animate-in fade-in-0 zoom-in-95 max-h-(--radix-context-menu-content-available-height) origin-(--radix-context-menu-content-transform-origin) z-50 cursor-default', props.side === 'bottom' && 'slide-in-from-top-2', props.side === 'top' && 'slide-in-from-bottom-2') }),
+    className
+  );
   return (
     <ContextMenuPrimitive.Portal hostName={portalHost}>
       <FullWindowOverlay>
         <ContextMenuPrimitive.Overlay
-          style={Platform.select({
-            web: overlayStyle ?? undefined,
-            native: overlayStyle
-              ? StyleSheet.flatten([
-                StyleSheet.absoluteFill,
-                overlayStyle as typeof StyleSheet.absoluteFill,
-              ])
-              : StyleSheet.absoluteFill,
-          })}
+          style={resolveOverlayStyle(overlayStyle)}
           className={overlayClassName}
           asChild={Platform.OS !== 'web'}>
           <NativeOnlyAnimatedView entering={FadeIn.reduceMotion(ReduceMotion.System)} as="Pressable">
             <TextClassContext.Provider value="text-popover-foreground">
-              <ContextMenuPrimitive.Content
-                className={cn(
-                  'bg-popover border-border min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-lg shadow-black/5',
-                  Platform.select({
-                    web: cn(
-                      'animate-in fade-in-0 zoom-in-95 max-h-(--radix-context-menu-content-available-height) origin-(--radix-context-menu-content-transform-origin) z-50 cursor-default',
-                      props.side === 'bottom' && 'slide-in-from-top-2',
-                      props.side === 'top' && 'slide-in-from-bottom-2'
-                    ),
-                  }),
-                  className
-                )}
-                {...props}
-              />
+              <ContextMenuPrimitive.Content className={contentClassName} {...props} />
             </TextClassContext.Provider>
           </NativeOnlyAnimatedView>
         </ContextMenuPrimitive.Overlay>

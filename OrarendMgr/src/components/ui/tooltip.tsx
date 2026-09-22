@@ -13,15 +13,15 @@ const TooltipTrigger = TooltipPrimitive.Trigger;
 
 const FullWindowOverlay = Platform.OS === 'ios' ? RNFullWindowOverlay : React.Fragment;
 
-function TooltipContent({
-  className,
-  sideOffset = 4,
-  portalHost,
-  side = 'top',
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Content> & {
-    portalHost?: string;
-  }) {
+function TooltipContent({ className, sideOffset = 4, portalHost, side = 'top', ...props }: React.ComponentProps<typeof TooltipPrimitive.Content> & { portalHost?: string }) {
+  const entering = side === 'top'
+    ? FadeInDown.withInitialValues({ transform: [{ translateY: 3 }] }).duration(150).reduceMotion(ReduceMotion.System)
+    : FadeInUp.withInitialValues({ transform: [{ translateY: -5 }] }).reduceMotion(ReduceMotion.System);
+  const contentClassName = cn(
+    'bg-primary z-50 rounded-md px-3 py-2 sm:py-1.5',
+    Platform.select({ web: cn('animate-in fade-in-0 zoom-in-95 origin-(--radix-tooltip-content-transform-origin) w-fit text-balance', side === 'bottom' && 'slide-in-from-top-2', side === 'left' && 'slide-in-from-right-2', side === 'right' && 'slide-in-from-left-2', side === 'top' && 'slide-in-from-bottom-2') }),
+    className
+  );
   return (
     <TooltipPrimitive.Portal hostName={portalHost}>
       <FullWindowOverlay>
@@ -29,33 +29,13 @@ function TooltipContent({
           style={Platform.select({ native: StyleSheet.absoluteFill })}
           asChild={Platform.OS !== 'web'}>
           <NativeOnlyAnimatedView
-            entering={
-              side === 'top'
-                ? FadeInDown.withInitialValues({ transform: [{ translateY: 3 }] })
-                    .duration(150)
-                    .reduceMotion(ReduceMotion.System)
-                : FadeInUp.withInitialValues({ transform: [{ translateY: -5 }] }).reduceMotion(
-                    ReduceMotion.System
-                  )
-            }
+            entering={entering}
             exiting={FadeOut.reduceMotion(ReduceMotion.System)}
             as="Pressable">
             <TextClassContext.Provider value="text-xs text-primary-foreground">
               <TooltipPrimitive.Content
                 sideOffset={sideOffset}
-                className={cn(
-                  'bg-primary z-50 rounded-md px-3 py-2 sm:py-1.5',
-                  Platform.select({
-                    web: cn(
-                      'animate-in fade-in-0 zoom-in-95 origin-(--radix-tooltip-content-transform-origin) w-fit text-balance',
-                      side === 'bottom' && 'slide-in-from-top-2',
-                      side === 'left' && 'slide-in-from-right-2',
-                      side === 'right' && 'slide-in-from-left-2',
-                      side === 'top' && 'slide-in-from-bottom-2'
-                    ),
-                  }),
-                  className
-                )}
+                className={contentClassName}
                 side={side}
                 {...props}
               />
