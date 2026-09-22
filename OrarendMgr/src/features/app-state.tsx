@@ -14,7 +14,7 @@ export type ViewState = {
 const initialView: ViewState = { left: 0, right: 0, leftDate: today(), rightDate: today(), mode: 'week', compare: false, sync: true, common: false, hidden: false, zoom: 1, leftScroll: 480, rightScroll: 480, theme: 'system' };
 const initialAnchor: Anchor = { date: monday(today()), week: 'A' };
 type AppState = {
-  view: ViewState; setView: (patch: Partial<ViewState>) => void; anchor: Anchor;
+  view: ViewState; setView: (patch: Partial<ViewState> | ((current: ViewState) => Partial<ViewState>)) => void; anchor: Anchor;
   profileList: Profile[]; version: number; refresh: () => Promise<void>;
   error: string; setError: (message: string) => void;
 };
@@ -40,7 +40,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
   useEffect(() => { if (ready) void saveSetting('view', view).catch(reportError); }, [view, ready]);
   if (!ready) return <View className="flex-1 items-center justify-center bg-background p-6"><ActivityIndicator /><Text>{error || 'Órarend megnyitása…'}</Text></View>;
-  const setView = (patch: Partial<ViewState>) => updateView(current => ({ ...current, ...patch }));
+  const setView = (patch: Partial<ViewState> | ((current: ViewState) => Partial<ViewState>)) => updateView(current => ({ ...current, ...(typeof patch === 'function' ? patch(current) : patch) }));
   return <Context.Provider value={{ view, setView, anchor, profileList, version, refresh, error, setError }}>{children}</Context.Provider>;
 }
 export function useApp(): AppState {
@@ -51,6 +51,7 @@ export function useApp(): AppState {
 
 function resolveProfiles(view: ViewState, list: Profile[]): ViewState {
   const left = list.find(profile => profile.id === view.left)?.id ?? list[0]?.id ?? 0;
-  const right = list.find(profile => profile.id === view.right)?.id ?? list[1]?.id ?? left;
+  const selectedRight = list.find(profile => profile.id === view.right && profile.id !== left)?.id;
+  const right = selectedRight ?? list.find(profile => profile.id !== left)?.id ?? left;
   return { ...view, left, right };
 }
