@@ -1,18 +1,20 @@
 {
   "expo": {
-    "name": "OrarendMgr",
-    "slug": "OrarendMgr",
+    "name": "Triton",
+    "slug": "triton",
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
-    "scheme": "orarendmgr",
+    "scheme": "triton",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "bundleIdentifier": "hu.t42.triton",
       "icon": "./assets/expo.icon"
     },
     "android": {
+      "package": "hu.t42.triton",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#122347",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -29,12 +31,15 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#122347",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-notifications",
+      "expo-background-task",
+      ["expo-build-properties", { "ios": { "enableSceneSupport": true } }]
     ],
     "experiments": {
       "typedRoutes": true,

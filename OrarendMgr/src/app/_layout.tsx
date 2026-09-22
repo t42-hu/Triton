@@ -1,4 +1,5 @@
 import '@/global.css';
+import '@/data/calendar-runtime';
 import { Stack, ThemeProvider } from 'expo-router';
 import { PortalHost } from '@rn-primitives/portal';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -18,5 +19,5 @@ function Navigation() {
   const { setColorScheme } = useColorScheme();
   const theme = view.theme === 'system' ? (system === 'dark' ? 'dark' : 'light') : view.theme;
   useEffect(() => setColorScheme(view.theme), [view.theme, setColorScheme]);
-  return <ThemeProvider value={NAV_THEME[theme]}><StatusBar style={theme === 'dark' ? 'light' : 'dark'} /><Stack screenOptions={{ headerShown: false }} /><PortalHost /></ThemeProvider>;
+  return <ThemeProvider value={NAV_THEME[theme]}><StatusBar style={theme === 'dark' ? 'light' : 'dark'} /><Stack screenOptions={{ headerShown: false, title: 'Triton' }} /><PortalHost /></ThemeProvider>;
 }
