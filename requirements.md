@@ -1,12 +1,14 @@
+> **Triton – jóváhagyott pontosítás, 2026-09-22:** Mobile-first Expo 57, React Native Reusables, NativeWind 4.2.7, Tailwind 3.4 és helyi SQLite. Saját profilhoz HTTPS/webcal ICS-link, mobilon előtérben 15 perces cooldown és OS által ütemezett háttérfrissítés, külön engedélyezhető helyi változásértesítés. Mások órarendje statikus ICS/JSON-import. Weben egyszeri linkimport, CORS-hibánál letöltés + fájlimport; nincs automatikus polling, proxy vagy alkalmazásszerver. Hibánál az utolsó sikeres órarend megmarad. A privát link és a valódi tesztadat nem része a kiadott alkalmazásnak. A név Triton, a fő szín az Óbudai Egyetem logójából vett kék; light/dark/system téma megmarad.
+>
 > **Jóváhagyott első kiadás – 2026-09-21:** Expo 57, React Native Reusables, NativeWind 4.2.7, Tailwind 3.4 és SQLite. Az alábbi eredeti specifikáció a későbbi fázisokat is tartalmazza; az első kiadás hatókörét az alábbi pontosítás rögzíti.
 >
 > Első kiadás: üres kezdőállapot; elnevezett helyi profilok, egy saját profil, profilonként egy cserélhető ICS/JSON-forrás és kézi órák; teljes import vagy változatlan korábbi adatok; megőrzött eredeti forrás és offline tartománybővítés; A/B heti ismétlődés közös hétfői referenciával; alkalmonkénti és jóváhagyott jövőbeli mezőfelülírások, visszaállítás és elrejtés; Budapest szerinti idő; napi/heti rács, nagyítás, egész napos/többnapos események; reszponzív összehasonlítás, szinkronlapozás, közösóra-jelölés és szűrés; nézetállapot-megőrzés; rendszer/világos/sötét téma a megadott palettával. Valódi mintafájl nem kerül a kiadásba.
 >
 > Közös óra: azonos látható név, kezdés, befejezés és azonos, nem üres terem, elrejtett alkalmak nélkül. A felülírás csak a módosított mezőkre vonatkozik; forrásból eltűnéskor törlődik. Tartományszűkítés nem töröl korábban importált alkalmat. Tömeges időmódosítás megőrzi az érintett dátumokat; később importált alkalom nem örökli automatikusan.
 >
-> Későbbi fázis: URL-import és online frissítés, térkép és modulok közötti térképes navigáció, időalapú kezdőképernyő. Nincs fiókrendszer vagy eszközök közötti szinkronizáció. Weben offline indítás nem követelmény.
+> Későbbi fázis: térkép és modulok közötti térképes navigáció, időalapú kezdőképernyő. Nincs fiókrendszer vagy eszközök közötti szinkronizáció. Weben offline indítás nem követelmény.
 >
-> Elfogadási cél: 15 × 15 000 alkalom mellett legfeljebb 2 s indulás és 200 ms hét-/profilváltás és szűrés kiadási buildben, iPhone SE 2020 és régebbi 3–4 GB RAM-os Android eszközön. Ezek eszközös mérés nélkül nem tekinthetők igazoltnak; jelenleg a felhasználó webes tesztelést kért.
+> Elfogadási cél: 15 × 15 000 alkalom mellett legfeljebb 2 s indulás és 200 ms hét-/profilváltás és szűrés kiadási buildben, iPhone SE 2020 és régebbi 3–4 GB RAM-os Android eszközön. Ezek eszközös mérés nélkül nem tekinthetők igazoltnak. A felhasználó webes és a saját MacBookján iOS-/Android-szimulátoros tesztelést kért; commit és push nélkül.
 >
 > [Használat és UI-beállítás](docs/app.md) · [Importformátum és példák](docs/import-format.md) · [Fogalomtár](CONTEXT.md) · [Ellenőrzési eredmények](docs/validation.md)
 

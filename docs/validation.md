@@ -1,5 +1,13 @@
 # Ellenőrzési jegyzőkönyv
 
+## ÓE témájú felületfrissítés — 2026-09-22
+
+- Az ÓE logójának mintavett `#122347` kékje, új világos/sötét szemantikus paletta és natív navigációs színek.
+- Közös web/iOS/Android fejléc, ikonok, 44 pontos fő vezérlők, tördelődő mobilos eszköztár, mai nap és A/B hét kiemelése.
+- iPhone 17e szimulátoron világos téma, Android 15 emulátoron sötét téma képernyőképpel ellenőrizve a felhasználó MacBookján. Mindkét platformon működött a Ma művelet, Androidon a korábbi importált és kézi órák megjelentek.
+- Az összehasonlító panel rövid áttűnése és a dialógusok animációi a rendszer csökkentett mozgás beállítását használják.
+- Lint, TypeScript, 15 automatizált teszt és web export sikeres. A böngészős vizuális ellenőrzést a T3 előnézet időtúllépése és később elérhetetlen automatizálási hostja korlátozta; ebből a körből nincs teljes webes vizuális regressziós eredmény.
+
 Dátum: 2026-09-21–22. Környezet: Linux, Node 22.22.2, Expo 57. Az első ellenőrzési kör weben, a második a felhasználó MacBookján futó iOS- és Android-szimulátorokon történt.
 
 ## Automatizált ellenőrzések
@@ -80,3 +88,35 @@ Az Android kezdetben ablak nélkül indult az eszközkezelő miatt. Újraindíto
 5. Az import folyamatjelzője fix 0 értéket mutatott. Az ismeretlen elemszámú feldolgozás most meghatározatlan folyamatként jelenik meg, mellette továbbra is nő a feldolgozott elemek száma.
 
 A módosítások után lint, TypeScript, webes export és mind a 15 automatizált teszt sikeres. A fájlválasztós natív ICS-import, forráscsere, A/B-előnézet és jóváhagyás, offline kiadási hidegindítás, képernyőolvasó, teljes billentyűzetes fókuszvizsgálat és célhardveres kiadási teljesítménymérés továbbra sincs igazolva ezekkel a próbákkal.
+
+## Triton Release és naptárfrissítés — 2026-09-23
+
+A natív build és futtatás a felhasználó MacBookján történt: Xcode 27, iPhone 17e / iOS 27 szimulátor és Android 15 / API 35 ARM64 emulátor. Mindkét platform önálló, beágyazott JavaScriptet tartalmazó Release buildet kapott, Metro és Expo Go nélkül. Androidon JDK 17-tel készült az APK; az iOS-szimulátoros build nem terjesztési aláírással készült.
+
+### Sikeres ellenőrzések
+
+- `pnpm lint`, `pnpm typecheck`, `pnpm test` (21 teszt), `pnpm build:web` és `git diff --check`.
+- Weben, Androidon és iOS-en tényleges rendszerfájlválasztós ICS-import: `Saját órarend` és `TTRMB_TEST`, profilonként 133 alkalom a kiválasztott tartományban. A saját profil korábbi sikeres letöltésből származó ICS-cache-t, a társ a felhasználó `NeptunCalendarExport.ics` fájlját használta.
+- Két különböző profil összehasonlítása, közös órák jelölése és szűrése, szinkronizált lapozás A és B hét között mindhárom platformon. Ez hétváltási próba; nem helyettesíti az A/B-referencia átállításának teljes natív elfogadási tesztjét.
+- Webes újratöltés és natív újranyitás után megmaradó profilok és órák. Androidon kikapcsolt Wi-Fi mellett Release-újraindítás után is elérhető a cache és a korábban választott B hét; a Wi-Fi a próba után visszakapcsolva.
+- Weben 390 px-es nézet teljes oldalas vízszintes túlcsordulás nélkül, világos/sötét téma, dialógusba ágyazott választó, tárolt forrásból offline tartománybővítés. Playwright Chromium alatt nem keletkezett oldalhiba.
+- A hat új integrációs teszt valódi SQLite-adattárral és kontrollált HTTP-válaszokkal ellenőrzi a validációt, megszakítást, méretkorlátot, közös frissítési időkorlátot, változásösszesítést, helyi felülírás megőrzését, hibás frissítés utáni cache-t és az elavult/párhuzamos import visszautasítását.
+
+### Javított natív hibák
+
+- iOS 27 indítási hiba: az Expo build-properties `ios.enableSceneSupport` beállítása bekapcsolva; az újragenerált natív projekt Release buildje elindul.
+- Az iOS rendszerfájlválasztót elfedte a dialógus FullWindowOverlay rétege. A közös PortalHost használatával a fájlválasztás és az import jóváhagyása működik.
+- Az iOS billentyűzet által elfoglalt helyet a közös dialógus és a görgethető űrlap figyelembe veszi.
+- Tiszta pnpm környezetben hiányzó Babel JSX-transzformáló függőség közvetlenül rögzítve.
+
+### Külső blokkolók és fennmaradó korlátok
+
+A megadott privát Neptun-link a vizsgálatkor HTTP 500 választ adott, Androidon az alkalmazás ezt tényleges lekérés után megjelenítette, a meglévő import sértetlen maradt. Weben a közvetlen hozzáférés hibája/CORS miatt a letöltés–fájlimport fallback szükséges. A saját profilok ezért jelenleg statikus cache-t használnak, nincs sikeresen aktivált élő előfizetés. A teljes élő automatikus frissítés és a változásértesítés szolgáltatással együtt nem kapott sikeres minősítést. iOS-en a hosszú URL automatizált bevitelét karaktervesztés akadályozta; ez nem sikeres URL-import teszt.
+
+A háttérfrissítés időpontját az operációs rendszer dönti el; a 15 perc nem háttérbeli garancia. iOS-szimulátoron a BackgroundTask nem támogatott. A háttérfuttatás és értesítés fizikai készülékes ellenőrzése, a célhardveres teljesítmény, valamint a teljes akadálymentességi és böngészőmátrix-teszt még hátravan. A tesztfájlok átviteléhez használt ideiglenes helyi HTTP-kiszolgáló nem része az alkalmazásnak; a Tritonnak nincs saját szervere.
+
+Az alkalmazás neve és csomagazonosítója Triton / `hu.t42.triton`, a GitHub-repository neve `t42-hu/Triton`. Commit és push nem történt.
+
+### Új naptárlink ellenőrzése — 2026-09-23
+
+A felhasználó újabb, az előzőktől eltérő linkje sikeresen letölthető az alkalmazás `fetchCalendar` függvényével, böngészős bejelentkezés és cookie nélkül. A válasz 43 148 byte; az alkalmazás `expandIcs` feldolgozója 2026-09-01–2027-03-22 között 133 alkalmat állított elő hiba nélkül. A privát URL és a letöltés csak ideiglenes, repositoryn kívüli fájlban van. Ez feloldja a korábbi HTTP 500 blokkolót ennél az új linknél, de nem igazol natív URL-importot, időzített frissítést vagy notification kézbesítést; ezek külön end-to-end ellenőrzést igényelnek.
