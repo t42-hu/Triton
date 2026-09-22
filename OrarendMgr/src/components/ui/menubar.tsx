@@ -157,9 +157,14 @@ function MenubarContent({
   alignOffset = -4,
   sideOffset = 8,
   ...props
-}: React.ComponentProps<typeof MenubarPrimitive.Content> & {
+  }: React.ComponentProps<typeof MenubarPrimitive.Content> & {
     portalHost?: string;
   }) {
+  const contentClassName = cn(
+    'bg-popover border-border min-w-[12rem] overflow-hidden rounded-md border p-1 shadow-lg shadow-black/5',
+    Platform.select({ web: cn('animate-in fade-in-0 zoom-in-95 max-h-(--radix-context-menu-content-available-height) origin-(--radix-context-menu-content-transform-origin) z-50 cursor-default', props.side === 'bottom' && 'slide-in-from-top-2', props.side === 'top' && 'slide-in-from-bottom-2') }),
+    className
+  );
   return (
     <MenubarPrimitive.Portal hostName={portalHost}>
       <FullWindowOverlay>
@@ -170,23 +175,7 @@ function MenubarContent({
           style={StyleSheet.absoluteFill}
           pointerEvents="box-none">
           <TextClassContext.Provider value="text-popover-foreground">
-            <MenubarPrimitive.Content
-              className={cn(
-                'bg-popover border-border min-w-[12rem] overflow-hidden rounded-md border p-1 shadow-lg shadow-black/5',
-                Platform.select({
-                  web: cn(
-                    'animate-in fade-in-0 zoom-in-95 max-h-(--radix-context-menu-content-available-height) origin-(--radix-context-menu-content-transform-origin) z-50 cursor-default',
-                    props.side === 'bottom' && 'slide-in-from-top-2',
-                    props.side === 'top' && 'slide-in-from-bottom-2'
-                  ),
-                }),
-                className
-              )}
-              align={align}
-              alignOffset={alignOffset}
-              sideOffset={sideOffset}
-              {...props}
-            />
+            <MenubarPrimitive.Content className={contentClassName} align={align} alignOffset={alignOffset} sideOffset={sideOffset} {...props} />
           </TextClassContext.Provider>
         </NativeOnlyAnimatedView>
       </FullWindowOverlay>

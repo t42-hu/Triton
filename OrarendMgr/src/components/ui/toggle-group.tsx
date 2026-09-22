@@ -58,34 +58,20 @@ function ToggleGroupItem({
   }) {
   const context = useToggleGroupContext();
   const { value } = ToggleGroupPrimitive.useRootContext();
+  const isSelected = ToggleGroupPrimitive.utils.getIsSelected(value, props.value);
+  const textClassName = cn('text-sm text-foreground font-medium', isSelected ? 'text-accent-foreground' : Platform.select({ web: 'group-hover:text-muted-foreground' }));
+  const isOutline = context.variant === 'outline' || variant === 'outline';
+  const itemClassName = cn(
+    toggleVariants({ variant: context.variant || variant, size: context.size || size }),
+    props.disabled && 'opacity-50', isSelected && 'bg-accent',
+    'min-w-0 shrink-0 rounded-none shadow-none', isFirst && 'rounded-l-md', isLast && 'rounded-r-md',
+    isOutline && 'border-l-0', isOutline && isFirst && 'border-l',
+    Platform.select({ web: 'flex-1 focus:z-10 focus-visible:z-10' }), className
+  );
 
   return (
-    <TextClassContext.Provider
-      value={cn(
-        'text-sm text-foreground font-medium',
-        ToggleGroupPrimitive.utils.getIsSelected(value, props.value)
-          ? 'text-accent-foreground'
-          : Platform.select({ web: 'group-hover:text-muted-foreground' })
-      )}>
-      <ToggleGroupPrimitive.Item
-        className={cn(
-          toggleVariants({
-            variant: context.variant || variant,
-            size: context.size || size,
-          }),
-          props.disabled && 'opacity-50',
-          ToggleGroupPrimitive.utils.getIsSelected(value, props.value) && 'bg-accent',
-          'min-w-0 shrink-0 rounded-none shadow-none',
-          isFirst && 'rounded-l-md',
-          isLast && 'rounded-r-md',
-          (context.variant === 'outline' || variant === 'outline') && 'border-l-0',
-          (context.variant === 'outline' || variant === 'outline') && isFirst && 'border-l',
-          Platform.select({
-            web: 'flex-1 focus:z-10 focus-visible:z-10',
-          }),
-          className
-        )}
-        {...props}>
+    <TextClassContext.Provider value={textClassName}>
+      <ToggleGroupPrimitive.Item className={itemClassName} {...props}>
         {children}
       </ToggleGroupPrimitive.Item>
     </TextClassContext.Provider>

@@ -67,16 +67,18 @@ function SelectTrigger({
 
 const FullWindowOverlay = Platform.OS === 'ios' ? RNFullWindowOverlay : React.Fragment;
 
-function SelectContent({
-  className,
-  children,
-  position = 'popper',
-  portalHost,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Content> & {
-    className?: string;
-    portalHost?: string;
-  }) {
+function SelectViewport({ position, children }: { position: 'item-aligned' | 'popper'; children: React.ReactNode }) {
+  const className = cn('p-1', position === 'popper' && cn('w-full', Platform.select({ web: 'h-[var(--radix-select-trigger-height)] min-w-[var(--radix-select-trigger-width)]' })));
+  return <SelectPrimitive.Viewport className={className}>{children}</SelectPrimitive.Viewport>;
+}
+
+function SelectContent({ className, children, position = 'popper', portalHost, ...props }: React.ComponentProps<typeof SelectPrimitive.Content> & { className?: string; portalHost?: string }) {
+  const contentClassName = cn(
+    'bg-popover border-border relative z-50 min-w-[8rem] rounded-md border shadow-md shadow-black/5',
+    Platform.select({ web: cn('animate-in fade-in-0 zoom-in-95 origin-(--radix-select-content-transform-origin) max-h-52 overflow-y-auto overflow-x-hidden', props.side === 'bottom' && 'slide-in-from-top-2', props.side === 'top' && 'slide-in-from-bottom-2'), native: 'p-1' }),
+    position === 'popper' && Platform.select({ web: cn(props.side === 'bottom' && 'translate-y-1', props.side === 'top' && '-translate-y-1') }),
+    className
+  );
   return (
     <SelectPrimitive.Portal hostName={portalHost}>
       <FullWindowOverlay>
@@ -90,41 +92,11 @@ function SelectContent({
             as="Pressable">
             <TextClassContext.Provider value="text-popover-foreground">
               <SelectPrimitive.Content
-                className={cn(
-                  'bg-popover border-border relative z-50 min-w-[8rem] rounded-md border shadow-md shadow-black/5',
-                  Platform.select({
-                    web: cn(
-                      'animate-in fade-in-0 zoom-in-95 origin-(--radix-select-content-transform-origin) max-h-52 overflow-y-auto overflow-x-hidden',
-                      props.side === 'bottom' && 'slide-in-from-top-2',
-                      props.side === 'top' && 'slide-in-from-bottom-2'
-                    ),
-                    native: 'p-1',
-                  }),
-                  position === 'popper' &&
-                  Platform.select({
-                    web: cn(
-                      props.side === 'bottom' && 'translate-y-1',
-                      props.side === 'top' && '-translate-y-1'
-                    ),
-                  }),
-                  className
-                )}
+                className={contentClassName}
                 position={position}
                 {...props}>
                 <SelectScrollUpButton />
-                <SelectPrimitive.Viewport
-                  className={cn(
-                    'p-1',
-                    position === 'popper' &&
-                    cn(
-                      'w-full',
-                      Platform.select({
-                        web: 'h-[var(--radix-select-trigger-height)] min-w-[var(--radix-select-trigger-width)]',
-                      })
-                    )
-                  )}>
-                  {children}
-                </SelectPrimitive.Viewport>
+                <SelectViewport position={position}>{children}</SelectViewport>
                 <SelectScrollDownButton />
               </SelectPrimitive.Content>
             </TextClassContext.Provider>

@@ -19,9 +19,14 @@ function PopoverContent({
   sideOffset = 4,
   portalHost,
   ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Content> & {
+  }: React.ComponentProps<typeof PopoverPrimitive.Content> & {
     portalHost?: string;
   }) {
+  const contentClassName = cn(
+    'bg-popover border-border outline-hidden z-50 w-72 rounded-md border p-4 shadow-md shadow-black/5',
+    Platform.select({ web: cn('animate-in fade-in-0 zoom-in-95 origin-(--radix-popover-content-transform-origin) cursor-auto', props.side === 'bottom' && 'slide-in-from-top-2', props.side === 'top' && 'slide-in-from-bottom-2') }),
+    className
+  );
   return (
     <PopoverPrimitive.Portal hostName={portalHost}>
       <FullWindowOverlay>
@@ -36,17 +41,7 @@ function PopoverContent({
               <PopoverPrimitive.Content
                 align={align}
                 sideOffset={sideOffset}
-                className={cn(
-                  'bg-popover border-border outline-hidden z-50 w-72 rounded-md border p-4 shadow-md shadow-black/5',
-                  Platform.select({
-                    web: cn(
-                      'animate-in fade-in-0 zoom-in-95 origin-(--radix-popover-content-transform-origin) cursor-auto',
-                      props.side === 'bottom' && 'slide-in-from-top-2',
-                      props.side === 'top' && 'slide-in-from-bottom-2'
-                    ),
-                  }),
-                  className
-                )}
+                className={contentClassName}
                 {...props}
               />
             </TextClassContext.Provider>
