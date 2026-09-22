@@ -3,7 +3,7 @@ import { FlatList, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import type { DisplayEvent, EventPatch } from '../domain/model';
 import { fromWall, wallTime } from '../domain/time';
-import { patchForTarget } from '../domain/comparison';
+import { eventIdentity, patchForTarget } from '../domain/comparison';
 import { futureEvents, updateEvents, deleteManualSource } from '../data/repository';
 import { Action, Confirm, Field, Modal, Toggle } from './controls';
 import { useApp } from './app-state';
@@ -21,12 +21,12 @@ export function EventDialog({ event, close }: { event: DisplayEvent; close: () =
   const [deleting, setDeleting] = useState(false);
   async function save(reset = false) {
     try {
-      const changes = candidates.length ? candidates.filter(item => selected.has(item.sourceId + item.key)).map(item => ({ event: item, patch: patchForTarget(createPatch(event, { title, location, start, end, hidden }, true), item) })) : [{ event, patch: reset ? null : createPatch(event, { title, location, start, end, hidden }, false) }];
+      const changes = candidates.length ? candidates.filter(item => selected.has(eventIdentity(item))).map(item => ({ event: item, patch: patchForTarget(createPatch(event, { title, location, start, end, hidden }, true), item) })) : [{ event, patch: reset ? null : createPatch(event, { title, location, start, end, hidden }, false) }];
       await updateEvents(changes); await app.refresh(); close();
     } catch (error) { setError(String(error)); }
   }
   async function suggest() {
-    const items = await futureEvents(event); setCandidates(items); setSelected(new Set(items.map(item => item.sourceId + item.key)));
+    const items = await futureEvents(event); setCandidates(items); setSelected(new Set(items.map(eventIdentity)));
   }
   async function remove() { try { await deleteManualSource(event.sourceId); await app.refresh(); close(); } catch (error) { setError(String(error)); } }
   return <Modal title="Óra részletei" description={`${event.kind === 'allDay' ? 'Egész napos esemény' : 'Budapesti idő'} · Terem: ${event.location || 'nincs megadva'}`} close={close}>
@@ -44,12 +44,12 @@ export function EventDialog({ event, close }: { event: DisplayEvent; close: () =
 }
 function CandidateList({ items, selected, setSelected }: { items: DisplayEvent[]; selected: Set<string>; setSelected: (value: Set<string>) => void }) {
   function toggle(item: DisplayEvent) {
-    const next = new Set(selected); const key = item.sourceId + item.key;
+    const next = new Set(selected); const key = eventIdentity(item);
     if (next.has(key)) next.delete(key); else next.add(key);
     setSelected(next);
   }
   return <View className="gap-2"><Text>{selected.size} kijelölt alkalom. A meglévő felülírásokat az új érték felváltja.</Text>
-    <FlatList style={{ height: 180 }} data={items} keyExtractor={item => item.sourceId + item.key} renderItem={({ item }) => <Toggle label={`${wallTime(item.start).slice(0, 16)} ${item.patch ? '(módosítva)' : ''}`} checked={selected.has(item.sourceId + item.key)} onChange={() => toggle(item)} />} />
+    <FlatList style={{ height: 180 }} data={items} keyExtractor={eventIdentity} renderItem={({ item }) => <Toggle label={`${wallTime(item.start).slice(0, 16)} ${item.patch ? '(módosítva)' : ''}`} checked={selected.has(eventIdentity(item))} onChange={() => toggle(item)} />} />
   </View>;
 }
 

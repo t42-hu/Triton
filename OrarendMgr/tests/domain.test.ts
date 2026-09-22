@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { expandIcs } from '../src/domain/ics-import';
 import { expandJson, parseJson } from '../src/domain/json-import';
 import { addDays, fromWall, monday, wallTime, weekAt } from '../src/domain/time';
-import { commonKeys, patchForTarget } from '../src/domain/comparison';
+import { commonKeys, eventIdentity, patchForTarget } from '../src/domain/comparison';
 import { dayLayout } from '../src/features/calendar-layout';
 import type { DisplayEvent, Occurrence } from '../src/domain/model';
 
@@ -61,6 +61,8 @@ test('common events use effective values and ignore hidden events and unknown ro
   assert.equal(commonKeys([first], [{ ...second, location: 'B' }]).size, 0);
   assert.equal(commonKeys([first], [{ ...second, hidden: 1 }]).size, 0);
   assert.equal(commonKeys([{ ...first, location: '' }], [{ ...second, location: '' }]).size, 0);
+  assert.equal(commonKeys([first], [{ ...second, kind: 'allDay' }]).size, 1);
+  assert.notEqual(eventIdentity({ sourceId: 'ab', key: 'c' }), eventIdentity({ sourceId: 'a', key: 'bc' }));
 });
 test('bulk edits retain dates; overlapping events occupy separate lanes', async () => {
   const [item] = await collect(expandIcs(calendar(event(base)), range, control()));
