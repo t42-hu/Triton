@@ -1,12 +1,12 @@
 import { Icon } from '@/components/ui/icon';
 import { NativeOnlyAnimatedView } from '@/components/ui/native-only-animated-view';
 import { cn } from '@/lib/utils';
+import { useKeyboardInset } from '@/hooks/use-keyboard-inset';
 import * as DialogPrimitive from '@rn-primitives/dialog';
 import { X } from 'lucide-react-native';
 import * as React from 'react';
 import { Platform, Text, View, type ViewProps } from 'react-native';
 import { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
-import { FullWindowOverlay as RNFullWindowOverlay } from 'react-native-screens';
 
 const Dialog = DialogPrimitive.Root;
 
@@ -16,8 +16,7 @@ const DialogPortal = DialogPrimitive.Portal;
 
 const DialogClose = DialogPrimitive.Close;
 
-const FullWindowOverlay = Platform.OS === 'ios' ? RNFullWindowOverlay : React.Fragment;
-
+/** The root portal stays below native document pickers and the system keyboard. */
 function DialogOverlay({
   className,
   children,
@@ -26,10 +25,8 @@ function DialogOverlay({
 }: Omit<React.ComponentProps<typeof DialogPrimitive.Overlay>, 'asChild'> & {
   children?: React.ReactNode;
 }) {
-
-
+  const keyboardInset = useKeyboardInset();
   return (
-    <FullWindowOverlay>
       <DialogPrimitive.Overlay
         className={cn(
           'absolute bottom-0 left-0 right-0 top-0 flex items-center justify-center bg-black/50 p-2',
@@ -39,6 +36,7 @@ function DialogOverlay({
           className
         )}
         {...props}
+        style={state => [typeof props.style === 'function' ? props.style(state) : props.style, { bottom: keyboardInset }]}
         onPress={onPress}
         asChild={Platform.OS !== 'web'}>
         <NativeOnlyAnimatedView
@@ -46,13 +44,12 @@ function DialogOverlay({
           exiting={FadeOut.duration(150).reduceMotion(ReduceMotion.System)}
           as="Pressable">
           <NativeOnlyAnimatedView
-            entering={FadeIn.delay(50).reduceMotion(ReduceMotion.System)}
+            entering={FadeIn.duration(180).reduceMotion(ReduceMotion.System)}
             exiting={FadeOut.duration(150).reduceMotion(ReduceMotion.System)}>
             <>{children}</>
           </NativeOnlyAnimatedView>
         </NativeOnlyAnimatedView>
       </DialogPrimitive.Overlay>
-    </FullWindowOverlay>
   );
 }
 function DialogContent({
@@ -68,9 +65,9 @@ function DialogContent({
       <DialogOverlay>
         <DialogPrimitive.Content
           className={cn(
-            'bg-background border-border z-50 mx-auto flex w-full max-w-[calc(100%-2rem)] flex-col gap-4 rounded-lg border p-6 shadow-lg shadow-black/5 sm:max-w-lg',
+            'bg-card border-border z-50 mx-auto flex w-full max-w-[calc(100%-2rem)] flex-col gap-4 rounded-2xl border p-6 shadow-lg shadow-black/5 sm:max-w-lg',
             Platform.select({
-              web: 'animate-in fade-in-0 zoom-in-95 duration-200',
+              web: 'motion-safe:animate-in fade-in-0 zoom-in-95 duration-200',
             }),
             className
           )}
