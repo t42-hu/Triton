@@ -16,6 +16,7 @@ function Switch({
   const thumbColor = colorScheme === 'dark' && props.checked ? theme.background : Colors.light.background;
   return (
     <SwitchPrimitives.Root
+      hitSlop={12}
       style={rootStyle}
       className={cn(
         'flex h-[1.15rem] w-8 shrink-0 flex-row items-center rounded-full border border-transparent shadow-sm shadow-black/5',
