@@ -45,7 +45,7 @@ export function ImportDialog({ profileId, close }: { profileId: number; close: (
     <Textarea accessibilityLabel="ICS vagy JSON tartalom" value={content} onChangeText={setContent} placeholder="Vagy illeszd be a fájl tartalmát…" className="h-24" />
     <Field label="Import kezdete (ÉÉÉÉ-HH-NN)" value={from} onChange={setFrom} /><Field label="Import vége (ÉÉÉÉ-HH-NN)" value={to} onChange={setTo} />
     {error ? <Text accessibilityRole="alert" className="text-destructive">{error}</Text> : null}
-    {busy ? <><Progress value={0} accessibilityLabel="Import folyamatban" /><Text>{count} feldolgozott elem</Text><Action secondary onPress={() => controller.current.abort()}>Megszakítás</Action></> : <Action onPress={() => void prepare()}>Ellenőrzés és előnézet</Action>}
+    {busy ? <><Progress value={undefined} accessibilityLabel="Import folyamatban" /><Text>{count} feldolgozott elem</Text><Action secondary onPress={() => controller.current.abort()}>Megszakítás</Action></> : <Action onPress={() => void prepare()}>Ellenőrzés és előnézet</Action>}
     {stage ? <Confirm title="Import jóváhagyása" description={`${stage.count} alkalom. Új: ${stage.added}, eltűnik: ${stage.removed}, törlődő felülírás: ${stage.lostOverrides}. A kézi órák megmaradnak.`} accept={() => void accept()} cancel={() => { setStage(undefined); void discardStages(staged.current); staged.current = []; }} /> : null}
   </Modal>;
 }

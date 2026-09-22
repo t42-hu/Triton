@@ -43,6 +43,7 @@ function WebIndicator({ value, className }: IndicatorProps) {
   if (Platform.OS !== 'web') {
     return null;
   }
+  if (value == null) return <View className={cn('bg-primary h-full w-1/3', className)} />;
 
   return (
     <View
@@ -68,6 +69,7 @@ function NativeIndicator({ value, className }: IndicatorProps) {
   if (Platform.OS === 'web') {
     return null;
   }
+  if (value == null) return <View className={cn('bg-foreground h-full w-1/3', className)} />;
 
   return (
     <ProgressPrimitive.Indicator asChild>
