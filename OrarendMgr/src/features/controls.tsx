@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from '@/components/ui/alert-dialog';
 
 export function Action({ children, onPress, disabled = false, secondary = false, label }: { children: string; onPress: () => void; disabled?: boolean; secondary?: boolean; label?: string }) {
   return <Button accessibilityLabel={label ?? children} disabled={disabled} variant={secondary ? 'outline' : 'default'} onPress={onPress}><Text>{children}</Text></Button>;
@@ -36,6 +36,6 @@ export function Modal({ title, description, close, children }: { title: string; 
 export function Confirm({ title, description, accept, cancel }: { title: string; description: string; accept: () => void; cancel: () => void }) {
   return <AlertDialog open onOpenChange={open => { if (!open) cancel(); }}><AlertDialogContent>
     <AlertDialogTitle>{title}</AlertDialogTitle><AlertDialogDescription>{description}</AlertDialogDescription>
-    <AlertDialogFooter><AlertDialogCancel onPress={cancel}><Text>Mégse</Text></AlertDialogCancel><AlertDialogAction onPress={accept}><Text>Jóváhagyás</Text></AlertDialogAction></AlertDialogFooter>
+    <AlertDialogFooter><AlertDialogCancel><Text>Mégse</Text></AlertDialogCancel><Action onPress={accept}>Jóváhagyás</Action></AlertDialogFooter>
   </AlertDialogContent></AlertDialog>;
 }
