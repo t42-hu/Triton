@@ -1,0 +1,58 @@
+@import '../../palette.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+:root {
+  --background: 216 71.4% 97.3%;
+  --foreground: 219.6 63.6% 17.3%;
+  --card: 0 0% 100%;
+  --card-foreground: 219.6 63.6% 17.3%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 219.6 63.6% 17.3%;
+  --primary: 222.9 100% 27.5%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 217.1 77.8% 94.7%;
+  --secondary-foreground: 219.4 80.9% 22.5%;
+  --muted: 213.8 61.5% 94.9%;
+  --muted-foreground: 213.3 21.3% 41.4%;
+  --accent: 180 58.1% 91.6%;
+  --accent-foreground: 192.4 87.9% 19.4%;
+  --destructive: 350.7 59.5% 44.5%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 214.1 46.8% 84.5%;
+  --input: 213.9 35.9% 74.9%;
+  --ring: 211.1 100% 38.6%;
+}
+.dark:root {
+  --background: 0 0% 0%;
+  --foreground: 217.5 100% 96.9%;
+  --card: 217 77% 12%;
+  --card-foreground: 217.5 100% 96.9%;
+  --popover: 217.5 73.7% 14.9%;
+  --popover-foreground: 217.5 100% 96.9%;
+  --primary: 218.4 100% 77.6%;
+  --primary-foreground: 222.7 100% 17.6%;
+  --secondary: 213.9 60% 22.5%;
+  --secondary-foreground: 217.5 100% 96.9%;
+  --muted: 215 68.2% 17.3%;
+  --muted-foreground: 215.1 40.6% 80.2%;
+  --accent: 200.8 84.8% 18%;
+  --accent-foreground: 180 76.7% 83.1%;
+  --destructive: 351.3 82.5% 75.3%;
+  --destructive-foreground: 0 60% 15%;
+  --border: 211.3 39.4% 34.3%;
+  --input: 214 24.4% 51.8%;
+  --ring: 180 100% 43.1%;
+}
+}
+:root {
+  --font-display:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif, Apple Color Emoji, Segoe UI Emoji,
+    Segoe UI Symbol, Noto Color Emoji;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
+  --font-serif: Georgia, 'Times New Roman', serif;
+}
