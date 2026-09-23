@@ -10,6 +10,11 @@ export async function profiles(): Promise<Profile[]> {
 export async function saveProfile(name: string, id?: number): Promise<void> {
   if (!name.trim()) throw new Error('Adj nevet a profilnak.');
   await write(async db => {
+    const existing = await db.getAllAsync<Profile>('SELECT * FROM profiles');
+    const normalizedName = name.trim().normalize('NFC').toLocaleLowerCase('hu');
+    for (const profile of existing) {
+      if (profile.id !== id && profile.name.trim().normalize('NFC').toLocaleLowerCase('hu') === normalizedName) throw new Error('Ilyen nevű profil már létezik. Válassz másik nevet.');
+    }
     if (id) { await db.runAsync('UPDATE profiles SET name=? WHERE id=?', name.trim(), id); return; }
     await db.runAsync('INSERT INTO profiles(name,isOwn) SELECT ?,CASE WHEN EXISTS(SELECT 1 FROM profiles) THEN 0 ELSE 1 END', name.trim());
   });

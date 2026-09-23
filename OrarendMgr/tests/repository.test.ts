@@ -8,6 +8,22 @@ const event = { id: 'course', title: 'Analízis', kind: 'timed', start: '2026-09
 const content = (events: unknown[]) => JSON.stringify({ version: 1, events });
 const control = () => ({ signal: new AbortController().signal, progress: () => undefined });
 
+test('profile names reject duplicates on create and rename, including concurrent saves and Hungarian case', async () => {
+  const results = await Promise.allSettled([saveProfile(' Árvíz '), saveProfile('árvíz')]);
+  assert.equal(results.filter(result => result.status === 'fulfilled').length, 1);
+  const [profile] = await profiles();
+  await assert.rejects(saveProfile('Árvíz'), /már létezik/);
+  await assert.rejects(saveProfile('A\u0301rvíz'), /már létezik/);
+  await saveProfile('Másik');
+  const other = (await profiles()).find(item => item.name === 'Másik');
+  assert.ok(other);
+  await assert.rejects(saveProfile('ÁRVÍZ', other.id), /már létezik/);
+  await saveProfile('ÁRVÍZ', profile.id);
+  assert.equal((await profiles()).length, 2);
+  await deleteProfile(other.id);
+  await deleteProfile(profile.id);
+});
+
 test('staged imports publish atomically, preserve field patches and delete orphan overrides', async () => {
   await saveProfile('Teszt'); const [profile] = await profiles();
   const input = { id: `${profile.id}:import`, profileId: profile.id, format: 'json' as const, content: content([event]), name: 'test', fromDate: '2026-09-01', toDate: '2026-12-31', isManual: 0 };
