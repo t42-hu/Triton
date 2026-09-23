@@ -1,3 +1,4 @@
+import { ReminderDialog } from './reminder-dialog';
 import { useEffect, useRef, useState } from 'react';
 import { Text } from '@/components/ui/text';
 import type { Anchor } from '../domain/model';
@@ -8,7 +9,7 @@ import { useApp } from './app-state';
 import { Action, Choice, Confirm, Field, Modal, Toggle } from './controls';
 
 export function SettingsDialog({ close }: { close: () => void }) {
-  const app = useApp();
+  const app = useApp(); const [remindersOpen, setRemindersOpen] = useState(false);
   const [date, setDate] = useState(app.anchor.date);
   const [week, setWeek] = useState(app.anchor.week);
   const [stages, setStages] = useState<StagedSource[]>([]);
@@ -34,7 +35,9 @@ export function SettingsDialog({ close }: { close: () => void }) {
   }
   function cancel() { controller.current.abort(); void discardStages(stages); close(); }
   const summary = stages.reduce((sum, stage) => ({ added: sum.added + stage.added, removed: sum.removed + stage.removed, lost: sum.lost + stage.lostOverrides }), { added: 0, removed: 0, lost: 0 });
+  if (remindersOpen) return <ReminderDialog close={() => setRemindersOpen(false)} />;
   return <Modal title="Beállítások" description="Közös A/B rend minden profilhoz. A konkrét dátumú ICS-események változatlanok maradnak." close={cancel}>
+    <Action secondary onPress={() => setRemindersOpen(true)}>Óra előtti értesítések</Action>
     <Choice label="Megjelenés" value={app.view.theme} onChange={theme => app.setView({ theme: theme as 'system' | 'light' | 'dark' })} options={[{ value: 'system', label: 'Rendszer témája' }, { value: 'light', label: 'Világos' }, { value: 'dark', label: 'Sötét' }]} />
     <Toggle label="Elrejtett alkalmak mutatása" checked={app.view.hidden} onChange={hidden => app.setView({ hidden })} />
     <Field label="Referenciahét hétfője" value={date} onChange={setDate} />

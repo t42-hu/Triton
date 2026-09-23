@@ -32,7 +32,9 @@ async function initialize(): Promise<SQLiteDatabase> {
       url TEXT, autoSync INTEGER NOT NULL DEFAULT 0, importedAt REAL NOT NULL,
       lastAttempt REAL NOT NULL DEFAULT 0, lastSuccess REAL NOT NULL DEFAULT 0,
       lastError TEXT NOT NULL DEFAULT '', lastChange TEXT NOT NULL DEFAULT '');
-    PRAGMA user_version=2;`);
+    CREATE TABLE IF NOT EXISTS event_reminders(sourceId TEXT NOT NULL REFERENCES sources(id) ON DELETE CASCADE,
+      key TEXT NOT NULL, excludeGlobal INTEGER NOT NULL DEFAULT 0, rules TEXT NOT NULL, PRIMARY KEY(sourceId,key));
+    PRAGMA user_version=3;`);
   await db.runAsync("DELETE FROM events WHERE revision<? AND NOT EXISTS (SELECT 1 FROM sources WHERE sources.id=events.sourceId AND sources.revision=events.revision)", (Date.now() - 86400000).toString(36));
   return db;
 }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 import { refreshCalendar, configureBackground } from '../data/calendar-runtime';
+import { reconcileReminders } from '../data/reminder-runtime';
 import { SYNC_INTERVAL } from '../data/calendar-sync';
 import { useApp } from './app-state';
 
@@ -31,7 +32,7 @@ export function useCalendarSync() {
   useEffect(() => {
     let canceled = false;
     async function configure() {
-      try { const message = await configureBackground(); if (!canceled) setBackground(message); }
+      try { await reconcileReminders(); const message = await configureBackground(); if (!canceled) setBackground(message); }
       catch { if (!canceled) setBackground('A háttérfrissítés nem érhető el; megnyitáskor frissítünk.'); }
     }
     void configure();
