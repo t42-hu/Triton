@@ -6,7 +6,7 @@ const enhanceMiddleware = config.server.enhanceMiddleware;
 config.server.enhanceMiddleware = function (middleware, server) {
   const enhanced = enhanceMiddleware ? enhanceMiddleware(middleware, server) : middleware;
   return function isolatedMiddleware(request, response, next) {
-    response.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
+    response.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
     response.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
     return enhanced(request, response, next);
   };
