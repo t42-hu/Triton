@@ -24,17 +24,17 @@ const buttonVariants = cva(
           })
         ),
         outline: cn(
-          'border-border bg-card active:bg-accent border',
+          'border-foreground/50 bg-card active:bg-accent border',
           Platform.select({
             web: 'hover:bg-accent dark:hover:bg-input/50',
           })
         ),
         secondary: cn(
-          'bg-secondary active:bg-secondary/80 shadow-sm shadow-black/5',
+          'border border-foreground/50 bg-secondary active:bg-secondary/80',
           Platform.select({ web: 'hover:bg-secondary/80' })
         ),
         ghost: cn(
-          'active:bg-accent dark:active:bg-accent/50',
+          'border border-foreground/50 bg-card active:bg-accent',
           Platform.select({ web: 'hover:bg-accent dark:hover:bg-accent/50' })
         ),
         link: '',
