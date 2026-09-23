@@ -21,15 +21,15 @@ Az előnézet alapértelmezett címe `http://localhost:8082`. A tesztekhez és a
 ## Használat
 
 1. Hozz létre egy profilt; az első automatikusan saját lesz. A profil átnevezhető és megerősítés után törölhető.
-2. Az Import műveletben válassz ICS- vagy JSON-fájlt, illetve illeszd be a tartalmát. Add meg a feldolgozandó dátumtartományt, ellenőrizd az alkalomszámokat, majd hagyd jóvá a cserét.
+2. Az Import műveletben válaszd ki a célprofilt és az ICS- vagy JSON-fájlt, illetve illeszd be a tartalmát. Add meg a feldolgozandó dátumtartományt, ellenőrizd az alkalomszámokat, majd hagyd jóvá a cserét. A sikeresen importált másik profil naptára automatikusan megnyílik.
 3. Üres forrásszöveggel a korábban tárolt forrás újra feldolgozható, így a tartomány internet nélkül is bővíthető. A korábbi és az új tartomány unióját őrizzük meg.
-4. A Kézi óra művelet egyszeri, heti, A vagy B heti, véges sorozatot hoz létre. A megadott helyi idő Budapest szerinti; egész napos eseménynél a végdátum kizáró.
+4. A Kézi óra művelet a választott profilhoz egyszeri, heti, A vagy B heti, véges sorozatot hoz létre. A megadott helyi idő Budapest szerinti; egész napos eseménynél a végdátum kizáró.
 5. Egy alkalomra kattintva szerkeszthető a neve, ideje és terme, vagy elrejthető. A jövőbeli alkalmak listájában jóváhagyható, melyek kapják meg a módosítást. Tömeges időmódosításnál a dátumok megmaradnak; dátumot egyenként módosíts.
 6. A visszaállítás törli az alkalom helyi módosításait. Az elrejtett alkalmak a Beállításokban ismét megjeleníthetők. Kézi sorozat külön megerősítéssel teljesen törölhető.
-7. Összehasonlításnál válassz profilt mindkét panelen. A szinkronlapozás bekapcsolása a bal/felső panel dátumát veszi át. A közös órák gyémántjelölést kapnak és külön szűrhetők.
+7. A saját naptár mindig legfelül látszik. A „Naptár hozzáadása” gombbal tetszőleges számú másik profil nyitható alatta, mindegyik egyszer; a saját naptár állandó, a többiek külön bezárhatók. A szinkronlapozás bekapcsolása a saját naptár dátumát veszi át. A saját és bármelyik megnyitott profil közös órái könyv ikont kapnak és külön szűrhetők.
 8. A Beállításokban módosítható a téma és az A/B referencia. Az újraszámítás jóváhagyás előtt megmutatja a létrejövő, eltűnő alkalmak és elvesző felülírások számát.
 
-A napi/heti nézet, dátumok, profilválasztás, kapcsolók, nagyítás és függőleges görgetés megmaradnak újranyitáskor. Nyitott párbeszéd és kitöltetlen űrlap nem áll vissza. A Ma gomb mindig visszavezet az aktuális napra. Szűk kijelzőn a két panel egymás alatt látható, a heti rács oldalra görgethető.
+A napi/heti nézet, dátumok, megnyitott profilok, kapcsolók, nagyítás és függőleges görgetés megmaradnak újranyitáskor. Nyitott párbeszéd és kitöltetlen űrlap nem áll vissza. A Ma gomb mindig visszavezet az aktuális napra. Szűk kijelzőn is egymás alatt láthatók a naptárak, a heti rács oldalra görgethető.
 
 ## UI-bekötés
 
@@ -104,3 +104,21 @@ A mérés és az elvégzett kézi ellenőrzések részletei: [validation.md](val
 ## Későbbi fázis
 
 Térképek és teremkiemelés, időalapú kezdőképernyő. Nincs bejelentkezés, felhős szinkron vagy beépített LLM.
+
+## Óra előtti helyi értesítések
+
+A Beállítások → Óra előtti értesítések alatt globális előjelzések adhatók meg a sajátként jelölt profilhoz. Alapminta: 60, 20 és 5 perc; legfeljebb 20 különböző, 1–10080 perces előjelzés. Minden sorhoz Finom, Normál vagy Erős jelzőprofil választható. Egy konkrét óra → Alkalom értesítései alatt egyszeri extra jelzések adhatók hozzá saját vagy szaktársi órarendhez. A saját alkalom kizárható a globális szabályból; ez és az extra lista együtt teljesen egyedi beállítást ad. Azonos percnél az egyedi jelzőprofil nyer. A sorozat más alkalmai nem öröklik a helyi beállítást.
+
+SQLite schema 3: a globális konfiguráció a `classReminders` setting, az alkalmankénti szabály az `event_reminders` tábla `(sourceId,key)` kulccsal. Importfrissítés megőrzi az egyező alkalmak szabályait, a törölt alkalmakét eltávolítja. Profil/forrás törlése kaszkádol. A notification terv az aktív forrásverziók tényleges, felülírásokkal korrigált kezdését használja; elrejtett és lejárt jelzés nem kerül ütemezésre. A nyári/téli időszámítás nem módosítja az előjelzés tényleges időtartamát. Egész napos eseménynél a kezdés budapesti éjfél.
+
+A natív scheduler a következő 30 nap legközelebbi legfeljebb 60 jelzését tartja fenn, az egyéb pending értesítéseknek is helyet hagyva. Megnyitáskor, előtérbe kerüléskor, aktív appban 15 percenként, adatváltozás és engedélyezett háttérfutás után újratervez. Csak a saját reminder-azonosítóit törli; az órarendváltozás-értesítések függetlenek. A beállítóképernyő mutatja a pending darabszámot és az utolsó ütemezett időpontot. Hosszabb, megnyitás nélküli offline időszakra nincs korlátlan kézbesítési garancia; a háttérfutás nem garantált.
+
+Androidon három tartós notification channel készül egy/kettő/három rezgéses alapmintával. Meglévő csatornát nem írunk felül, így a felhasználó hang- és rezgésbeállításai megmaradnak. A csatorna saját rendszerképernyője közvetlenül megnyitható; a további rezgésminta-választék készülékfüggő. Android 12+ esetén a manifest `SCHEDULE_EXACT_ALARM` engedélyt kér; a felhasználónak az Ébresztések és emlékeztetők rendszerbeállításban is engedélyeznie kellhet. Engedély nélkül az Expo best-effort ütemezése késhet. iOS-en az alap rendszerhang használatos, Android-szerű csatornánkénti hang/rezgés testreszabás nincs. A néma mód és a Ne zavarjanak beállítás továbbra is érvényes.
+
+Weben a beállítások szerkeszthetők és lokálisan megmaradnak, de nincs háttérbeli notification és nincs szinkron a telefon beállításaival. A natív működés az Expo Notifications SDK 57 helyi DATE triggerét használja, backend vagy push token nélkül: https://docs.expo.dev/versions/v57.0.0/sdk/notifications/.
+
+Az időrács 07:00–20:00 közötti budapesti időt mutat napi és heti módban. A határt metsző esemény blokkját vágjuk, az esemény adatait nem módosítjuk. A teljesen ezen kívüli időzített esemény nem látszik a rácson; az egész napos sáv és a reminder-ütemezés ettől független. A korábban tárolt görgetési pozíció továbbra is éjféltől számított perc, ezért az új kezdőhatár nem tolja el a visszaállított időpontot.
+
+## Fejlesztői web preview a Tailscale hálózaton
+
+A hoston a `triton-preview.service` systemd user service futtatja a `scripts/serve-web.mjs` kiszolgálót a 8092-es porton. A service engedélyezett, a user lingering aktív, ezért nem függ a terminál/SSH-session élettartamától. A Tailscale Serve háttérben a HTTPS 8444-es portot erre irányítja; a meglévő 443-as szolgáltatás változatlan. Ez tailneten belüli preview, nem nyilvános Funnel vagy production deployment. Előfeltétele a futó host és Tailscale. Új kódhoz `pnpm build:web` szükséges; a kiszolgáló az exportált `dist` tartalmát olvassa.
