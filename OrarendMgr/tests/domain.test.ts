@@ -98,3 +98,14 @@ test('embedded VTIMEZONE keeps recurring Budapest local hours across DST', async
   assert.equal(items.length, 3); assert.ok(items.every(item => wallTime(item.start).slice(11, 16) === '08:00'));
   await assert.rejects(collect(expandIcs(calendar(body), range, control())), /VTIMEZONE/);
 });
+
+test('calendar clips timed events to 07:00–20:00 without changing their stored times', () => {
+  const date = '2026-09-07';
+  const make = (start: string, end: string) => display({ key: start, title: 'Window', originalTitle: 'Window', start: fromWall(`${date}T${start}`), end: fromWall(`${date}T${end}`), kind: 'timed', location: '' });
+  const early = make('06:30', '07:30'); const late = make('19:30', '22:00');
+  const result = dayLayout([make('05:00', '06:00'), early, late, make('20:00', '23:00')], date);
+  assert.equal(result.length, 2);
+  assert.equal(result[0].top, 0); assert.equal(result[0].height, 30);
+  assert.equal(result[1].top, 750); assert.equal(result[1].height, 30);
+  assert.equal(result[0].event.start, early.start); assert.equal(result[1].event.end, late.end);
+});

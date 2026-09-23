@@ -33,7 +33,11 @@ export function useImport(profileId: number, close: () => void) {
   async function accept() {
     if (busy || !staged.current.length) return;
     setBusy(true);
-    try { await publishStages(staged.current); staged.current = []; setStage(undefined); await app.refresh(); close(); }
+    try {
+      await publishStages(staged.current); staged.current = []; setStage(undefined); await app.refresh();
+      if (profileId !== app.view.left) app.setView(current => current.openProfiles.includes(profileId) ? {} : { openProfiles: [...current.openProfiles, profileId], right: profileId, compare: true });
+      close();
+    }
     catch (error) { report(error); await cancelStage(); } finally { setBusy(false); }
   }
   return { draft, update, stage, busy, count, error, pick, prepare, accept, cancelStage, cancel: () => controller.current.abort(), report };

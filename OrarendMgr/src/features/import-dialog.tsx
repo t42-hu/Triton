@@ -1,4 +1,5 @@
 import { Linking, Platform, View } from 'react-native';
+import { useState } from 'react';
 import { Text } from '@/components/ui/text';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,13 +10,19 @@ import { useImport } from './use-import';
 
 export function ImportDialog({ profileId, close }: { profileId: number; close: () => void }) {
   const { profileList } = useApp();
-  const state = useImport(profileId, close);
+  const [selectedId, setSelectedId] = useState(profileId);
+  const state = useImport(selectedId, close);
   const { draft, update, stage, busy, count, error } = state;
-  const own = profileList.find(profile => profile.id === profileId)?.isOwn;
+  const own = profileList.find(profile => profile.id === selectedId)?.isOwn;
   const options = [{ value: 'file', label: 'ICS / JSON fájl' }, ...(own ? [{ value: 'url', label: 'Saját naptárlink' }] : [])];
   function finish() { if (busy) { state.cancel(); return; } close(); }
+  function chooseProfile(id: string) {
+    setSelectedId(Number(id));
+    if (!profileList.find(profile => profile.id === Number(id))?.isOwn) update({ mode: 'file' });
+  }
   return <Modal title="Órarend importálása" description={own ? 'Saját naptárlink vagy helyi fájl. A meglévő kézi órák megmaradnak.' : 'Csoporttárs órarendje: helyi fájl, automatikus frissítés nélkül.'} close={finish}>
     <View pointerEvents={busy || stage ? 'none' : 'auto'} className="gap-4">
+      <Choice label="Célprofil" value={String(selectedId)} options={profileList.map(profile => ({ value: String(profile.id), label: profile.name }))} onChange={chooseProfile} />
       <Choice label="Import forrása" value={draft.mode} options={options} onChange={mode => update({ mode: mode === 'url' ? 'url' : 'file' })} />
       {draft.mode === 'url' ? <><Field label="Naptár HTTPS / webcal link" value={draft.url} onChange={url => update({ url })} placeholder="https://…" /><Text className="text-xs text-muted-foreground">{Platform.OS === 'web' ? 'Egyszeri letöltés. Weben nincs automatikus frissítés.' : 'Saját órarended 15 percenként frissül használat közben. Háttérben a rendszer ütemez.'}</Text></> : <>
         <Action secondary onPress={() => void state.pick()}>Fájl kiválasztása</Action>

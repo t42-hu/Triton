@@ -7,11 +7,11 @@ import { readSetting, saveSetting } from '../data/database';
 import { Text } from '@/components/ui/text';
 
 export type ViewState = {
-  left: number; right: number; leftDate: string; rightDate: string; mode: 'day' | 'week';
+  left: number; right: number; openProfiles: number[]; leftDate: string; rightDate: string; mode: 'day' | 'week';
   compare: boolean; sync: boolean; common: boolean; hidden: boolean; zoom: number;
   leftScroll: number; rightScroll: number; theme: 'system' | 'light' | 'dark';
 };
-const initialView: ViewState = { left: 0, right: 0, leftDate: today(), rightDate: today(), mode: 'week', compare: false, sync: true, common: false, hidden: false, zoom: 1, leftScroll: 480, rightScroll: 480, theme: 'system' };
+const initialView: ViewState = { left: 0, right: 0, openProfiles: [], leftDate: today(), rightDate: today(), mode: 'week', compare: false, sync: true, common: false, hidden: false, zoom: 1, leftScroll: 420, rightScroll: 420, theme: 'system' };
 const initialAnchor: Anchor = { date: monday(today()), week: 'A' };
 type AppState = {
   view: ViewState; setView: (patch: Partial<ViewState> | ((current: ViewState) => Partial<ViewState>)) => void; anchor: Anchor;
@@ -50,8 +50,10 @@ export function useApp(): AppState {
 }
 
 function resolveProfiles(view: ViewState, list: Profile[]): ViewState {
-  const left = list.find(profile => profile.id === view.left)?.id ?? list[0]?.id ?? 0;
-  const selectedRight = list.find(profile => profile.id === view.right && profile.id !== left)?.id;
-  const right = selectedRight ?? list.find(profile => profile.id !== left)?.id ?? left;
-  return { ...view, left, right };
+  const left = list.find(profile => profile.isOwn)?.id ?? list.find(profile => profile.id === view.left)?.id ?? list[0]?.id ?? 0;
+  const previouslyOpen = Array.isArray(view.openProfiles) ? view.openProfiles : [];
+  const requested = previouslyOpen.length ? previouslyOpen : view.compare ? [view.right] : [];
+  const validIds = new Set(list.map(profile => profile.id));
+  const openProfiles = [...new Set(requested)].filter(id => id !== left && validIds.has(id));
+  return { ...view, left, right: openProfiles[0] ?? left, openProfiles, compare: openProfiles.length > 0 };
 }
