@@ -1,3 +1,4 @@
+import { ReminderDialog } from './reminder-dialog';
 import { useState } from 'react';
 import { FlatList, View } from 'react-native';
 import { Text } from '@/components/ui/text';
@@ -10,6 +11,7 @@ import { useApp } from './app-state';
 
 export function EventDialog({ event, close }: { event: DisplayEvent; close: () => void }) {
   const app = useApp();
+  const [remindersOpen, setRemindersOpen] = useState(false);
   const [title, setTitle] = useState(event.title);
   const [location, setLocation] = useState(event.location);
   const [start, setStart] = useState(wallTime(event.start).slice(0, 16));
@@ -29,7 +31,9 @@ export function EventDialog({ event, close }: { event: DisplayEvent; close: () =
     const items = await futureEvents(event); setCandidates(items); setSelected(new Set(items.map(eventIdentity)));
   }
   async function remove() { try { await deleteManualSource(event.sourceId); await app.refresh(); close(); } catch (error) { setError(String(error)); } }
+  if (remindersOpen) return <ReminderDialog event={event} close={() => setRemindersOpen(false)} />;
   return <Modal title="Óra részletei" description={`${event.kind === 'allDay' ? 'Egész napos esemény' : 'Budapesti idő'} · Terem: ${event.location || 'nincs megadva'}`} close={close}>
+    <Action secondary onPress={() => setRemindersOpen(true)}>Alkalom értesítései</Action>
     <Field label="Óra neve" value={title} onChange={setTitle} /><Field label="Terem" value={location} onChange={setLocation} />
     <Field label="Kezdés" value={start} onChange={setStart} /><Field label="Befejezés" value={end} onChange={setEnd} />
     <Toggle label="Alkalom elrejtése / kihagyása" checked={hidden} onChange={setHidden} />

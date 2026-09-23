@@ -6,14 +6,18 @@ import { isDevice } from 'expo-device';
 import { getDatabase, readSetting, saveSetting } from './database';
 import { syncOwnCalendar, type SyncResult } from './calendar-sync';
 
+import { hasReminders } from './reminders';
+import { reconcileReminders } from './reminder-runtime';
+
 const taskName = 'triton-calendar-sync';
 const channelId = 'timetable-changes';
-Notifications.setNotificationHandler({ handleNotification: async () => ({ shouldPlaySound: false, shouldSetBadge: false, shouldShowBanner: true, shouldShowList: true }) });
+Notifications.setNotificationHandler({ handleNotification: async notification => ({ shouldPlaySound: notification.request.content.data?.kind === 'class-reminder', shouldSetBadge: false, shouldShowBanner: true, shouldShowList: true }) });
 if (!TaskManager.isTaskDefined(taskName)) TaskManager.defineTask(taskName, runBackground);
 
 /** Local notifications contain only counts, never the private feed URL or class details. */
 export async function refreshCalendar(): Promise<SyncResult> {
   const result = await syncOwnCalendar();
+  await reconcileReminders();
   if (!result.summary || !await readSetting('changeNotifications', false)) return result;
   try {
     const permission = await Notifications.getPermissionsAsync();
@@ -45,7 +49,7 @@ export async function configureBackground(): Promise<string> {
   if (!await TaskManager.isAvailableAsync()) return 'Háttérfrissítéshez saját natív build szükséges.';
   const subscription = await (await getDatabase()).getFirstAsync(`SELECT c.sourceId FROM source_sync c JOIN sources s ON s.id=c.sourceId JOIN profiles p ON p.id=s.profileId WHERE p.isOwn=1 AND c.autoSync=1 AND c.url IS NOT NULL`);
   const registered = await TaskManager.isTaskRegisteredAsync(taskName);
-  if (!subscription) {
+  if (!subscription && !await hasReminders()) {
     if (registered) await BackgroundTask.unregisterTaskAsync(taskName);
     return '';
   }

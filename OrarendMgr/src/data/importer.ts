@@ -57,6 +57,7 @@ async function publishOne(db: SQLiteDatabase, stage: StagedSource): Promise<void
   await validatePublication(db, stage);
   await db.runAsync(`INSERT INTO sources VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET content=excluded.content,format=excluded.format,name=excluded.name,revision=excluded.revision,fromDate=excluded.fromDate,toDate=excluded.toDate`, input.id, input.profileId, input.format, input.content, input.name, revision, input.fromDate, input.toDate, input.isManual);
   await db.runAsync('DELETE FROM overrides WHERE sourceId=? AND key NOT IN (SELECT key FROM events WHERE sourceId=? AND revision=?)', input.id, input.id, revision);
+  await db.runAsync('DELETE FROM event_reminders WHERE sourceId=? AND key NOT IN (SELECT key FROM events WHERE sourceId=? AND revision=?)', input.id, input.id, revision);
   const patches = await db.getAllAsync<{ key: string; patch: string }>('SELECT key,patch FROM overrides WHERE sourceId=?', input.id);
   for (const patch of patches) await applyStoredPatch(db, input.id, revision, patch);
   await db.runAsync('DELETE FROM events WHERE sourceId=? AND revision<>?', input.id, revision);
