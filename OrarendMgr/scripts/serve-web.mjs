@@ -9,7 +9,7 @@ const mime = { '.html': 'text/html', '.js': 'application/javascript', '.css': 't
 /** Serves the exported app with the isolation required by the SQLite worker. */
 async function respond(request, response) {
   response.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-  response.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
+  response.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
   try {
     const pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
     const file = resolve(root, `.${pathname === '/' ? '/index.html' : pathname}`);
