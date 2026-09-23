@@ -120,3 +120,15 @@ Az alkalmazás neve és csomagazonosítója Triton / `hu.t42.triton`, a GitHub-r
 ### Új naptárlink ellenőrzése — 2026-09-23
 
 A felhasználó újabb, az előzőktől eltérő linkje sikeresen letölthető az alkalmazás `fetchCalendar` függvényével, böngészős bejelentkezés és cookie nélkül. A válasz 43 148 byte; az alkalmazás `expandIcs` feldolgozója 2026-09-01–2027-03-22 között 133 alkalmat állított elő hiba nélkül. A privát URL és a letöltés csak ideiglenes, repositoryn kívüli fájlban van. Ez feloldja a korábbi HTTP 500 blokkolót ennél az új linknél, de nem igazol natív URL-importot, időzített frissítést vagy notification kézbesítést; ezek külön end-to-end ellenőrzést igényelnek.
+
+## Óra előtti reminderek, időrács és preview — 2026-09-23
+
+- 27 automatizált teszt, lint, TypeScript és web export sikeres. Új ellenőrzések: globális/szaktársi szétválasztás, alkalmankénti kizárás és felülírás, lejárt/elhagyott jelzések, DST, legközelebbi 60 jelzés, idempotens ütemezési különbség, SQLite szabálymegőrzés/frissítés/törlés, 07:00–21:00 határok metszése.
+- Playwright Chromium: globális reminder-űrlap invalid 0 perc elutasítása, jelzőprofil kiválasztása, mentés/újratöltés, sor hozzáadása/törlése. Tailscale HTTPS címen is sikeres. Napi/heti nézet, Ma, billentyűzetes tabváltás, mobilméret és mindkét téma ellenőrizve; 00:00 és 22:00 hiányzik, 07:00 és 21:00 megvan.
+- MacBookon Android API 35 és iOS 27 önálló Release build: engedélykérés, globális bekapcsolás és 60 pending jelzés. iOS-en kikapcsolás után 0 pending jelzés, beállítások újranyitáskor is megmaradnak. Androidon alkalmankénti 1 perces szabály, globális kizárás, időpontmódosítás; csatorna hang/rezgés rendszeroldala és a pontos ébresztések engedélyoldala ténylegesen megnyílik.
+- Androidon a pontos ébresztés külön engedélye kezdetben tiltott volt, az első próba nem érkezett meg a kívánt percben. Az app ezért külön gombot ad az engedélyhez; onnan visszatérve újraütemezi a pending jelzéseket. A rendszer energiatakarékossága, néma/Ne zavarjanak módja és engedélyei továbbra is hatnak a kézbesítésre.
+- A Tailscale 8444-es porthoz hiányzott a Serve beállítás. A háttérben tartósan konfigurált proxy és a `triton-preview.service` systemd user service helyreállította. A MacBookról HTTP/2 200 és SQLite-hoz szükséges izolációs fejlécek érkeznek; a meglévő 443-as Tailscale-szolgáltatás megmaradt.
+
+Az OS által ütemezett többnapos háttérfuttatás, a tényleges készülékhang/rezgéserősség és a fizikai telefonos akkukímélési mátrix nincs ezekkel a szimulátoros próbákkal igazolva.
+
+Az Android pontos ébresztési engedély megadása után a `ReminderSmoke` alkalom kezdését 11:13-ról 11:19-re módosítottuk, saját 1 perces előjelzéssel és globális kizárással. Az app a háttérben volt. 11:18-kor a rendszer értesítési sávjában megjelent a „ReminderSmoke — 1 perc múlva kezdődik” Triton-értesítés. Ez az egyszeri helyi reminder tényleges kézbesítését és az óramódosítás utáni újraütemezést igazolja; iOS-en ebben a körben a permission/pending/cancel folyamatot vizsgáltuk, tényleges kézbesítést nem.
