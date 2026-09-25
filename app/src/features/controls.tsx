@@ -27,10 +27,10 @@ export function Choice({ label, value, options, onChange, fullWidth = false }: {
 export function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
   return <View className="flex-row items-center gap-2"><Switch accessibilityLabel={label} checked={checked} onCheckedChange={onChange} /><Text className="text-sm">{label}</Text></View>;
 }
-export function Modal({ title, description, close, children }: { title: string; description: string; close: () => void; children: ReactNode }) {
+export function Modal({ title, description, close, children, wide = false }: { title: string; description: string; close: () => void; children: ReactNode; wide?: boolean }) {
   const { width, height } = useWindowDimensions();
   const availableHeight = height - useKeyboardInset();
-  return <Dialog open onOpenChange={open => { if (!open) close(); }}><DialogContent style={{ width: Math.min(width - 32, 576), maxWidth: 576, maxHeight: availableHeight - 32 }}>
+  return <Dialog open onOpenChange={open => { if (!open) close(); }}><DialogContent className={wide ? 'sm:max-w-[960px]' : undefined} style={{ width: Math.min(width - 32, wide ? 960 : 576), maxWidth: wide ? 960 : 576, maxHeight: availableHeight - 32 }}>
     <DialogTitle>{title}</DialogTitle><DialogDescription>{description}</DialogDescription>
     <ScrollView style={{ maxHeight: Math.max(80, availableHeight - 230) }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 16, paddingBottom: 12 }}>{children}</ScrollView>
   </DialogContent></Dialog>;

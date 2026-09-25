@@ -10,6 +10,7 @@ import { discardStages, publishStages, stageSource, uniqueId } from '../data/imp
 import { addDays, fromWall, today } from '../domain/time';
 import type { CalendarEvent, Recurrence } from '../domain/model';
 import { openProfile } from './view-state';
+import { RoomField, RoomMapDialog } from './room-map-dialog';
 
 export function ManualDialog({ profileId, close }: { profileId: number; close: () => void }) {
   const app = useApp();
@@ -23,6 +24,7 @@ export function ManualDialog({ profileId, close }: { profileId: number; close: (
   const [kind, setKind] = useState('timed');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
   async function save() {
     setBusy(true); setError('');
     try {
@@ -35,10 +37,11 @@ export function ManualDialog({ profileId, close }: { profileId: number; close: (
       close();
     } catch (error) { setError(String(error)); } finally { setBusy(false); }
   }
+  if (mapOpen) return <RoomMapDialog location={location} close={() => setMapOpen(false)} />;
   return <Modal title="Új óra" description="Add meg az óra adatait és időpontját." close={close}>
     <ManualSection icon={BookOpen} title="Óra adatai">
       <View className="gap-1.5"><Text className="text-sm font-medium">Célprofil</Text><Choice fullWidth label="Célprofil" value={String(selectedId)} onChange={id => setSelectedId(Number(id))} options={app.profileList.map(profile => ({ value: String(profile.id), label: profile.name }))} /></View>
-      <Field label="Óra neve" value={title} onChange={setTitle} /><Field label="Terem" value={location} onChange={setLocation} />
+      <Field label="Óra neve" value={title} onChange={setTitle} /><RoomField value={location} onChange={setLocation} onOpen={() => setMapOpen(true)} />
     </ManualSection>
     <ManualSchedule kind={kind} setKind={setKind} start={start} setStart={setStart} end={end} setEnd={setEnd} />
     <ManualSection icon={Repeat2} title="Ismétlődés">

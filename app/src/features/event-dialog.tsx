@@ -8,10 +8,12 @@ import { eventIdentity, patchForTarget } from '../domain/comparison';
 import { futureEvents, updateEvents, deleteManualSource } from '../data/repository';
 import { Action, Confirm, Field, Modal, Toggle } from './controls';
 import { useApp } from './app-state';
+import { RoomField, RoomMapDialog } from './room-map-dialog';
 
 export function EventDialog({ event, close }: { event: DisplayEvent; close: () => void }) {
   const app = useApp();
   const [remindersOpen, setRemindersOpen] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
   const [title, setTitle] = useState(event.title);
   const [location, setLocation] = useState(event.location);
   const [start, setStart] = useState(wallTime(event.start).slice(0, 16));
@@ -32,9 +34,10 @@ export function EventDialog({ event, close }: { event: DisplayEvent; close: () =
   }
   async function remove() { try { await deleteManualSource(event.sourceId); await app.refresh(); close(); } catch (error) { setError(String(error)); } }
   if (remindersOpen) return <ReminderDialog event={event} close={() => setRemindersOpen(false)} />;
+  if (mapOpen) return <RoomMapDialog location={location} close={() => setMapOpen(false)} />;
   return <Modal title="Óra részletei" description={`${event.kind === 'allDay' ? 'Egész napos esemény' : 'Budapesti idő'} · Terem: ${event.location || 'nincs megadva'}`} close={close}>
     <Action secondary onPress={() => setRemindersOpen(true)}>Alkalom értesítései</Action>
-    <Field label="Óra neve" value={title} onChange={setTitle} /><Field label="Terem" value={location} onChange={setLocation} />
+    <Field label="Óra neve" value={title} onChange={setTitle} /><RoomField value={location} onChange={setLocation} onOpen={() => setMapOpen(true)} />
     <Field label="Kezdés" value={start} onChange={setStart} /><Field label="Befejezés" value={end} onChange={setEnd} />
     <Toggle label="Alkalom elrejtése / kihagyása" checked={hidden} onChange={setHidden} />
     <Action secondary onPress={() => void suggest().catch(error => setError(String(error)))}>Tartós módosítás: alkalmak kiválasztása</Action>
