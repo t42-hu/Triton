@@ -5,6 +5,7 @@ import type { Anchor, Profile } from '../domain/model';
 import { monday, today } from '../domain/time';
 import { profiles } from '../data/repository';
 import { globalReminders } from '../data/reminders';
+import { reminderPermissionGranted } from '../data/reminder-runtime';
 import { readSetting, saveSetting } from '../data/database';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
@@ -34,8 +35,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
   async function refresh() {
-    const [nextProfiles, reminders, nextAnchor] = await Promise.all([profiles(), globalReminders(), readSetting('anchor', initialAnchor)]);
-    setProfiles(nextProfiles); setRemindersEnabled(reminders.enabled); updateView(current => resolveProfiles(current, nextProfiles)); setAnchor(nextAnchor); setVersion(value => value + 1);
+    const [nextProfiles, reminders, permissionGranted, nextAnchor] = await Promise.all([profiles(), globalReminders(), reminderPermissionGranted(), readSetting('anchor', initialAnchor)]);
+    setProfiles(nextProfiles); setRemindersEnabled(reminders.enabled && permissionGranted); updateView(current => resolveProfiles(current, nextProfiles)); setAnchor(nextAnchor); setVersion(value => value + 1);
   }
   function reportError(error: unknown) { setError(String(error)); }
   useEffect(() => {

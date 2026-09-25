@@ -10,7 +10,7 @@ import type { DisplayEvent } from '../domain/model';
 import { DEFAULT_REMINDERS, REMINDER_PROFILES, validateReminderRules, type ReminderProfile, type ReminderRule } from '../domain/reminders';
 import { eventReminders, globalReminders, saveEventReminders, saveGlobalReminders } from '../data/reminders';
 import { readSetting } from '../data/database';
-import { openExactAlarmSettings, openReminderChannel, reconcileReminders, requestReminderPermission } from '../data/reminder-runtime';
+import { openExactAlarmSettings, openReminderChannel, reconcileReminders, reminderPermissionGranted, requestReminderPermission } from '../data/reminder-runtime';
 import { wallTime } from '../domain/time';
 import { useApp } from './app-state';
 import { Action, Choice, Modal, Toggle } from './controls';
@@ -37,7 +37,7 @@ export function ReminderDialog({ event, close }: { event?: DisplayEvent; close: 
     finally { state.setBusy(false); }
   }
   return <Modal title={event ? 'Alkalom értesítései' : 'Óra előtti értesítések'} description={event ? `${event.title} · ${wallTime(event.start).slice(0, 16)}` : 'Jelzések a sajátként kijelölt órarendhez.'} close={close}>
-    {event ? <Text className="text-sm text-muted-foreground">Egyszeri jelzések erre az alkalomra, a mentett kezdés előtt. A sorozat többi óráját nem módosítják. Azonos előjelzési időnél az itteni profil váltja fel a globálisat.</Text> : <View className="flex-row items-center gap-3 rounded-xl border border-border bg-background/40 p-3"><View className="h-10 w-10 items-center justify-center rounded-xl bg-muted"><ReminderBell enabled={state.enabled} size={19} /></View><View className="min-w-0 flex-1"><Text className="font-semibold">Globális jelzések</Text><Text className="text-xs text-muted-foreground">A saját órarended óráihoz</Text></View><Switch accessibilityLabel="Globális óra előtti jelzések" checked={state.enabled} onCheckedChange={state.setEnabled} /></View>}
+    {event ? <Text className="text-sm text-muted-foreground">Egyszeri jelzések erre az alkalomra, a mentett kezdés előtt. A sorozat többi óráját nem módosítják. Azonos előjelzési időnél az itteni profil váltja fel a globálisat.</Text> : <View className="flex-row items-center gap-3 rounded-xl border border-border bg-background/40 p-3"><View className="h-10 w-10 items-center justify-center rounded-xl bg-muted"><ReminderBell enabled={state.enabled && state.permissionGranted} size={19} /></View><View className="min-w-0 flex-1"><Text className="font-semibold">Globális jelzések</Text><Text className="text-xs text-muted-foreground">A saját órarended óráihoz</Text></View><Switch accessibilityLabel="Globális óra előtti jelzések" checked={state.enabled} onCheckedChange={state.setEnabled} /></View>}
     {event && isOwn ? <Toggle label="Globális jelzések kizárása erre az alkalomra" checked={state.excluded} onChange={state.setExcluded} /> : null}
     {event && !isOwn ? <Text className="text-sm text-muted-foreground">Szaktársi órarend: csak az itt felvett jelzések érvényesek.</Text> : null}
     <RuleEditor rules={state.rules} onChange={state.setRules} />
@@ -49,22 +49,22 @@ export function ReminderDialog({ event, close }: { event?: DisplayEvent; close: 
 }
 function useReminderForm(event?: DisplayEvent) {
   const [rules, setRules] = useState<DraftRule[]>([]);
-  const [enabled, setEnabled] = useState(false); const [excluded, setExcluded] = useState(false);
+  const [enabled, setEnabled] = useState(false); const [excluded, setExcluded] = useState(false); const [permissionGranted, setPermissionGranted] = useState(false);
   const [ready, setReady] = useState(false); const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(''); const [status, setStatus] = useState(emptyStatus);
   useEffect(() => {
     let disposed = false;
     async function load() {
       try {
-        const global = await globalReminders(); const local = event ? await eventReminders(event) : null;
+        const global = await globalReminders(); const local = event ? await eventReminders(event) : null; const permission = await reminderPermissionGranted();
         const delivery = await readSetting('reminderStatus', emptyStatus);
         if (disposed) return;
-        setRules((local?.rules ?? global.rules).map(toDraft)); setEnabled(global.enabled); setExcluded(local?.excludeGlobal ?? false); setStatus(delivery); setReady(true);
+        setRules((local?.rules ?? global.rules).map(toDraft)); setEnabled(global.enabled); setExcluded(local?.excludeGlobal ?? false); setPermissionGranted(permission); setStatus(delivery); setReady(true);
       } catch { if (!disposed) setMessage('Nem sikerült betölteni az értesítéseket. Nyisd meg újra az ablakot.'); }
     }
     void load(); return () => { disposed = true; };
   }, [event]);
-  return { rules, setRules, enabled, setEnabled, excluded, setExcluded, ready, busy, setBusy, message, setMessage, status, setStatus };
+  return { rules, setRules, enabled, setEnabled, excluded, setExcluded, permissionGranted, ready, busy, setBusy, message, setMessage, status, setStatus };
 }
 function toDraft(rule: ReminderRule): DraftRule { return { ...rule, minutes: String(rule.minutes) }; }
 function RuleEditor({ rules, onChange }: { rules: DraftRule[]; onChange: (rules: DraftRule[]) => void }) {

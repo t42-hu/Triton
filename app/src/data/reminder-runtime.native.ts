@@ -12,6 +12,9 @@ export function reconcileReminders(): Promise<void> {
   pending = next.catch(() => undefined);
   return next;
 }
+export async function reminderPermissionGranted(): Promise<boolean> {
+  return (await Notifications.getPermissionsAsync()).granted;
+}
 async function reconcile(): Promise<void> {
   try {
     const now = Date.now();
