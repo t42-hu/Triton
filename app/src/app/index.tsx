@@ -1,16 +1,14 @@
-import { Plus, Settings2, TriangleAlert, Upload, Users } from 'lucide-react-native';
+import { Plus, Settings2, TriangleAlert, Users } from 'lucide-react-native';
 import { Icon } from '@/components/ui/icon';
 import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
 import { Platform, ScrollView, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui/text';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useApp, type ViewState } from '@/features/app-state';
-import { Action, Modal, Toggle } from '@/features/controls';
+import { Action, Modal } from '@/features/controls';
 import { CalendarPanel } from '@/features/calendar-panel';
 import { ProfilesDialog } from '@/features/profiles-dialog';
 import { ImportDialog } from '@/features/import-dialog';
@@ -20,8 +18,9 @@ import { EventDialog } from '@/features/event-dialog';
 import { visibleEvents } from '@/data/repository';
 import type { DisplayEvent } from '@/domain/model';
 import { commonKeys } from '@/domain/comparison';
-import { monday, today } from '@/domain/time';
+import { monday } from '@/domain/time';
 import { CalendarSyncPanel } from '@/features/source-status';
+import { TimetableToolbar } from '@/features/timetable-toolbar';
 
 type DialogName = 'profiles' | 'import' | 'manual' | 'settings' | null;
 export default function TimetableScreen() {
@@ -51,7 +50,7 @@ export default function TimetableScreen() {
     {app.error ? <Alert icon={TriangleAlert} variant="destructive"><AlertTitle>Nem sikerült a művelet</AlertTitle><AlertDescription>{app.error}</AlertDescription></Alert> : null}
     <CalendarSyncPanel />
     {!app.profileList.length ? <EmptyState create={() => setDialog('profiles')} /> : <>
-      <Toolbar open={setDialog} />
+      <TimetableToolbar open={setDialog} />
       {sideBySide ? <ScrollView horizontal contentContainerStyle={{ gap: 24 }}>{panels}</ScrollView> : <View className="gap-6">{panels}</View>}
       {availableProfiles.length ? <View className="self-start"><Action secondary icon={Plus} onPress={() => setAddingCalendar(true)}>Órarend hozzáadása</Action></View> : null}
       <Text className="text-xs text-muted-foreground">Budapesti idő szerint. Az órarendjeid ezen az eszközön maradnak.</Text>
@@ -102,31 +101,6 @@ function useCalendarData() {
   const extras = view.openProfiles.map(id => ({ id, date: extraDate, events: eventsById[id] ?? [], common: commonKeys(eventsById[id] ?? [], ownEvents) }));
   const ownCommon = new Set(extras.flatMap(extra => [...commonKeys(ownEvents, extra.events)]));
   return { ownId, ownDate, ownEvents, ownCommon, extras };
-}
-const toolbarControlSize = { width: 132, height: 44 };
-function Toolbar({ open }: { open: (dialog: DialogName) => void }) {
-  const { view, setView } = useApp();
-  const { width } = useWindowDimensions();
-  const compact = width < 600;
-  return <View className="gap-3">
-    <View className={`flex-row flex-wrap items-center justify-between ${compact ? 'gap-2' : 'gap-3'}`}>
-      <View className={`flex-row items-center ${width < 350 ? 'flex-wrap' : ''} ${compact ? 'gap-1' : 'gap-2'}`}>
-        <Tabs value={view.mode} onValueChange={mode => setView({ mode: mode === 'day' ? 'day' : 'week' })}><TabsList style={{ ...toolbarControlSize, width: compact ? 116 : 132 }}><TabsTrigger className="min-w-0 flex-1" value="day"><Text>Nap</Text></TabsTrigger><TabsTrigger className="min-w-0 flex-1" value="week"><Text>Hét</Text></TabsTrigger></TabsList></Tabs>
-        <Action secondary onPress={() => setView({ leftDate: today(), rightDate: today() })}>Ma</Action>
-        <Action secondary label="Kicsinyítés" onPress={() => setView({ zoom: Math.max(0.5, view.zoom - 0.25) })}>−</Action>
-        <Badge variant="outline"><Text>{Math.round(view.zoom * 100)}%</Text></Badge>
-        <Action secondary label="Nagyítás" onPress={() => setView({ zoom: Math.min(2.5, view.zoom + 0.25) })}>+</Action>
-      </View>
-      <View className={`flex-row gap-2 ${compact ? 'w-full' : ''}`}>
-        <Button accessibilityLabel="Importálás" variant="outline" style={compact ? { flex: 1 } : toolbarControlSize} className="px-2" onPress={() => open('import')}><Icon as={Upload} size={17} className="text-foreground" /><Text>Importálás</Text></Button>
-        <Button accessibilityLabel="Új óra" style={compact ? { flex: 1 } : undefined} onPress={() => open('manual')}><Icon as={Plus} size={17} className="text-primary-foreground" /><Text>Új óra</Text></Button>
-      </View>
-    </View>
-    {view.openProfiles.length ? <View className={compact ? 'gap-3 pt-1' : 'flex-row flex-wrap gap-5 pt-2'}>
-      <Tabs value={view.arrangement} onValueChange={arrangement => setView({ arrangement: arrangement === 'row' ? 'row' : 'column' })}><TabsList style={compact ? { width: '100%' } : undefined}><TabsTrigger className={compact ? 'min-w-0 flex-1 px-1' : ''} value="column"><Text>Egymás alatt</Text></TabsTrigger><TabsTrigger className={compact ? 'min-w-0 flex-1 px-1' : ''} value="row"><Text>Egymás mellett</Text></TabsTrigger></TabsList></Tabs>
-      <View className="flex-row flex-wrap items-center gap-4"><Toggle label="Szinkronlapozás" checked={view.sync} onChange={sync => setView({ sync, ...(sync ? { rightDate: view.leftDate } : {}) })} /><Toggle label="Csak közös órák" checked={view.common} onChange={common => setView({ common, ...(common ? { rightDate: view.leftDate } : {}) })} /></View>
-    </View> : null}
-  </View>;
 }
 function EmptyState({ create }: { create: () => void }) {
   return <View className="min-h-96 justify-center gap-5 px-3 py-12 sm:px-12">
