@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Platform, View } from 'react-native';
+import { Image } from 'expo-image';
 import type { Anchor, Profile } from '../domain/model';
 import { monday, today } from '../domain/time';
 import { profiles } from '../data/repository';
@@ -40,7 +41,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     void restore().catch(reportError);
   }, []);
   useEffect(() => { if (ready) void saveSetting('view', view).catch(reportError); }, [view, ready]);
-  if (!ready) return <View className="flex-1 items-center justify-center gap-3 bg-background p-6">{!error ? <ActivityIndicator /> : null}<Text className="text-center">{error ? startupError(error) : 'Órarend megnyitása…'}</Text>{error && Platform.OS === 'web' ? <Button onPress={() => window.location.reload()}><Text>Újrapróbálás</Text></Button> : null}</View>;
+  if (!ready) return <View className="flex-1 items-center justify-center gap-3 bg-background p-6"><Image source={require('@/assets/images/triton-v15.png')} contentFit="contain" style={{ width: 88, height: 88 }} />{!error ? <ActivityIndicator /> : null}<Text className="text-center">{error ? startupError(error) : 'Órarend megnyitása…'}</Text>{error && Platform.OS === 'web' ? <Button onPress={() => window.location.reload()}><Text>Újrapróbálás</Text></Button> : null}</View>;
   const setView = (patch: Partial<ViewState> | ((current: ViewState) => Partial<ViewState>)) => updateView(current => ({ ...current, ...(typeof patch === 'function' ? patch(current) : patch) }));
   return <Context.Provider value={{ view, setView, anchor, profileList, version, refresh, error, setError }}>{children}</Context.Provider>;
 }
