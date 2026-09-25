@@ -1,4 +1,4 @@
-import { Bell, Plus, Settings2, TriangleAlert, Users } from 'lucide-react-native';
+import { Plus, Settings2, TriangleAlert, Users } from 'lucide-react-native';
 import { Icon } from '@/components/ui/icon';
 import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
@@ -23,6 +23,7 @@ import { monday } from '@/domain/time';
 import { CalendarSyncPanel } from '@/features/source-status';
 import { TimetableToolbar } from '@/features/timetable-toolbar';
 import { openProfile } from '@/features/view-state';
+import { ReminderBell } from '@/features/reminder-bell';
 
 type DialogName = 'profiles' | 'import' | 'manual' | 'settings' | 'reminders' | null;
 export default function TimetableScreen() {
@@ -66,10 +67,11 @@ export default function TimetableScreen() {
   </ScrollView></SafeAreaView>;
 }
 function HeaderActions({ compact, open }: { compact: boolean; open: (dialog: DialogName) => void }) {
+  const { remindersEnabled } = useApp();
   const buttonStyle = compact ? { width: 44, height: 44 } : undefined;
   return <View className="flex-row gap-1">
     <Button accessibilityLabel="Profilok" variant="ghost" size={compact ? 'icon' : 'default'} style={buttonStyle} onPress={() => open('profiles')}><Icon as={Users} size={17} className="text-foreground" />{compact ? null : <Text>Profilok</Text>}</Button>
-    <Button accessibilityLabel="Értesítések" variant="ghost" size={compact ? 'icon' : 'default'} style={buttonStyle} onPress={() => open('reminders')}><Icon as={Bell} size={17} className="text-foreground" />{compact ? null : <Text>Értesítések</Text>}</Button>
+    <Button accessibilityLabel="Értesítések" accessibilityHint={remindersEnabled ? 'A globális jelzések bekapcsolva' : 'A globális jelzések kikapcsolva'} variant="ghost" size={compact ? 'icon' : 'default'} style={buttonStyle} onPress={() => open('reminders')}><ReminderBell enabled={remindersEnabled} size={17} />{compact ? null : <Text>Értesítések</Text>}</Button>
     <Button accessibilityLabel="Beállítások" variant="ghost" size={compact ? 'icon' : 'default'} style={buttonStyle} onPress={() => open('settings')}><Icon as={Settings2} size={17} className="text-foreground" />{compact ? null : <Text>Beállítások</Text>}</Button>
   </View>;
 }

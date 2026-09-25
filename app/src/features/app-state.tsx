@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import type { Anchor, Profile } from '../domain/model';
 import { monday, today } from '../domain/time';
 import { profiles } from '../data/repository';
+import { globalReminders } from '../data/reminders';
 import { readSetting, saveSetting } from '../data/database';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,7 @@ const initialAnchor: Anchor = { date: monday(today()), week: 'A' };
 type AppState = {
   view: ViewState; setView: (patch: Partial<ViewState> | ((current: ViewState) => Partial<ViewState>)) => void; anchor: Anchor;
   profileList: Profile[]; version: number; refresh: () => Promise<void>;
+  remindersEnabled: boolean;
   error: string; setError: (message: string) => void;
 };
 const Context = createContext<AppState | null>(null);
@@ -27,11 +29,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [view, updateView] = useState(initialView);
   const [anchor, setAnchor] = useState(initialAnchor);
   const [profileList, setProfiles] = useState<Profile[]>([]);
+  const [remindersEnabled, setRemindersEnabled] = useState(false);
   const [version, setVersion] = useState(0);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
   async function refresh() {
-    const nextProfiles = await profiles(); setProfiles(nextProfiles); updateView(current => resolveProfiles(current, nextProfiles)); setAnchor(await readSetting('anchor', initialAnchor)); setVersion(value => value + 1);
+    const [nextProfiles, reminders, nextAnchor] = await Promise.all([profiles(), globalReminders(), readSetting('anchor', initialAnchor)]);
+    setProfiles(nextProfiles); setRemindersEnabled(reminders.enabled); updateView(current => resolveProfiles(current, nextProfiles)); setAnchor(nextAnchor); setVersion(value => value + 1);
   }
   function reportError(error: unknown) { setError(String(error)); }
   useEffect(() => {
@@ -43,7 +47,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => { if (ready) void saveSetting('view', view).catch(reportError); }, [view, ready]);
   if (!ready) return <View className="flex-1 items-center justify-center gap-3 bg-background p-6"><Image source={require('@/assets/images/triton-v15.png')} contentFit="contain" style={{ width: 88, height: 88 }} />{!error ? <ActivityIndicator /> : null}<Text className="text-center">{error ? startupError(error) : 'Órarend megnyitása…'}</Text>{error && Platform.OS === 'web' ? <Button onPress={() => window.location.reload()}><Text>Újrapróbálás</Text></Button> : null}</View>;
   const setView = (patch: Partial<ViewState> | ((current: ViewState) => Partial<ViewState>)) => updateView(current => ({ ...current, ...(typeof patch === 'function' ? patch(current) : patch) }));
-  return <Context.Provider value={{ view, setView, anchor, profileList, version, refresh, error, setError }}>{children}</Context.Provider>;
+  return <Context.Provider value={{ view, setView, anchor, profileList, remindersEnabled, version, refresh, error, setError }}>{children}</Context.Provider>;
 }
 function startupError(error: string): string {
   if (error.includes('NoModificationAllowedError') || error.includes('Access Handle')) return 'A helyi adatbázis egy másik Triton böngészőfülön van megnyitva. Zárd be azt a fület, majd próbáld újra.';

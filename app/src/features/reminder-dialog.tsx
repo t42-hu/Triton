@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
-import { BellRing, Check, Plus, Trash2 } from 'lucide-react-native';
+import { Check, Plus, Trash2 } from 'lucide-react-native';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ import { openExactAlarmSettings, openReminderChannel, reconcileReminders, reques
 import { wallTime } from '../domain/time';
 import { useApp } from './app-state';
 import { Action, Choice, Modal, Toggle } from './controls';
+import { ReminderBell } from './reminder-bell';
 
 type DraftRule = { minutes: string; profile: ReminderProfile };
 type ReminderStatus = { count: number; through: number; error: string };
@@ -31,12 +32,12 @@ export function ReminderDialog({ event, close }: { event?: DisplayEvent; close: 
       if (rules.length && (event || state.enabled) && Platform.OS !== 'web') await requestReminderPermission();
       if (event) await saveEventReminders(event, { excludeGlobal: state.excluded, rules });
       else await saveGlobalReminders({ enabled: state.enabled, rules });
-      state.setMessage('Mentve.'); await reconcileReminders(); await app.refresh(); state.setStatus(await readSetting('reminderStatus', emptyStatus));
+      await reconcileReminders(); await app.refresh(); close();
     } catch (error) { state.setMessage(`Nem sikerült minden lépés: ${error instanceof Error ? error.message : String(error)}`); }
     finally { state.setBusy(false); }
   }
   return <Modal title={event ? 'Alkalom értesítései' : 'Óra előtti értesítések'} description={event ? `${event.title} · ${wallTime(event.start).slice(0, 16)}` : 'Jelzések a sajátként kijelölt órarendhez.'} close={close}>
-    {event ? <Text className="text-sm text-muted-foreground">Egyszeri jelzések erre az alkalomra, a mentett kezdés előtt. A sorozat többi óráját nem módosítják. Azonos előjelzési időnél az itteni profil váltja fel a globálisat.</Text> : <View className="flex-row items-center gap-3 rounded-xl border border-border bg-background/40 p-3"><View className="h-10 w-10 items-center justify-center rounded-xl bg-muted"><Icon as={BellRing} size={19} className="text-primary" /></View><View className="min-w-0 flex-1"><Text className="font-semibold">Globális jelzések</Text><Text className="text-xs text-muted-foreground">A saját órarended óráihoz</Text></View><Switch accessibilityLabel="Globális óra előtti jelzések" checked={state.enabled} onCheckedChange={state.setEnabled} /></View>}
+    {event ? <Text className="text-sm text-muted-foreground">Egyszeri jelzések erre az alkalomra, a mentett kezdés előtt. A sorozat többi óráját nem módosítják. Azonos előjelzési időnél az itteni profil váltja fel a globálisat.</Text> : <View className="flex-row items-center gap-3 rounded-xl border border-border bg-background/40 p-3"><View className="h-10 w-10 items-center justify-center rounded-xl bg-muted"><ReminderBell enabled={state.enabled} size={19} /></View><View className="min-w-0 flex-1"><Text className="font-semibold">Globális jelzések</Text><Text className="text-xs text-muted-foreground">A saját órarended óráihoz</Text></View><Switch accessibilityLabel="Globális óra előtti jelzések" checked={state.enabled} onCheckedChange={state.setEnabled} /></View>}
     {event && isOwn ? <Toggle label="Globális jelzések kizárása erre az alkalomra" checked={state.excluded} onChange={state.setExcluded} /> : null}
     {event && !isOwn ? <Text className="text-sm text-muted-foreground">Szaktársi órarend: csak az itt felvett jelzések érvényesek.</Text> : null}
     <RuleEditor rules={state.rules} onChange={state.setRules} />
