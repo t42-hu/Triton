@@ -96,7 +96,7 @@ A natív build és futtatás a felhasználó MacBookján történt: Xcode 27, iP
 ### Sikeres ellenőrzések
 
 - `pnpm lint`, `pnpm typecheck`, `pnpm test` (21 teszt), `pnpm build:web` és `git diff --check`.
-- Weben, Androidon és iOS-en tényleges rendszerfájlválasztós ICS-import: `Saját órarend` és `TTRMB_TEST`, profilonként 133 alkalom a kiválasztott tartományban. A saját profil korábbi sikeres letöltésből származó ICS-cache-t, a társ a felhasználó `NeptunCalendarExport.ics` fájlját használta.
+- Weben, Androidon és iOS-en tényleges rendszerfájlválasztós ICS-import: `Saját órarend` és `TTRMB_TEST`, profilonként 133 alkalom a kiválasztott tartományban. A saját profil korábbi sikeres letöltésből származó ICS-cache-t, a társ a felhasználó helyi ICS-exportját használta.
 - Két különböző profil összehasonlítása, közös órák jelölése és szűrése, szinkronizált lapozás A és B hét között mindhárom platformon. Ez hétváltási próba; nem helyettesíti az A/B-referencia átállításának teljes natív elfogadási tesztjét.
 - Webes újratöltés és natív újranyitás után megmaradó profilok és órák. Androidon kikapcsolt Wi-Fi mellett Release-újraindítás után is elérhető a cache és a korábban választott B hét; a Wi-Fi a próba után visszakapcsolva.
 - Weben 390 px-es nézet teljes oldalas vízszintes túlcsordulás nélkül, világos/sötét téma, dialógusba ágyazott választó, tárolt forrásból offline tartománybővítés. Playwright Chromium alatt nem keletkezett oldalhiba.
