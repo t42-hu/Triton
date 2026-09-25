@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
-import { BookOpen, CalendarDays, ChevronLeft, ChevronRight, MapPin, X } from 'lucide-react-native';
+import { BookOpen, CalendarDays, ChevronLeft, ChevronRight, MapPin, Monitor, PencilLine, Presentation, X } from 'lucide-react-native';
 import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -10,6 +10,7 @@ import type { DisplayEvent } from '../domain/model';
 import { addDays, clockTime, dateLabel, fromWall, today, weekAt } from '../domain/time';
 import { dayLayout, GRID_START, GRID_MINUTES, type PositionedEvent } from './calendar-layout';
 import { eventIdentity } from '../domain/comparison';
+import { lessonType } from '../domain/lesson-type';
 import { useApp, type ViewState } from './app-state';
 import { SourceStamp } from './source-status';
 
@@ -75,7 +76,7 @@ function DayHeading({ date, width, events, common, selectEvent }: { date: string
   const weekday = new Intl.DateTimeFormat('hu-HU', { weekday: 'short', timeZone: 'Europe/Budapest' }).format(new Date(fromWall(`${date}T12:00`)));
   const month = new Intl.DateTimeFormat('hu-HU', { month: 'short', timeZone: 'Europe/Budapest' }).format(new Date(fromWall(`${date}T12:00`)));
   return <View className={`gap-1 border-l border-border px-3 py-2 ${isToday ? 'bg-primary/10' : ''}`} style={{ width }}><View className="flex-row items-center gap-2"><Text className={isToday ? 'text-2xl font-bold text-primary' : 'text-2xl font-semibold text-foreground'}>{Number(date.slice(8))}</Text><View><Text className="text-xs font-semibold text-muted-foreground">{weekday}</Text><Text className="text-xs text-muted-foreground">{month}</Text></View></View>
-    {allDay.map(event => <Pressable key={eventIdentity(event)} accessibilityRole="button" accessibilityLabel={`${event.title}${common.has(eventIdentity(event)) ? ', közös óra' : ''}`} onPress={() => selectEvent(event)} className="rounded bg-accent p-1"><View className="flex-row items-start gap-1">{common.has(eventIdentity(event)) ? <Icon as={BookOpen} size={13} className="mt-0.5 shrink-0 text-primary" /> : null}<Text className="shrink text-xs" numberOfLines={2}>{event.title}</Text></View></Pressable>)}
+    {allDay.map(event => <Pressable key={eventIdentity(event)} accessibilityRole="button" accessibilityLabel={`${event.title}, ${lessonLabel(event)}${common.has(eventIdentity(event)) ? ', közös óra' : ''}`} onPress={() => selectEvent(event)} className="rounded bg-accent p-1"><View className="flex-row items-start gap-1"><Icon as={lessonIcon(event)} size={13} className="mt-0.5 shrink-0 text-primary" /><Text className="shrink text-xs" numberOfLines={2}>{event.title}</Text></View></Pressable>)}
   </View>;
 }
 function TimeAxis({ zoom }: { zoom: number }) {
@@ -92,7 +93,15 @@ function EventBlock({ item, zoom, shared, selectEvent }: { item: PositionedEvent
   const event = item.event;
   const height = Math.max(18, item.height * zoom - 2);
   const dense = height < 60;
-  return <Pressable accessibilityRole="button" accessibilityLabel={`${event.title}, ${clockTime(event.start)}, terem: ${event.location || 'nincs'}, ${shared ? 'közös óra' : ''}`} onPress={() => selectEvent(event)} className={`absolute overflow-hidden rounded-lg border border-primary/30 bg-secondary p-2 active:opacity-70 dark:bg-[#163B59] ${shared ? 'border-l-[3px] border-l-primary' : ''} ${event.hidden ? 'opacity-40' : ''}`} style={{ top: item.top * zoom + 1, height, left: `${item.lane * 100 / item.lanes}%`, width: `${100 / item.lanes}%` }}>
-    {dense ? <Text className="text-[11px] font-bold text-primary" numberOfLines={1}>{clockTime(event.start)} · {event.title}</Text> : <><View className="flex-row items-center justify-between gap-1"><Text className="text-[11px] font-bold text-primary" style={{ fontVariant: ['tabular-nums'] }}>{clockTime(event.start)}–{clockTime(event.end)}</Text>{shared ? <Icon as={BookOpen} size={13} className="text-primary" /> : null}</View><Text className="mt-1 text-[13px] font-semibold leading-[17px] text-foreground" numberOfLines={height > 105 ? 3 : 2}>{event.title}</Text>{height > 82 && event.location ? <View className="mt-1 flex-row items-center gap-1"><Icon as={MapPin} size={12} className="text-muted-foreground" /><Text className="shrink text-[11px] text-muted-foreground" numberOfLines={1}>{event.location}</Text></View> : null}</>}
+  return <Pressable accessibilityRole="button" accessibilityLabel={`${event.title}, ${lessonLabel(event)}, ${clockTime(event.start)}, terem: ${event.location || 'nincs'}, ${shared ? 'közös óra' : ''}`} onPress={() => selectEvent(event)} className={`absolute overflow-hidden rounded-lg border border-primary/30 bg-secondary p-2 active:opacity-70 dark:bg-[#163B59] ${shared ? 'border-l-[3px] border-l-primary' : ''} ${event.hidden ? 'opacity-40' : ''}`} style={{ top: item.top * zoom + 1, height, left: `${item.lane * 100 / item.lanes}%`, width: `${100 / item.lanes}%` }}>
+    {dense ? <View className="flex-row items-center gap-1"><Icon as={lessonIcon(event)} size={12} className="shrink-0 text-primary" /><Text className="shrink text-[11px] font-bold text-primary" numberOfLines={1}>{clockTime(event.start)} · {event.title}</Text></View> : <><View className="flex-row items-center justify-between gap-1"><Text className="text-[11px] font-bold text-primary" style={{ fontVariant: ['tabular-nums'] }}>{clockTime(event.start)}–{clockTime(event.end)}</Text><Icon as={lessonIcon(event)} size={14} className="text-primary" /></View><Text className="mt-1 text-[13px] font-semibold leading-[17px] text-foreground" numberOfLines={height > 105 ? 3 : 2}>{event.title}</Text>{height > 82 && event.location ? <View className="mt-1 flex-row items-center gap-1"><Icon as={MapPin} size={12} className="text-muted-foreground" /><Text className="shrink text-[11px] text-muted-foreground" numberOfLines={1}>{event.location}</Text></View> : null}</>}
   </Pressable>;
+}
+function lessonIcon(event: DisplayEvent) {
+  const type = lessonType(`${event.title} ${event.originalTitle}`);
+  return type === 'EA' ? Presentation : type === 'GY' ? PencilLine : type === 'LA' ? Monitor : BookOpen;
+}
+function lessonLabel(event: DisplayEvent) {
+  const type = lessonType(`${event.title} ${event.originalTitle}`);
+  return type === 'EA' ? 'előadás' : type === 'GY' ? 'gyakorlat' : type === 'LA' ? 'számítógépes labor' : 'óra';
 }

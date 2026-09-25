@@ -5,9 +5,16 @@ import { expandJson, parseJson } from '../src/domain/json-import';
 import { addDays, fromWall, monday, wallTime, weekAt } from '../src/domain/time';
 import { commonKeys, eventIdentity, patchForTarget } from '../src/domain/comparison';
 import { dayLayout } from '../src/features/calendar-layout';
+import { lessonType } from '../src/domain/lesson-type';
 import type { DisplayEvent, Occurrence } from '../src/domain/model';
 
 const range = { from: '2026-09-01', to: '2026-12-31' };
+test('Neptun course codes identify lecture, practice and lab lessons', () => {
+  assert.equal(lessonType('Fizika ( - Fiz_EA)'), 'EA');
+  assert.equal(lessonType('Matematika ( - MAI_GY_02)'), 'GY');
+  assert.equal(lessonType('Programozás ( - PMP_LA_02)'), 'LA');
+  assert.equal(lessonType('Szabadon választott esemény'), null);
+});
 const anchor = { date: '2026-09-07', week: 'A' as const };
 const control = () => ({ signal: new AbortController().signal, progress: () => undefined });
 async function collect(generator: AsyncGenerator<Occurrence>) { const values: Occurrence[] = []; for await (const item of generator) values.push(item); return values; }
