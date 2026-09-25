@@ -35,7 +35,7 @@ Egy iOS és Android platformokon futó mobilalkalmazás fejlesztése, amely megk
 ### 3.1. Órarend Kezelő Modul
 *   **Adatimportálás és Értelmezés:**
     *   **Offline ICS betöltés:** Alapértelmezett ICS fájlok helyi (offline) beolvasása és értelmezése (napokra és hetekre lebontva).
-    *   Referencia mintaformátum: `NeptunCalendarExport.ics`.
+    *   Referencia mintaformátum: szabványos ICS-naptárexport.
     *   **Online ICS betöltés:** Legyen lehetőség URL-alapú, online ICS forrás betöltésére és frissítésére.
     *   **Fallback és cache logika:** Ha az online ICS forrás nem elérhető, az alkalmazás automatikusan a legutóbb lokálisan elérhető verziót használja. Az online ICS tartalmát cache-elni kell a lokális **SQLite** adatbázisban.
     *   Rugalmas adatkezelés: lehetőség egyedi, akár nyelvi modell (LLM) által generált strukturált fájlok importálására is.
