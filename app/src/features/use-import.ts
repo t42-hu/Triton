@@ -7,6 +7,7 @@ import { discardStages, publishStages, sourceById, stageSource, type StagedSourc
 import { addDays, monday, today, validateRange } from '../domain/time';
 import type { Anchor, ImportControl } from '../domain/model';
 import { useApp } from './app-state';
+import { openProfile } from './view-state';
 
 export type ImportDraft = { mode: 'file' | 'url'; url: string; content: string; name: string; from: string; to: string };
 
@@ -36,7 +37,7 @@ export function useImport(profileId: number, close: () => void) {
     setBusy(true);
     try {
       await publishStages(staged.current); staged.current = []; setStage(undefined); await app.refresh();
-      if (profileId !== app.view.left) app.setView(current => current.openProfiles.includes(profileId) ? {} : { openProfiles: [...current.openProfiles, profileId], right: profileId, compare: true });
+      app.setView(current => openProfile(current, profileId));
       close();
     }
     catch (error) { report(error); await cancelStage(); } finally { setBusy(false); }
