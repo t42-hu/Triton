@@ -21,7 +21,7 @@ export function ProfilesDialog({ close, onCreated }: { close: () => void; onCrea
   const compact = width < 600;
   async function perform(operation: Promise<void>) {
     setError(''); setIsSaving(true);
-    try { await operation; await app.refresh(); setName(''); setEditing(undefined); }
+    try { await operation; await app.refresh(); close(); }
     catch (error) { setError(error instanceof Error ? error.message : String(error)); }
     finally { setIsSaving(false); }
   }
@@ -30,7 +30,7 @@ export function ProfilesDialog({ close, onCreated }: { close: () => void; onCrea
     try {
       const id = await saveProfile(name, editing);
       await app.refresh(); setName(''); setEditing(undefined);
-      if (editing === undefined) onCreated(id);
+      if (editing === undefined) onCreated(id); else close();
     } catch (error) { setError(error instanceof Error ? error.message : String(error)); }
     finally { setIsSaving(false); }
   }
