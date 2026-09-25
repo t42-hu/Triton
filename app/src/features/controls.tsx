@@ -18,9 +18,9 @@ export function Action({ children, onPress, disabled = false, secondary = false,
 export function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string }) {
   return <View className="gap-1.5"><Label nativeID={label}>{label}</Label><Input accessibilityLabel={label} aria-labelledby={label} value={value} onChangeText={onChange} placeholder={placeholder} autoCapitalize="none" /></View>;
 }
-export function Choice({ label, value, options, onChange }: { label: string; value: string; options: { value: string; label: string }[]; onChange: (value: string) => void }) {
+export function Choice({ label, value, options, onChange, fullWidth = false }: { label: string; value: string; options: { value: string; label: string }[]; onChange: (value: string) => void; fullWidth?: boolean }) {
   return <Select value={options.find(option => option.value === value)} onValueChange={option => { if (option) onChange(option.value); }}>
-    <SelectTrigger accessibilityLabel={label} className="min-w-36"><SelectValue placeholder={label} /></SelectTrigger>
+    <SelectTrigger accessibilityLabel={label} className={fullWidth ? 'w-full' : 'min-w-36'}><SelectValue placeholder={label} /></SelectTrigger>
     <SelectContent>{options.map(option => <SelectItem key={option.value} {...option} />)}</SelectContent>
   </Select>;
 }
