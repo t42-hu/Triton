@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
+import { Clock3 } from 'lucide-react-native';
+import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { syncStatus, disconnectCalendar, SYNC_INTERVAL, type SyncStatus } from '../data/calendar-sync';
 import { readSetting } from '../data/database';
@@ -24,7 +26,7 @@ function timestamp(time: number): string {
 export function SourceStamp({ profileId }: { profileId: number }) {
   const status = useSourceStatus(profileId);
   if (!status) return null;
-  return <Text className="px-4 py-2 text-xs text-muted-foreground">{status.url ? 'Frissítve' : 'Importálva'}: {timestamp(status.lastSuccess)}{!status.url || !status.autoSync ? ' · Statikus másolat' : ''}</Text>;
+  return <View className="flex-row items-center gap-1.5 border-b border-border px-5 pb-3"><Icon as={Clock3} size={13} className="text-muted-foreground" /><Text className="shrink text-xs text-muted-foreground">{status.url ? 'Frissítve' : 'Importálva'}: {timestamp(status.lastSuccess)}{!status.url || !status.autoSync ? ' · Statikus másolat' : ''}</Text></View>;
 }
 export function CalendarSyncPanel() {
   const app = useApp();
