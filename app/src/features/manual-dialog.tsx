@@ -9,6 +9,7 @@ import { useApp } from './app-state';
 import { discardStages, publishStages, stageSource, uniqueId } from '../data/importer';
 import { addDays, fromWall, today } from '../domain/time';
 import type { CalendarEvent, Recurrence } from '../domain/model';
+import { openProfile } from './view-state';
 
 export function ManualDialog({ profileId, close }: { profileId: number; close: () => void }) {
   const app = useApp();
@@ -30,7 +31,7 @@ export function ManualDialog({ profileId, close }: { profileId: number; close: (
       const stage = await stageSource({ id: `${selectedId}:manual:${event.id}`, profileId: selectedId, format: 'json', content: JSON.stringify({ version: 1, events: [event] }), name: title, fromDate: start.slice(0, 10), toDate: weeks === 'once' ? end.slice(0, 10) : until, isManual: 1 }, app.anchor, { signal: new AbortController().signal, progress: () => undefined });
       try { await publishStages([stage]); } finally { await discardStages([stage]); }
       await app.refresh();
-      if (selectedId !== app.view.left) app.setView(current => current.openProfiles.includes(selectedId) ? {} : { openProfiles: [...current.openProfiles, selectedId], right: selectedId, compare: true });
+      app.setView(current => openProfile(current, selectedId));
       close();
     } catch (error) { setError(String(error)); } finally { setBusy(false); }
   }
