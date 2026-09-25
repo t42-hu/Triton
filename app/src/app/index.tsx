@@ -22,6 +22,7 @@ import { commonKeys } from '@/domain/comparison';
 import { monday } from '@/domain/time';
 import { CalendarSyncPanel } from '@/features/source-status';
 import { TimetableToolbar } from '@/features/timetable-toolbar';
+import { openProfile } from '@/features/view-state';
 
 type DialogName = 'profiles' | 'import' | 'manual' | 'settings' | 'reminders' | null;
 export default function TimetableScreen() {
@@ -41,7 +42,7 @@ export default function TimetableScreen() {
   const availableProfiles = app.profileList.filter(profile => profile.id !== data.ownId && !app.view.openProfiles.includes(profile.id));
   function addCalendar(profileId: number) {
     if (profileId === data.ownId) return;
-    app.setView(current => current.openProfiles.includes(profileId) ? {} : { openProfiles: [...current.openProfiles, profileId], right: profileId, compare: true });
+    app.setView(current => openProfile(current, profileId));
     setAddingCalendar(false);
   }
   function closeCalendar(profileId: number) { app.setView(current => closeOpenProfile(current, profileId, data.ownId)); }
