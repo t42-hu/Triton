@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { BookOpen, ChevronLeft, ChevronRight, X } from 'lucide-react-native';
 import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,6 @@ import type { DisplayEvent } from '../domain/model';
 import { addDays, clockTime, dateLabel, fromWall, today, weekAt } from '../domain/time';
 import { dayLayout, GRID_START, GRID_MINUTES, type PositionedEvent } from './calendar-layout';
 import { eventIdentity } from '../domain/comparison';
-import { Action } from './controls';
 import { useApp, type ViewState } from './app-state';
 import { SourceStamp } from './source-status';
 
@@ -33,10 +32,7 @@ export function CalendarPanel(props: Props) {
     setView(props.side === 'left' ? { leftDate: date } : { rightDate: date });
   }
   return <View className="overflow-hidden rounded-2xl border border-border bg-card" style={{ width: panelWidth }}>
-    <View className="gap-2 border-b border-border p-4">
-      <View className="flex-row flex-wrap items-center gap-2"><Text className="shrink font-semibold" numberOfLines={1}>{props.profileName}</Text>{props.side === 'left' ? <Badge variant="secondary"><Text>Saját</Text></Badge> : null}{props.onClose ? <View className="ml-auto"><Action quiet icon={X} label={`${props.profileName} naptár bezárása`} onPress={props.onClose}>Bezárás</Action></View> : null}</View>
-      <View className="flex-row flex-wrap items-center gap-2"><PeriodArrow next={false} onPress={() => move(-1)} /><Text className="text-sm font-medium">{dateLabel(props.date)}</Text><PeriodArrow next onPress={() => move(1)} /><Badge variant="secondary"><Text>{weekAt(props.date, anchor)} hét</Text></Badge></View>
-    </View>
+    <CalendarHeader profileName={props.profileName} own={props.side === 'left'} date={props.date} week={weekAt(props.date, anchor)} panelWidth={panelWidth} move={move} onClose={props.onClose} />
     <SourceStamp profileId={props.profileId} />
     {!visible.length ? <View className="border-b border-border bg-muted px-4 py-2"><Text className="text-sm text-muted-foreground">{commonOnly && props.events.length ? 'Nincs közös óra ebben az időszakban. Kapcsold ki a szűrőt az összes óra megjelenítéséhez.' : 'Ebben az időszakban nincs megjeleníthető óra.'}</Text></View> : null}
     <GestureDetector gesture={pinch}><ScrollView horizontal scrollEnabled={!props.outerHorizontalScroll} contentContainerStyle={{ minWidth: '100%' }}>
@@ -49,8 +45,26 @@ export function CalendarPanel(props: Props) {
     </ScrollView></GestureDetector>
   </View>;
 }
+function CalendarHeader({ profileName, own, date, week, panelWidth, move, onClose }: { profileName: string; own: boolean; date: string; week: 'A' | 'B'; panelWidth: number; move: (amount: number) => void; onClose?: () => void }) {
+  const { width } = useWindowDimensions();
+  const compact = width < 600 || panelWidth < 680;
+  const visibleWidth = width < 600 ? Math.min(panelWidth - 32, width - 64) : panelWidth - 32;
+  const identity = <View className="min-w-0 flex-row items-center gap-2"><Text className="shrink text-[18px] font-semibold" numberOfLines={1}>{profileName}</Text>{own ? <Badge variant="secondary"><Text>Saját</Text></Badge> : null}</View>;
+  const period = <PeriodNavigator date={date} week={week} compact={compact} move={move} />;
+  const close = onClose ? <Button accessibilityLabel={`${profileName} naptár bezárása`} variant="ghost" className="h-[44px] w-[44px] rounded-xl border-0 bg-transparent p-0" onPress={onClose}><Icon as={X} size={18} /></Button> : null;
+  return <View className="border-b border-border p-4"><View className="gap-3" style={{ width: visibleWidth }}>
+    {compact ? <><View className="min-h-[44px] flex-row items-center justify-between gap-3">{identity}{close}</View>{period}</> : <View className="flex-row items-center justify-between gap-4">{identity}<View className="flex-row items-center gap-2">{period}{close}</View></View>}
+  </View></View>;
+}
+function PeriodNavigator({ date, week, compact, move }: { date: string; week: 'A' | 'B'; compact: boolean; move: (amount: number) => void }) {
+  return <View className="h-[44px] flex-row items-center rounded-xl bg-muted" style={{ width: compact ? '100%' : 264 }}>
+    <PeriodArrow next={false} onPress={() => move(-1)} />
+    <View className="min-w-0 flex-1 flex-row items-center justify-center gap-2"><Text className="shrink text-center text-[14px] font-medium" numberOfLines={1}>{dateLabel(date)}</Text><Badge variant="secondary"><Text>{week} hét</Text></Badge></View>
+    <PeriodArrow next onPress={() => move(1)} />
+  </View>;
+}
 function PeriodArrow({ next, onPress }: { next: boolean; onPress: () => void }) {
-  return <Button accessibilityLabel={next ? 'Következő időszak' : 'Előző időszak'} hitSlop={6} variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onPress={onPress}><Icon as={next ? ChevronRight : ChevronLeft} size={16} /></Button>;
+  return <Button accessibilityLabel={next ? 'Következő időszak' : 'Előző időszak'} hitSlop={6} variant="ghost" className="h-[44px] w-[44px] rounded-xl border-0 bg-transparent p-0" onPress={onPress}><Icon as={next ? ChevronRight : ChevronLeft} size={17} /></Button>;
 }
 function changeZoom(scaleChange: number): (current: ViewState) => Partial<ViewState> {
   return current => ({ zoom: Math.min(2.5, Math.max(0.5, current.zoom * scaleChange)) });
