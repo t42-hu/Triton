@@ -37,7 +37,7 @@ export function ReminderDialog({ event, close }: { event?: DisplayEvent; close: 
     finally { state.setBusy(false); }
   }
   return <Modal title={event ? 'Alkalom értesítései' : 'Óra előtti értesítések'} description={event ? `${event.title} · ${wallTime(event.start).slice(0, 16)}` : 'Jelzések a sajátként kijelölt órarendhez.'} close={close}>
-    {event ? <Text className="text-sm text-muted-foreground">Egyszeri jelzések erre az alkalomra, a mentett kezdés előtt. A sorozat többi óráját nem módosítják. Azonos előjelzési időnél az itteni profil váltja fel a globálisat.</Text> : <View className="flex-row items-center gap-3 rounded-xl border border-border bg-background/40 p-3"><View className="h-10 w-10 items-center justify-center rounded-xl bg-muted"><ReminderBell enabled={state.enabled && state.permissionGranted} size={19} /></View><View className="min-w-0 flex-1"><Text className="font-semibold">Globális jelzések</Text><Text className="text-xs text-muted-foreground">A saját órarended óráihoz</Text></View><Switch accessibilityLabel="Globális óra előtti jelzések" checked={state.enabled} onCheckedChange={state.setEnabled} /></View>}
+    {event ? <Text className="text-sm text-muted-foreground">Egyszeri jelzések erre az alkalomra, a mentett kezdés előtt. A sorozat többi óráját nem módosítják. Azonos előjelzési időnél az itteni profil váltja fel a globálisat.</Text> : <View className="flex-row items-center gap-3 rounded-xl border border-border bg-background/40 p-3"><View className="h-10 w-10 items-center justify-center rounded-xl bg-muted"><ReminderBell enabled={state.enabled && state.permissionGranted} size={19} /></View><View className="min-w-0 flex-1"><Text className="font-semibold">Globális jelzések</Text><Text className="text-xs text-muted-foreground">A saját órarended óráihoz</Text></View><Switch accessibilityLabel="Globális óra előtti jelzések" checked={state.enabled} disabled={!state.ready || state.busy} onCheckedChange={value => void toggleGlobal(value, state, app.refresh)} /></View>}
     {event && isOwn ? <Toggle label="Globális jelzések kizárása erre az alkalomra" checked={state.excluded} onChange={state.setExcluded} /> : null}
     {event && !isOwn ? <Text className="text-sm text-muted-foreground">Szaktársi órarend: csak az itt felvett jelzések érvényesek.</Text> : null}
     <RuleEditor rules={state.rules} onChange={state.setRules} />
@@ -46,6 +46,22 @@ export function ReminderDialog({ event, close }: { event?: DisplayEvent; close: 
     {state.message ? <Text accessibilityLiveRegion="polite">{state.message}</Text> : null}
     <ReminderDelivery status={state.status} report={state.setMessage} />
   </Modal>;
+}
+async function toggleGlobal(enabled: boolean, state: ReturnType<typeof useReminderForm>, refresh: () => Promise<void>) {
+  if (state.busy || !state.ready) return;
+  state.setBusy(true); state.setMessage('');
+  try {
+    if (enabled && Platform.OS !== 'web') await requestReminderPermission();
+    const saved = await globalReminders();
+    await saveGlobalReminders({ ...saved, enabled });
+    state.setEnabled(enabled);
+    state.setPermissionGranted(await reminderPermissionGranted());
+    await reconcileReminders(); await refresh();
+    state.setStatus(await readSetting('reminderStatus', emptyStatus));
+  } catch (error) {
+    await refresh().catch(() => undefined);
+    state.setMessage(`Nem sikerült menteni a globális jelzéseket: ${error instanceof Error ? error.message : String(error)}`);
+  } finally { state.setBusy(false); }
 }
 function useReminderForm(event?: DisplayEvent) {
   const [rules, setRules] = useState<DraftRule[]>([]);
@@ -64,7 +80,7 @@ function useReminderForm(event?: DisplayEvent) {
     }
     void load(); return () => { disposed = true; };
   }, [event]);
-  return { rules, setRules, enabled, setEnabled, excluded, setExcluded, permissionGranted, ready, busy, setBusy, message, setMessage, status, setStatus };
+  return { rules, setRules, enabled, setEnabled, excluded, setExcluded, permissionGranted, setPermissionGranted, ready, busy, setBusy, message, setMessage, status, setStatus };
 }
 function toDraft(rule: ReminderRule): DraftRule { return { ...rule, minutes: String(rule.minutes) }; }
 function RuleEditor({ rules, onChange }: { rules: DraftRule[]; onChange: (rules: DraftRule[]) => void }) {
