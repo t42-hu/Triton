@@ -5,13 +5,13 @@
   --color-2: #00DCDC;
   --color-2-rgb: 0, 220, 220;
   --color-2-hsl: 180, 100%, 43.1%;
-  --color-3: #071936;
-  --color-3-rgb: 7, 25, 54;
-  --color-3-hsl: 217, 77%, 12%;
-  --color-4: #DCE9FF;
-  --color-4-rgb: 220, 233, 255;
-  --color-4-hsl: 217.7, 100%, 93.1%;
-  --color-5: #F3F7FD;
-  --color-5-rgb: 243, 247, 253;
-  --color-5-hsl: 216, 71.4%, 97.3%;
+  --color-3: #1B1E23;
+  --color-3-rgb: 27, 30, 35;
+  --color-3-hsl: 217.5, 12.9%, 12.2%;
+  --color-4: #E9EDF4;
+  --color-4-rgb: 233, 237, 244;
+  --color-4-hsl: 218.2, 33.3%, 93.5%;
+  --color-5: #F6F7F9;
+  --color-5-rgb: 246, 247, 249;
+  --color-5-hsl: 220, 20%, 97.1%;
 }

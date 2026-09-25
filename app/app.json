@@ -15,7 +15,7 @@
       "package": "hu.t42.triton",
       "icon": "./assets/images/triton-v15.png",
       "adaptiveIcon": {
-        "backgroundColor": "#F3F7FD",
+        "backgroundColor": "#F6F7F9",
         "foregroundImage": "./assets/images/triton-v15.png",
         "monochromeImage": "./assets/images/triton-v15.png"
       },
@@ -33,11 +33,11 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#F3F7FD",
+          "backgroundColor": "#F6F7F9",
           "image": "./assets/images/triton-v15.png",
           "imageWidth": 200,
           "dark": {
-            "backgroundColor": "#000000",
+            "backgroundColor": "#111317",
             "image": "./assets/images/triton-v15.png"
           }
         }
