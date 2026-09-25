@@ -1,4 +1,4 @@
-import { Plus, Settings2, TriangleAlert, Users } from 'lucide-react-native';
+import { Bell, Plus, Settings2, TriangleAlert, Users } from 'lucide-react-native';
 import { Icon } from '@/components/ui/icon';
 import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
@@ -14,6 +14,7 @@ import { ProfilesDialog } from '@/features/profiles-dialog';
 import { ImportDialog } from '@/features/import-dialog';
 import { ManualDialog } from '@/features/manual-dialog';
 import { SettingsDialog } from '@/features/settings-dialog';
+import { ReminderDialog } from '@/features/reminder-dialog';
 import { EventDialog } from '@/features/event-dialog';
 import { visibleEvents } from '@/data/repository';
 import type { DisplayEvent } from '@/domain/model';
@@ -22,7 +23,7 @@ import { monday } from '@/domain/time';
 import { CalendarSyncPanel } from '@/features/source-status';
 import { TimetableToolbar } from '@/features/timetable-toolbar';
 
-type DialogName = 'profiles' | 'import' | 'manual' | 'settings' | null;
+type DialogName = 'profiles' | 'import' | 'manual' | 'settings' | 'reminders' | null;
 export default function TimetableScreen() {
   const app = useApp(); const { width } = useWindowDimensions();
   const [dialog, setDialog] = useState<DialogName>(null);
@@ -45,7 +46,7 @@ export default function TimetableScreen() {
   }
   function closeCalendar(profileId: number) { app.setView(current => closeOpenProfile(current, profileId, data.ownId)); }
   return <SafeAreaView className="flex-1 bg-background"><ScrollView contentContainerStyle={{ padding: width < 600 ? 16 : 32, gap: 24, flexGrow: 1, width: '100%', maxWidth: 1600, alignSelf: 'center' }}>
-    <View className="flex-row flex-wrap items-center justify-between gap-3 border-b border-border pb-5"><View className="flex-row items-center gap-3"><Image source={require('@/assets/images/triton-v15.png')} accessibilityLabel="Triton logó" contentFit="contain" style={{ width: 56, height: 56 }} /><View className="h-9 w-px bg-border" /><Text className="text-2xl font-semibold tracking-tight">Triton</Text></View>
+    <View className="flex-row flex-wrap items-center justify-between gap-3 border-b border-border pb-5"><View className="flex-row items-center gap-2"><Image source={require('@/assets/images/triton-v15.png')} accessibilityLabel="Triton logó" contentFit="contain" style={{ width: width < 600 ? 38 : 56, height: width < 600 ? 38 : 56 }} /><View className={width < 600 ? 'h-7 w-px bg-border' : 'h-9 w-px bg-border'} /><Text className={`${width < 600 ? 'text-xl' : 'text-2xl'} font-semibold tracking-tight`}>Triton</Text></View>
       <HeaderActions compact={width < 600} open={setDialog} /></View>
     {app.error ? <Alert icon={TriangleAlert} variant="destructive"><AlertTitle>Nem sikerült a művelet</AlertTitle><AlertDescription>{app.error}</AlertDescription></Alert> : null}
     <CalendarSyncPanel />
@@ -59,7 +60,7 @@ export default function TimetableScreen() {
     {dialog === 'profiles' ? <ProfilesDialog close={() => setDialog(null)} onCreated={id => { setImportProfileId(id); setDialog('import'); }} /> : null}
     {dialog === 'import' ? <ImportDialog profileId={importProfileId ?? data.ownId} close={() => { setImportProfileId(undefined); setDialog(null); }} /> : null}
     {dialog === 'manual' ? <ManualDialog profileId={data.ownId} close={() => setDialog(null)} /> : null}
-    {dialog === 'settings' ? <SettingsDialog close={() => setDialog(null)} /> : null}
+    {dialog === 'settings' ? <SettingsDialog close={() => setDialog(null)} /> : null}{dialog === 'reminders' ? <ReminderDialog close={() => setDialog(null)} /> : null}
     {event ? <EventDialog event={event} close={() => setEvent(undefined)} /> : null}
   </ScrollView></SafeAreaView>;
 }
@@ -67,6 +68,7 @@ function HeaderActions({ compact, open }: { compact: boolean; open: (dialog: Dia
   const buttonStyle = compact ? { width: 44, height: 44 } : undefined;
   return <View className="flex-row gap-1">
     <Button accessibilityLabel="Profilok" variant="ghost" size={compact ? 'icon' : 'default'} style={buttonStyle} onPress={() => open('profiles')}><Icon as={Users} size={17} className="text-foreground" />{compact ? null : <Text>Profilok</Text>}</Button>
+    <Button accessibilityLabel="Értesítések" variant="ghost" size={compact ? 'icon' : 'default'} style={buttonStyle} onPress={() => open('reminders')}><Icon as={Bell} size={17} className="text-foreground" />{compact ? null : <Text>Értesítések</Text>}</Button>
     <Button accessibilityLabel="Beállítások" variant="ghost" size={compact ? 'icon' : 'default'} style={buttonStyle} onPress={() => open('settings')}><Icon as={Settings2} size={17} className="text-foreground" />{compact ? null : <Text>Beállítások</Text>}</Button>
   </View>;
 }
