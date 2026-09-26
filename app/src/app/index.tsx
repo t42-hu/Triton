@@ -1,4 +1,4 @@
-import { Plus, Settings2, TriangleAlert, Users } from 'lucide-react-native';
+import { MapPinned, Plus, Settings2, TriangleAlert, Users } from 'lucide-react-native';
 import { Icon } from '@/components/ui/icon';
 import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
@@ -16,6 +16,7 @@ import { ManualDialog } from '@/features/manual-dialog';
 import { SettingsDialog } from '@/features/settings-dialog';
 import { ReminderDialog } from '@/features/reminder-dialog';
 import { EventDialog } from '@/features/event-dialog';
+import { RoomMapDialog } from '@/features/room-map-dialog';
 import { visibleEvents } from '@/data/repository';
 import type { DisplayEvent } from '@/domain/model';
 import { commonKeys } from '@/domain/comparison';
@@ -25,7 +26,7 @@ import { TimetableToolbar } from '@/features/timetable-toolbar';
 import { openProfile } from '@/features/view-state';
 import { ReminderBell } from '@/features/reminder-bell';
 
-type DialogName = 'profiles' | 'import' | 'manual' | 'settings' | 'reminders' | null;
+type DialogName = 'profiles' | 'import' | 'manual' | 'settings' | 'reminders' | 'map' | null;
 export default function TimetableScreen() {
   const app = useApp(); const { width } = useWindowDimensions();
   const [dialog, setDialog] = useState<DialogName>(null);
@@ -35,7 +36,7 @@ export default function TimetableScreen() {
   const data = useCalendarData();
   const contentWidth = Math.min(width, 1600) - (width < 600 ? 32 : 64); const sideBySide = app.view.arrangement === 'row' && data.extras.length > 0;
   const nativeRow = sideBySide && Platform.OS !== 'web';
-  const panelWidth = sideBySide ? Math.max(nativeRow && app.view.mode === 'week' ? 780 : 320, (contentWidth - 24) / 2) : contentWidth;
+  const panelWidth = sideBySide ? Math.max(nativeRow && app.view.mode === 'week' ? 1092 : 320, (contentWidth - 24) / 2) : contentWidth;
   const panels = <>
     <CalendarPanel side="left" date={data.ownDate} profileId={data.ownId} profileName={profileName(app.profileList, data.ownId)} panelWidth={panelWidth} outerHorizontalScroll={nativeRow} events={data.ownEvents} common={data.ownCommon} selectEvent={setEvent} />
     {data.extras.map(extra => <CalendarPanel key={extra.id} side="right" date={extra.date} profileId={extra.id} profileName={profileName(app.profileList, extra.id)} panelWidth={panelWidth} outerHorizontalScroll={nativeRow} events={extra.events} common={extra.common} selectEvent={setEvent} onClose={closeCalendar.bind(null, extra.id)} />)}
@@ -47,21 +48,21 @@ export default function TimetableScreen() {
     setAddingCalendar(false);
   }
   function closeCalendar(profileId: number) { app.setView(current => closeOpenProfile(current, profileId, data.ownId)); }
-  return <SafeAreaView className="flex-1 bg-background"><ScrollView contentContainerStyle={{ padding: width < 600 ? 16 : 32, gap: 24, flexGrow: 1, width: '100%', maxWidth: 1600, alignSelf: 'center' }}>
+  return <SafeAreaView className="flex-1 bg-background"><ScrollView nestedScrollEnabled directionalLockEnabled contentContainerStyle={{ padding: width < 600 ? 16 : 32, gap: 24, flexGrow: 1, width: '100%', maxWidth: 1600, alignSelf: 'center' }}>
     <View className="flex-row flex-wrap items-center justify-between gap-3 border-b border-border pb-5"><View className="flex-row items-center gap-2"><Image source={require('@/assets/images/triton-v15.png')} accessibilityLabel="Triton logó" contentFit="contain" style={{ width: width < 600 ? 38 : 56, height: width < 600 ? 38 : 56 }} /><View className={width < 600 ? 'h-7 w-px bg-border' : 'h-9 w-px bg-border'} /><Text className={`${width < 600 ? 'text-xl' : 'text-2xl'} font-semibold tracking-tight`}>Triton</Text></View>
       <HeaderActions compact={width < 600} open={setDialog} /></View>
     {app.error ? <Alert icon={TriangleAlert} variant="destructive"><AlertTitle>Nem sikerült a művelet</AlertTitle><AlertDescription>{app.error}</AlertDescription></Alert> : null}
     <CalendarSyncPanel />
     {!app.profileList.length ? <EmptyState create={() => setDialog('profiles')} /> : <>
       <TimetableToolbar open={setDialog} />
-      {sideBySide ? <ScrollView horizontal contentContainerStyle={{ gap: 24 }}>{panels}</ScrollView> : <View className="gap-6">{panels}</View>}
+      {sideBySide ? <ScrollView horizontal nestedScrollEnabled directionalLockEnabled contentContainerStyle={{ gap: 24 }}>{panels}</ScrollView> : <View className="gap-6">{panels}</View>}
       {availableProfiles.length ? <View className="self-start"><Action secondary icon={Plus} onPress={() => setAddingCalendar(true)}>Órarend hozzáadása</Action></View> : null}
       <Text className="text-xs text-muted-foreground">Budapesti idő szerint. Az órarendjeid ezen az eszközön maradnak.</Text>
     </>}
     {addingCalendar ? <Modal title="Órarend hozzáadása" description="Válassz egy még meg nem nyitott órarendet." close={() => setAddingCalendar(false)}>{availableProfiles.map(profile => <Action key={profile.id} secondary onPress={() => addCalendar(profile.id)}>{profile.name}</Action>)}</Modal> : null}
     {dialog === 'profiles' ? <ProfilesDialog close={() => setDialog(null)} onCreated={id => { setImportProfileId(id); setDialog('import'); }} /> : null}
     {dialog === 'import' ? <ImportDialog profileId={importProfileId ?? data.ownId} close={() => { setImportProfileId(undefined); setDialog(null); }} /> : null}
-    {dialog === 'manual' ? <ManualDialog profileId={data.ownId} close={() => setDialog(null)} /> : null}
+    {dialog === 'manual' ? <ManualDialog profileId={data.ownId} close={() => setDialog(null)} /> : null}{dialog === 'map' ? <RoomMapDialog location="" close={() => setDialog(null)} /> : null}
     {dialog === 'settings' ? <SettingsDialog close={() => setDialog(null)} /> : null}{dialog === 'reminders' ? <ReminderDialog close={() => setDialog(null)} /> : null}
     {event ? <EventDialog event={event} close={() => setEvent(undefined)} /> : null}
   </ScrollView></SafeAreaView>;
@@ -70,6 +71,7 @@ function HeaderActions({ compact, open }: { compact: boolean; open: (dialog: Dia
   const { remindersEnabled } = useApp();
   const buttonStyle = compact ? { width: 44, height: 44 } : undefined;
   return <View className="flex-row gap-1">
+    <Button accessibilityLabel="Térkép" variant="ghost" size={compact ? 'icon' : 'default'} style={buttonStyle} onPress={() => open('map')}><Icon as={MapPinned} size={17} className="text-foreground" />{compact ? null : <Text>Térkép</Text>}</Button>
     <Button accessibilityLabel="Profilok" variant="ghost" size={compact ? 'icon' : 'default'} style={buttonStyle} onPress={() => open('profiles')}><Icon as={Users} size={17} className="text-foreground" />{compact ? null : <Text>Profilok</Text>}</Button>
     <Button accessibilityLabel="Értesítések" accessibilityHint={remindersEnabled ? 'A globális jelzések bekapcsolva' : 'A globális jelzések kikapcsolva'} variant="ghost" size={compact ? 'icon' : 'default'} style={buttonStyle} onPress={() => open('reminders')}><ReminderBell enabled={remindersEnabled} size={17} />{compact ? null : <Text>Értesítések</Text>}</Button>
     <Button accessibilityLabel="Beállítások" variant="ghost" size={compact ? 'icon' : 'default'} style={buttonStyle} onPress={() => open('settings')}><Icon as={Settings2} size={17} className="text-foreground" />{compact ? null : <Text>Beállítások</Text>}</Button>

@@ -23,10 +23,26 @@ export function CalendarPanel(props: Props) {
   const visible = commonOnly ? props.events.filter(event => props.common.has(eventIdentity(event))) : props.events;
   const scroll = useRef<ScrollView>(null);
   const initialScroll = useRef(props.side === 'left' ? view.leftScroll : view.rightScroll);
-  useEffect(() => { scroll.current?.scrollTo({ y: Math.max(0, initialScroll.current - GRID_START) * view.zoom, animated: false }); }, [view.zoom]);
-  const pinch = Gesture.Pinch().runOnJS(true).onChange(event => setView(changeZoom(event.scaleChange)));
+  const appliedZoom = useRef(view.zoom);
+  useEffect(() => {
+    scroll.current?.scrollTo({ y: Math.max(0, initialScroll.current - GRID_START) * view.zoom, animated: false });
+    appliedZoom.current = view.zoom;
+  }, [view.zoom]);
+  const verticalScroll = Gesture.Native();
+  const horizontalScroll = Gesture.Native();
+  const pinch = Gesture.Pinch().simultaneousWithExternalGesture(verticalScroll, horizontalScroll).runOnJS(true).onChange(event => setView(changeZoom(event.scaleChange)));
   const panelWidth = props.panelWidth;
   const dayWidth = Math.max(days === 1 ? panelWidth - 56 : 148, (panelWidth - 56) / days);
+  const grid = <View style={{ width: dayWidth * days + 56, flex: 1 }}>
+    <View className="flex-row border-b border-border bg-muted/40" style={{ paddingLeft: 56 }}>{dates.map(date => <DayHeading key={date} date={date} width={dayWidth} events={visible} common={props.common} selectEvent={props.selectEvent} />)}</View>
+    <GestureDetector gesture={verticalScroll}><ScrollView ref={scroll} nestedScrollEnabled directionalLockEnabled className="bg-background/50 dark:bg-[#15181D]" style={{ height: view.compare && panelWidth < 500 ? 360 : 560 }} scrollEventThrottle={200} onScroll={event => {
+      if (appliedZoom.current !== view.zoom) return;
+      const minute = initialScroll.current = event.nativeEvent.contentOffset.y / view.zoom + GRID_START;
+      setView(props.side === 'left' ? { leftScroll: minute } : { rightScroll: minute });
+    }}>
+      <View style={{ height: GRID_MINUTES * view.zoom, flexDirection: 'row' }}><TimeAxis zoom={view.zoom} />{dates.map(date => <DayColumn key={date} date={date} width={dayWidth} zoom={view.zoom} events={visible} common={props.common} selectEvent={props.selectEvent} />)}</View>
+    </ScrollView></GestureDetector>
+  </View>;
   function move(amount: number) {
     const date = addDays(props.date, amount * days);
     if (view.sync) { setView({ leftDate: date, rightDate: date }); return; }
@@ -36,14 +52,7 @@ export function CalendarPanel(props: Props) {
     <CalendarHeader profileName={props.profileName} own={props.side === 'left'} date={props.date} week={weekAt(props.date, anchor)} panelWidth={panelWidth} move={move} onClose={props.onClose} />
     <SourceStamp profileId={props.profileId} />
     {!visible.length ? <View className="border-b border-border bg-muted px-5 py-3"><Text className="text-sm text-muted-foreground">{commonOnly && props.events.length ? 'Nincs közös óra ebben az időszakban. Kapcsold ki a szűrőt az összes óra megjelenítéséhez.' : 'Ebben az időszakban nincs megjeleníthető óra.'}</Text></View> : null}
-    <GestureDetector gesture={pinch}><ScrollView horizontal scrollEnabled={!props.outerHorizontalScroll} contentContainerStyle={{ minWidth: '100%' }}>
-      <View style={{ width: dayWidth * days + 56, flex: 1 }}>
-        <View className="flex-row border-b border-border bg-muted/40" style={{ paddingLeft: 56 }}>{dates.map(date => <DayHeading key={date} date={date} width={dayWidth} events={visible} common={props.common} selectEvent={props.selectEvent} />)}</View>
-        <ScrollView ref={scroll} className="bg-background/50 dark:bg-[#15181D]" style={{ height: view.compare && panelWidth < 500 ? 360 : 560 }} scrollEventThrottle={200} onScroll={event => setView(props.side === 'left' ? { leftScroll: (initialScroll.current = event.nativeEvent.contentOffset.y / view.zoom + GRID_START) } : { rightScroll: (initialScroll.current = event.nativeEvent.contentOffset.y / view.zoom + GRID_START) })}>
-          <View style={{ height: GRID_MINUTES * view.zoom, flexDirection: 'row' }}><TimeAxis zoom={view.zoom} />{dates.map(date => <DayColumn key={date} date={date} width={dayWidth} zoom={view.zoom} events={visible} common={props.common} selectEvent={props.selectEvent} />)}</View>
-        </ScrollView>
-      </View>
-    </ScrollView></GestureDetector>
+    <GestureDetector gesture={pinch}><View collapsable={false}>{props.outerHorizontalScroll ? grid : <GestureDetector gesture={horizontalScroll}><ScrollView horizontal nestedScrollEnabled directionalLockEnabled contentContainerStyle={{ minWidth: '100%' }}>{grid}</ScrollView></GestureDetector>}</View></GestureDetector>
   </View>;
 }
 function CalendarHeader({ profileName, own, date, week, panelWidth, move, onClose }: { profileName: string; own: boolean; date: string; week: 'A' | 'B'; panelWidth: number; move: (amount: number) => void; onClose?: () => void }) {

@@ -47,10 +47,11 @@ function PeriodControls() {
 
 function ZoomControls() {
   const { view, setView } = useApp();
-  return <View className="flex-row items-center self-start rounded-xl bg-muted">
-    <Button variant="ghost" className={`${quietButton} w-[44px] px-0`} accessibilityLabel="Kicsinyítés" disabled={view.zoom <= 0.5} onPress={() => setView({ zoom: Math.max(0.5, view.zoom - 0.25) })}><Icon as={Minus} size={16} /></Button>
-    <Text accessibilityLabel={`Nagyítás: ${Math.round(view.zoom * 100)} százalék`} className="min-w-[36px] text-center text-[12px] font-medium text-muted-foreground" style={{ fontVariant: ['tabular-nums'] }}>{Math.round(view.zoom * 100)}%</Text>
-    <Button variant="ghost" className={`${quietButton} w-[44px] px-0`} accessibilityLabel="Nagyítás" disabled={view.zoom >= 2.5} onPress={() => setView({ zoom: Math.min(2.5, view.zoom + 0.25) })}><Icon as={Plus} size={16} /></Button>
+  function step(amount: number) { setView(current => ({ zoom: Math.min(2.5, Math.max(0.5, Math.round((current.zoom + amount) * 100) / 100)) })); }
+  return <View className="h-[48px] flex-row items-center self-start overflow-hidden rounded-xl border border-border bg-card">
+    <Button variant="ghost" className="h-[46px] w-[44px] rounded-none border-0 bg-transparent p-0" accessibilityLabel="Kicsinyítés" disabled={view.zoom <= 0.5} onPress={() => step(-0.25)}><Icon as={Minus} size={17} /></Button>
+    <Button variant="ghost" className="h-[46px] min-w-[56px] rounded-none border-x border-y-0 border-border bg-muted px-1" accessibilityLabel="Nagyítás visszaállítása 100 százalékra" accessibilityHint={`Jelenlegi nagyítás: ${Math.round(view.zoom * 100)} százalék`} onPress={() => setView({ zoom: 1 })}><Text className="text-center text-[13px] font-semibold text-primary" style={{ fontVariant: ['tabular-nums'] }}>{Math.round(view.zoom * 100)}%</Text></Button>
+    <Button variant="ghost" className="h-[46px] w-[44px] rounded-none border-0 bg-transparent p-0" accessibilityLabel="Nagyítás" disabled={view.zoom >= 2.5} onPress={() => step(0.25)}><Icon as={Plus} size={17} /></Button>
   </View>;
 }
 

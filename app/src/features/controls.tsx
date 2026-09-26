@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react-native';
 import { Icon } from '@/components/ui/icon';
 import { ScrollView, View, useWindowDimensions } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useKeyboardInset } from '@/hooks/use-keyboard-inset';
 import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
@@ -27,12 +28,13 @@ export function Choice({ label, value, options, onChange, fullWidth = false }: {
 export function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
   return <View className="flex-row items-center gap-2"><Switch accessibilityLabel={label} checked={checked} onCheckedChange={onChange} /><Text className="text-sm">{label}</Text></View>;
 }
-export function Modal({ title, description, close, children, wide = false }: { title: string; description: string; close: () => void; children: ReactNode; wide?: boolean }) {
+export function Modal({ title, description, close, children, wide = false, scrollGesture }: { title: string; description: string; close: () => void; children: ReactNode; wide?: boolean; scrollGesture?: ReturnType<typeof Gesture.Native> }) {
   const { width, height } = useWindowDimensions();
   const availableHeight = height - useKeyboardInset();
+  const content = <ScrollView nestedScrollEnabled directionalLockEnabled style={{ maxHeight: Math.max(80, availableHeight - 230) }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 16, paddingBottom: 12 }}>{children}</ScrollView>;
   return <Dialog open onOpenChange={open => { if (!open) close(); }}><DialogContent className={wide ? 'sm:max-w-[960px]' : undefined} style={{ width: Math.min(width - 32, wide ? 960 : 576), maxWidth: wide ? 960 : 576, maxHeight: availableHeight - 32 }}>
     <DialogTitle>{title}</DialogTitle><DialogDescription>{description}</DialogDescription>
-    <ScrollView style={{ maxHeight: Math.max(80, availableHeight - 230) }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 16, paddingBottom: 12 }}>{children}</ScrollView>
+    {scrollGesture ? <GestureDetector gesture={scrollGesture}>{content}</GestureDetector> : content}
   </DialogContent></Dialog>;
 }
 export function Confirm({ title, description, accept, cancel }: { title: string; description: string; accept: () => void; cancel: () => void }) {
