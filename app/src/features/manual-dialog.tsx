@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, useWindowDimensions } from 'react-native';
+import { View } from 'react-native';
 import { BookOpen, CalendarClock, Check, Repeat2 } from 'lucide-react-native';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -11,6 +11,7 @@ import { addDays, fromWall, today } from '../domain/time';
 import type { CalendarEvent, Recurrence } from '../domain/model';
 import { openProfile } from './view-state';
 import { RoomField, RoomMapDialog } from './room-map-dialog';
+import { DateTimeField } from './date-time-field';
 
 export function ManualDialog({ profileId, close }: { profileId: number; close: () => void }) {
   const app = useApp();
@@ -61,13 +62,10 @@ function ManualSection({ icon, title, children }: { icon: typeof BookOpen; title
 }
 
 function ManualSchedule({ kind, setKind, start, setStart, end, setEnd }: { kind: string; setKind: (value: string) => void; start: string; setStart: (value: string) => void; end: string; setEnd: (value: string) => void }) {
-  const compact = useWindowDimensions().width < 600;
   return <ManualSection icon={CalendarClock} title="Időpont">
     <Choice fullWidth label="Esemény típusa" value={kind} onChange={setKind} options={[{ value: 'timed', label: 'Időzített' }, { value: 'allDay', label: 'Egész napos' }]} />
-    <View className={compact ? 'gap-3' : 'flex-row gap-3'}>
-      <View className="min-w-0 flex-1"><Field label="Kezdés" value={start} onChange={setStart} /></View>
-      <View className="min-w-0 flex-1"><Field label="Befejezés" value={end} onChange={setEnd} /></View>
-    </View>
+    <View className="gap-3"><DateTimeField label="Kezdés" value={start} onChange={setStart} allDay={kind === 'allDay'} />
+      <DateTimeField label="Befejezés" value={end} onChange={setEnd} allDay={kind === 'allDay'} /></View>
     <Text className="text-xs text-muted-foreground">Budapesti idő szerint. Egész napos óránál a végdátum nem része az eseménynek.</Text>
   </ManualSection>;
 }

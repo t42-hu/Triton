@@ -9,6 +9,7 @@ import { futureEvents, updateEvents, deleteManualSource } from '../data/reposito
 import { Action, Confirm, Field, Modal, Toggle } from './controls';
 import { useApp } from './app-state';
 import { RoomField, RoomMapDialog } from './room-map-dialog';
+import { DateTimeField } from './date-time-field';
 
 export function EventDialog({ event, close }: { event: DisplayEvent; close: () => void }) {
   const app = useApp();
@@ -38,7 +39,7 @@ export function EventDialog({ event, close }: { event: DisplayEvent; close: () =
   return <Modal title="Óra részletei" description={`${event.kind === 'allDay' ? 'Egész napos esemény' : 'Budapesti idő'} · Terem: ${event.location || 'nincs megadva'}`} close={close}>
     <Action secondary onPress={() => setRemindersOpen(true)}>Alkalom értesítései</Action>
     <Field label="Óra neve" value={title} onChange={setTitle} /><RoomField value={location} onChange={setLocation} onOpen={() => setMapOpen(true)} />
-    <Field label="Kezdés" value={start} onChange={setStart} /><Field label="Befejezés" value={end} onChange={setEnd} />
+    <DateTimeField label="Kezdés" value={start} onChange={setStart} allDay={event.kind === 'allDay'} /><DateTimeField label="Befejezés" value={end} onChange={setEnd} allDay={event.kind === 'allDay'} />
     <Toggle label="Alkalom elrejtése / kihagyása" checked={hidden} onChange={setHidden} />
     <Action secondary onPress={() => void suggest().catch(error => setError(String(error)))}>Tartós módosítás: alkalmak kiválasztása</Action>
     {candidates.length ? <CandidateList items={candidates} selected={selected} setSelected={setSelected} /> : null}
