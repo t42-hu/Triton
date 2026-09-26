@@ -20,7 +20,7 @@ Az előnézet alapértelmezett címe `http://localhost:8082`. A tesztekhez és a
 
 ## Használat
 
-1. Első indításkor automatikusan létrejön a Me, Beni, Matyi és Parker profil a mellékelt ICS-naptárakkal; a Me lesz a saját profil. Meglévő telepítésen a korábbi saját profil megmarad. A profilok átnevezhetők és megerősítés után törölhetők.
+1. Első indításkor hozz létre egy profilt, majd importáld a saját órarendedet. Az első profil lesz a saját profil. Meglévő telepítésen a korábbi profilok és helyi adatok megmaradnak. A profilok átnevezhetők és megerősítés után törölhetők.
 2. Az Import műveletben válaszd ki a célprofilt és az ICS- vagy JSON-fájlt, illetve illeszd be a tartalmát. Add meg a feldolgozandó dátumtartományt, ellenőrizd az alkalomszámokat, majd hagyd jóvá a cserét. A sikeresen importált másik profil naptára automatikusan megnyílik.
 3. Üres forrásszöveggel a korábban tárolt forrás újra feldolgozható, így a tartomány internet nélkül is bővíthető. A korábbi és az új tartomány unióját őrizzük meg.
 4. A Kézi óra művelet a választott profilhoz egyszeri, heti, A vagy B heti, véges sorozatot hoz létre. A megadott helyi idő Budapest szerinti; egész napos eseménynél a végdátum kizáró.

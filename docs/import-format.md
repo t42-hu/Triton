@@ -26,4 +26,4 @@ Az `ical.js` dolgozza fel a VCALENDAR/VEVENT adatokat, többek között az RRULE
 
 UTC és lebegő időpontok, egész napos és többnapos események támogatottak. A lebegő idő Budapest szerint értendő. Névvel megadott TZID esetén a fájl tartalmazza a megfelelő VTIMEZONE definíciót; hiányzó definíciónál az app hibát jelez, nem találja ki az időzónát. Ismétlődési kivételhez szükséges a szülősorozat. A fájlban ismétlődő UID/RECURRENCE-ID pár hiba.
 
-Példa: [timetable.ics](examples/timetable.ics). A valódi Neptun-mintafájl nincs az alkalmazásba beépítve. A módosított alkalom kulcsa az eredeti ismétlődési időpontot őrzi, ezért egy forrásban áthelyezett óra helyi teremfelülírása megmaradhat.
+A módosított alkalom kulcsa az eredeti ismétlődési időpontot őrzi, ezért egy forrásban áthelyezett óra helyi teremfelülírása megmaradhat.

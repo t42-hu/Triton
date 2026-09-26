@@ -4,7 +4,6 @@ import { Image } from 'expo-image';
 import type { Anchor, Profile } from '../domain/model';
 import { monday, today } from '../domain/time';
 import { profiles } from '../data/repository';
-import { seedStarterProfiles } from '../data/starter-profiles';
 import { globalReminders } from '../data/reminders';
 import { reminderPermissionGranted } from '../data/reminder-runtime';
 import { readSetting, saveSetting } from '../data/database';
@@ -42,7 +41,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   function reportError(error: unknown) { setError(String(error)); }
   useEffect(() => {
     async function restore() {
-      await seedStarterProfiles();
       await refresh(); updateView(resolveProfiles({ ...initialView, ...await readSetting('view', initialView) }, await profiles())); setReady(true);
     }
     void restore().catch(reportError);

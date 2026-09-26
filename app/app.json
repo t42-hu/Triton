@@ -2,14 +2,14 @@
   "expo": {
     "name": "Triton",
     "slug": "triton",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "default",
     "icon": "./assets/images/triton-v15.png",
     "scheme": "triton",
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "hu.t42.triton",
-      "buildNumber": "5",
+      "buildNumber": "8",
       "icon": "./assets/images/triton-v15.png",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -17,7 +17,7 @@
     },
     "android": {
       "package": "hu.t42.triton",
-      "versionCode": 5,
+      "versionCode": 6,
       "icon": "./assets/images/triton-v15.png",
       "adaptiveIcon": {
         "backgroundColor": "#F6F7F9",
