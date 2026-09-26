@@ -1,7 +1,7 @@
 {
   "name": "triton",
   "main": "expo-router/entry",
-  "version": "1.0.0",
+  "version": "1.0.4",
   "dependencies": {
     "@babel/plugin-transform-react-jsx": "^7.29.7",
     "@expo/ui": "~57.0.19",

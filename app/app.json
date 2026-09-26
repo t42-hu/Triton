@@ -2,17 +2,22 @@
   "expo": {
     "name": "Triton",
     "slug": "triton",
-    "version": "1.0.0",
+    "version": "1.0.4",
     "orientation": "default",
     "icon": "./assets/images/triton-v15.png",
     "scheme": "triton",
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "hu.t42.triton",
-      "icon": "./assets/images/triton-v15.png"
+      "buildNumber": "5",
+      "icon": "./assets/images/triton-v15.png",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "hu.t42.triton",
+      "versionCode": 5,
       "icon": "./assets/images/triton-v15.png",
       "adaptiveIcon": {
         "backgroundColor": "#F6F7F9",
@@ -57,6 +62,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": false
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ae26e223-c2ce-4374-82d1-47fd2c0294f7"
+      }
+    },
+    "owner": "kbenim"
   }
 }

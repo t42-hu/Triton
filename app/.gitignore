@@ -8,3 +8,5 @@ node_modules/
 .expo/
 dist/
 dist-native/
+/android/
+/ios/
