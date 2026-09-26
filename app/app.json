@@ -64,7 +64,10 @@
       "reactCompiler": false
     },
     "extra": {
-      "router": {}
+      "router": {},
+      "eas": {
+        "projectId": "c794d514-8d74-4102-bf0a-639f82b14075"
+      }
     },
     "owner": "baranyaigabor"
   }
