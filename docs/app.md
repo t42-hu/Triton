@@ -20,7 +20,7 @@ Az előnézet alapértelmezett címe `http://localhost:8082`. A tesztekhez és a
 
 ## Használat
 
-1. Hozz létre egy profilt; az első automatikusan saját lesz. A profil átnevezhető és megerősítés után törölhető.
+1. Első indításkor automatikusan létrejön a Me, Beni, Matyi és Parker profil a mellékelt ICS-naptárakkal; a Me lesz a saját profil. Meglévő telepítésen a korábbi saját profil megmarad. A profilok átnevezhetők és megerősítés után törölhetők.
 2. Az Import műveletben válaszd ki a célprofilt és az ICS- vagy JSON-fájlt, illetve illeszd be a tartalmát. Add meg a feldolgozandó dátumtartományt, ellenőrizd az alkalomszámokat, majd hagyd jóvá a cserét. A sikeresen importált másik profil naptára automatikusan megnyílik.
 3. Üres forrásszöveggel a korábban tárolt forrás újra feldolgozható, így a tartomány internet nélkül is bővíthető. A korábbi és az új tartomány unióját őrizzük meg.
 4. A Kézi óra művelet a választott profilhoz egyszeri, heti, A vagy B heti, véges sorozatot hoz létre. A megadott helyi idő Budapest szerinti; egész napos eseménynél a végdátum kizáró.
@@ -103,7 +103,7 @@ A mérés és az elvégzett kézi ellenőrzések részletei: [validation.md](val
 
 ## Későbbi fázis
 
-Térképek és teremkiemelés, időalapú kezdőképernyő. Nincs bejelentkezés, felhős szinkron vagy beépített LLM.
+Időalapú kezdőképernyő. Nincs bejelentkezés, felhős szinkron vagy beépített LLM. A fejléc Térkép gombjával a 2D és 3D épülettérkép nyílik meg; a terem mezőből az adott terem is kiemelhető.
 
 ## Óra előtti helyi értesítések
 

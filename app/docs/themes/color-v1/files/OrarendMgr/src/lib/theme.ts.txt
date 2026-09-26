@@ -1,0 +1,4 @@
+import { DarkTheme, DefaultTheme } from 'expo-router';
+const light = { primary: '#122347', background: '#F4F6FA', card: '#FFFFFF', text: '#182238', border: '#DCE3EF', notification: '#122347' };
+const dark = { primary: '#89A8DC', background: '#000000', card: '#0D1B2A', text: '#F1F5FC', border: '#33465F', notification: '#89A8DC' };
+export const NAV_THEME = { light: { ...DefaultTheme, colors: light }, dark: { ...DarkTheme, colors: dark } };

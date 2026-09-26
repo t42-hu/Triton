@@ -1,0 +1,74 @@
+{
+  "expo": {
+    "name": "Triton",
+    "slug": "triton",
+    "version": "1.0.4",
+    "orientation": "default",
+    "icon": "./assets/images/triton-v15.png",
+    "scheme": "triton",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "hu.t42.triton",
+      "buildNumber": "5",
+      "icon": "./assets/images/triton-v15.png",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "hu.t42.triton",
+      "versionCode": 5,
+      "icon": "./assets/images/triton-v15.png",
+      "adaptiveIcon": {
+        "backgroundColor": "#F6F7F9",
+        "foregroundImage": "./assets/images/triton-v15.png",
+        "monochromeImage": "./assets/images/triton-v15.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.SCHEDULE_EXACT_ALARM"
+      ]
+    },
+    "web": {
+      "output": "single",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F6F7F9",
+          "image": "./assets/images/triton-v15.png",
+          "imageWidth": 200,
+          "dark": {
+            "backgroundColor": "#111317",
+            "image": "./assets/images/triton-v15.png"
+          }
+        }
+      ],
+      "expo-sqlite",
+      "expo-notifications",
+      "expo-background-task",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "enableSceneSupport": true
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": false
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ae26e223-c2ce-4374-82d1-47fd2c0294f7"
+      }
+    },
+    "owner": "kbenim"
+  }
+}

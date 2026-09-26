@@ -1,17 +1,17 @@
 :root {
-  --color-1: #101827;
-  --color-1-rgb: 16, 24, 39;
-  --color-1-hsl: 219, 42%, 11%;
-  --color-2: #192438;
-  --color-2-rgb: 25, 36, 56;
-  --color-2-hsl: 219, 38%, 16%;
-  --color-3: #122347;
-  --color-3-rgb: 18, 35, 71;
-  --color-3-hsl: 220.75, 59.55%, 17.45%;
-  --color-4: #A9C3F5;
-  --color-4-rgb: 169, 195, 245;
-  --color-4-hsl: 219.47, 79.17%, 81.18%;
-  --color-5: #F4F6FA;
-  --color-5-rgb: 244, 246, 250;
-  --color-5-hsl: 220, 38%, 97%;
+  --color-1: #00288C;
+  --color-1-rgb: 0, 40, 140;
+  --color-1-hsl: 222.9, 100%, 27.5%;
+  --color-2: #00DCDC;
+  --color-2-rgb: 0, 220, 220;
+  --color-2-hsl: 180, 100%, 43.1%;
+  --color-3: #1B1E23;
+  --color-3-rgb: 27, 30, 35;
+  --color-3-hsl: 217.5, 12.9%, 12.2%;
+  --color-4: #E9EDF4;
+  --color-4-rgb: 233, 237, 244;
+  --color-4-hsl: 218.2, 33.3%, 93.5%;
+  --color-5: #F6F7F9;
+  --color-5-rgb: 246, 247, 249;
+  --color-5-hsl: 220, 20%, 97.1%;
 }

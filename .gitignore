@@ -42,3 +42,9 @@ example
 /ios
 /android
 .cursor/hooks/
+
+ics/
+output/
+.cursor/
+neptunSubscribeLink.md
+NeptunCalendarExport.ics
