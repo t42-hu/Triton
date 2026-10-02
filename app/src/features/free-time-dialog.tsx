@@ -20,7 +20,7 @@ export function FreeTimeDialog({ profileId, close }: { profileId: number; close:
     try { setResult(await findCommonFreeTime([...selected], fromWall(start), fromWall(end), Number(duration))); }
     catch (reason) { setError(reason instanceof Error ? reason.message : String(reason)); } finally { setBusy(false); }
   }
-  return <Modal title="Közös szabad idő" description="Az összes egybefüggő szabad időszak a megadott tartományban." close={close}>
+  return <Modal title="Közös szabad idő" close={close}>
     <Text className="font-semibold">Résztvevők</Text>{app.profileList.map(profile => <Toggle key={profile.id} label={profile.name} checked={selected.has(profile.id)} onChange={() => toggle(profile.id)} />)}
     <DateTimeField label="Kezdés" value={start} onChange={value => { setStart(value); setResult(undefined); }} />
     <DateTimeField label="Befejezés" value={end} onChange={value => { setEnd(value); setResult(undefined); }} />
@@ -28,7 +28,6 @@ export function FreeTimeDialog({ profileId, close }: { profileId: number; close:
     <Action icon={Search} disabled={busy || selected.size < 2} onPress={() => void search()}>{busy ? 'Keresés…' : 'Szabad idő keresése'}</Action>
     {selected.size < 2 ? <Text className="text-sm text-muted-foreground">Válassz legalább két profilt. Másik órarendet a Profilok menüben importálhatsz.</Text> : null}
     {result ? <FreeTimeResults result={result} profiles={app.profileList} /> : null}
-    <Text className="text-xs text-muted-foreground">Csak a betöltött órarendek elfoglaltságait ismerjük. Beadandó határideje nem foglal időt; egész napos program igen. Hiányzó import esetén nem állítjuk, hogy a nap szabad.</Text>
     {error ? <Text accessibilityRole="alert" className="text-destructive">{error}</Text> : null}
   </Modal>;
 }
