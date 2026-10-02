@@ -1,4 +1,5 @@
 import { openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite';
+import { initializeStudentStorage } from './student-migration';
 let database: Promise<SQLiteDatabase> | undefined;
 let pending: Promise<unknown> = Promise.resolve();
 
@@ -24,7 +25,7 @@ async function initialize(): Promise<SQLiteDatabase> {
     CREATE TABLE IF NOT EXISTS overrides(sourceId TEXT NOT NULL REFERENCES sources(id) ON DELETE CASCADE, key TEXT NOT NULL, patch TEXT NOT NULL, PRIMARY KEY(sourceId,key));
     CREATE TABLE IF NOT EXISTS events(sourceId TEXT NOT NULL, revision TEXT NOT NULL, key TEXT NOT NULL,
       title TEXT NOT NULL, originalTitle TEXT NOT NULL, start REAL NOT NULL, end REAL NOT NULL, location TEXT NOT NULL,
-      kind TEXT NOT NULL, hidden INTEGER NOT NULL DEFAULT 0, base TEXT NOT NULL, PRIMARY KEY(sourceId,revision,key));
+      kind TEXT NOT NULL, hidden INTEGER NOT NULL DEFAULT 0, base TEXT NOT NULL, notes TEXT NOT NULL DEFAULT '', PRIMARY KEY(sourceId,revision,key));
     CREATE INDEX IF NOT EXISTS event_window ON events(sourceId,revision,start,end);
     CREATE INDEX IF NOT EXISTS event_title ON events(sourceId,revision,originalTitle,start);
     CREATE INDEX IF NOT EXISTS source_profile ON sources(profileId);
@@ -34,7 +35,10 @@ async function initialize(): Promise<SQLiteDatabase> {
       lastError TEXT NOT NULL DEFAULT '', lastChange TEXT NOT NULL DEFAULT '');
     CREATE TABLE IF NOT EXISTS event_reminders(sourceId TEXT NOT NULL REFERENCES sources(id) ON DELETE CASCADE,
       key TEXT NOT NULL, excludeGlobal INTEGER NOT NULL DEFAULT 0, rules TEXT NOT NULL, PRIMARY KEY(sourceId,key));
-    PRAGMA user_version=3;`);
+    PRAGMA user_version=4;`);
+  const columns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(events)');
+  if (!columns.some(column => column.name === 'notes')) await db.execAsync("ALTER TABLE events ADD COLUMN notes TEXT NOT NULL DEFAULT ''");
+  await initializeStudentStorage(db);
   await db.runAsync("DELETE FROM events WHERE revision<? AND NOT EXISTS (SELECT 1 FROM sources WHERE sources.id=events.sourceId AND sources.revision=events.revision)", (Date.now() - 86400000).toString(36));
   return db;
 }
