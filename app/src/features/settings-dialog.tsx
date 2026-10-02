@@ -10,7 +10,8 @@ import { monday, validDate } from '../domain/time';
 import { sources } from '../data/repository';
 import { discardStages, publishStages, stageSource, type StagedSource } from '../data/importer';
 import { useApp } from './app-state';
-import { Action, Choice, Confirm, Field, Modal } from './controls';
+import { DateField } from './date-time-field';
+import { Action, Choice, Confirm, Modal } from './controls';
 
 export function SettingsDialog({ close }: { close: () => void }) {
   const app = useApp();
@@ -57,7 +58,7 @@ function SettingsOptions({ date, setDate, week, setWeek, busy, error, prepare, a
     <View className="gap-4 rounded-xl border border-border bg-background/40 p-4">
       <View className="flex-row items-center gap-2"><Icon as={CalendarRange} size={19} className="text-primary" /><Text className="font-semibold">A/B hetek</Text></View>
       <Text className="text-xs leading-5 text-muted-foreground">A referenciahét minden profilra érvényes. A dátumhoz kötött ICS-események nem változnak.</Text>
-      <Field label="Referenciahét hétfője" value={date} onChange={setDate} />
+      <DateField label="Referenciahét hétfője" value={date} onChange={setDate} />
       <View className={compact ? 'gap-2' : 'flex-row items-center justify-between gap-3'}><Text className="text-sm">Hét</Text><Choice fullWidth={compact} label="Referenciahét jele" value={week} onChange={value => setWeek(value as Anchor['week'])} options={[{ value: 'A', label: 'A hét' }, { value: 'B', label: 'B hét' }]} /></View>
       {error ? <Text accessibilityRole="alert" className="text-destructive">{error}</Text> : null}
       <Button accessibilityLabel="A/B változás előnézete" disabled={busy} onPress={prepare}><Icon as={RefreshCw} size={17} className="text-primary-foreground" /><Text>{busy ? 'Újraszámítás…' : 'A/B előnézet'}</Text></Button>
