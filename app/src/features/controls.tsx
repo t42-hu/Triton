@@ -16,8 +16,8 @@ import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescripti
 export function Action({ children, onPress, disabled = false, secondary = false, label, icon = ChevronRight, quiet = false }: { children: string; onPress: () => void; disabled?: boolean; secondary?: boolean; label?: string; icon?: LucideIcon; quiet?: boolean }) {
   return <Button accessibilityLabel={label ?? children} disabled={disabled} variant={quiet ? 'ghost' : secondary ? 'outline' : 'default'} onPress={onPress}>{icon ? <Icon as={icon} size={17} className={secondary || quiet ? 'text-foreground' : 'text-primary-foreground'} /> : null}<Text>{children}</Text></Button>;
 }
-export function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string }) {
-  return <View className="gap-1.5"><Label nativeID={label}>{label}</Label><Input accessibilityLabel={label} aria-labelledby={label} value={value} onChangeText={onChange} placeholder={placeholder} autoCapitalize="none" /></View>;
+export function Field({ label, value, onChange, placeholder, insetLabel = false }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; insetLabel?: boolean }) {
+  return <View className="relative gap-1.5">{insetLabel ? <View pointerEvents="none" className="absolute left-3 top-2 z-10"><Label nativeID={label} className="text-xs text-muted-foreground">{label}</Label></View> : <Label nativeID={label}>{label}</Label>}<Input className={insetLabel ? 'h-14 pb-2 pt-6 sm:h-14' : undefined} accessibilityLabel={label} aria-labelledby={label} value={value} onChangeText={onChange} placeholder={placeholder} autoCapitalize="none" /></View>;
 }
 export function Choice({ label, value, options, onChange, fullWidth = false, icon }: { icon?: LucideIcon; label: string; value: string; options: { value: string; label: string }[]; onChange: (value: string) => void; fullWidth?: boolean }) {
   return <Select value={options.find(option => option.value === value)} onValueChange={option => { if (option) onChange(option.value); }}>
@@ -28,14 +28,14 @@ export function Choice({ label, value, options, onChange, fullWidth = false, ico
 export function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
   return <View className="flex-row items-center gap-2"><Switch accessibilityLabel={label} checked={checked} onCheckedChange={onChange} /><Text className="min-w-0 flex-1 text-sm">{label}</Text></View>;
 }
-export function Modal({ title, description, close, children, wide = false, scrollGesture, open = true, keepMounted = false }: { title: string; description: string; close: () => void; children: ReactNode; wide?: boolean; scrollGesture?: ReturnType<typeof Gesture.Native>; open?: boolean; keepMounted?: boolean }) {
+export function Modal({ title, description, close, children, wide = false, scrollGesture, open = true, keepMounted = false }: { title: string; description?: string; close: () => void; children: ReactNode; wide?: boolean; scrollGesture?: ReturnType<typeof Gesture.Native>; open?: boolean; keepMounted?: boolean }) {
   const { width, height } = useWindowDimensions();
   const keyboardInset = useKeyboardInset();
   const { scroll, revealFocusedInput, rememberOffset } = useFocusedInputVisibility(open, keyboardInset);
   const availableHeight = height - keyboardInset;
-  const content = <ScrollView ref={scroll} onFocus={revealFocusedInput} onLayout={revealFocusedInput} onScroll={rememberOffset} scrollEventThrottle={16} nestedScrollEnabled directionalLockEnabled keyboardDismissMode="none" style={{ maxHeight: Math.max(80, availableHeight - 230), ...(Platform.OS === 'web' ? { overscrollBehavior: 'contain' as const } : {}) }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 16, paddingBottom: 12 }}>{children}</ScrollView>;
+  const content = <ScrollView ref={scroll} onFocus={revealFocusedInput} onLayout={revealFocusedInput} onScroll={rememberOffset} scrollEventThrottle={16} nestedScrollEnabled directionalLockEnabled keyboardDismissMode="none" style={{ marginRight: -16, maxHeight: Math.max(80, availableHeight - (description ? 230 : 190)), ...(Platform.OS === 'web' ? { overscrollBehavior: 'contain' as const } : {}) }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 20, paddingRight: 16, paddingBottom: 12 }}>{children}</ScrollView>;
   return <Dialog open={open} onOpenChange={nextOpen => { if (!nextOpen) close(); }}><DialogContent forceMount={keepMounted ? true : undefined} hidden={!open} className={wide ? 'sm:max-w-[960px]' : undefined} style={{ width: Math.min(width - 32, wide ? 960 : 576), maxWidth: wide ? 960 : 576, maxHeight: availableHeight - 32 }}>
-    <DialogTitle>{title}</DialogTitle><DialogDescription>{description}</DialogDescription>
+    <DialogTitle>{title}</DialogTitle>{description ? <DialogDescription>{description}</DialogDescription> : null}
     {scrollGesture ? <GestureDetector gesture={scrollGesture}>{content}</GestureDetector> : content}
   </DialogContent></Dialog>;
 }
