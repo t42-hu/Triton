@@ -3,6 +3,7 @@
 Usage: python3 scripts/check-mobile-panels.py keyboard 'Field label' -- DEVICE_FLAGS
        python3 scripts/check-mobile-panels.py keyboard-scroll -- DEVICE_FLAGS
        python3 scripts/check-mobile-panels.py calendar -- DEVICE_FLAGS
+       python3 scripts/check-mobile-panels.py panel -- DEVICE_FLAGS
 Set TRITON_AGENT_DEVICE when agent-device is not on PATH.
 """
 
@@ -82,9 +83,25 @@ def check_calendar():
     print('PASS: the final hour is reachable and the outer page stayed still')
 
 
+def check_panel():
+    """Require the panel controls to fit between the persistent navigation bars."""
+    nodes = snapshot()['nodes']
+    header_action = next(node for node in nodes if node.get('label') == 'Új óra / esemény')
+    navigation = next(node for node in nodes if node.get('label') == 'Menü')
+    close_action = next(node for node in nodes if node.get('label') == 'Bezárás')
+    scroll_panels = [node for node in nodes if node['type'] == 'ScrollView' and node['index'] > close_action['index']]
+    panel = max(scroll_panels, key=lambda node: node['depth'])
+    header_bottom = header_action['rect']['y'] + header_action['rect']['height']
+    assert close_action['rect']['y'] > header_bottom + 8, 'Panel overlaps the header'
+    assert panel['rect']['y'] + panel['rect']['height'] < navigation['rect']['y'] - 8, 'Panel overlaps navigation'
+    print('PASS: the panel stays between the navigation bars')
+
+
 if __name__ == '__main__':
     if sys.argv[1] == 'keyboard':
         check_keyboard(sys.argv[2])
+    elif sys.argv[1] == 'panel':
+        check_panel()
     elif sys.argv[1] == 'keyboard-scroll':
         check_keyboard_scroll()
     else:
