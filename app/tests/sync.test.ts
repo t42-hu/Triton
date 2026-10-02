@@ -127,3 +127,18 @@ test('only the current own profile can refresh, including ownership changes in f
   assert.equal((await sourceById(input.id))?.revision, before?.revision);
   assert.equal((await syncOwnCalendar(Date.now() + SYNC_INTERVAL)).status, 'skipped');
 });
+
+test('a peer profile accepts a calendar link and sync starts after marking it own', async t => {
+  const ownId = await saveProfile('Original owner'); const peerId = await saveProfile('Linked peer');
+  t.after(async () => { await deleteProfile(ownId); await deleteProfile(peerId); });
+  const input = { id: `${peerId}:import`, profileId: peerId, format: 'ics' as const, content: calendar(course('Peer calendar')), name: 'Peer', fromDate: '2026-09-01', toDate: '2026-12-31', isManual: 0 };
+  const stage = await stageSource(input, anchor, control());
+  stage.connection = { url, autoSync: 1, fetchedAt: 1 };
+  await publishStages([stage]);
+  assert.equal((await syncStatus(input.id))?.url, url);
+  assert.equal((await syncOwnCalendar()).status, 'skipped');
+  await ownProfile(peerId);
+  t.mock.method(globalThis, 'fetch', async () => new Response(calendar(course('Updated peer'))));
+  assert.equal((await syncOwnCalendar()).status, 'success');
+  assert.equal((await visibleEvents(peerId, '2026-09-07', 1, false))[0].title, 'Updated peer');
+});
