@@ -41,7 +41,7 @@ export function ProfilesDialog({ close, onCreated, onImport }: { close: () => vo
     </View>
     <View className="gap-3 rounded-xl bg-muted p-4">
       <View className="flex-row items-center justify-between gap-2"><View className="flex-row items-center gap-2"><Icon as={editing ? Pencil : Plus} size={18} className="text-primary" /><Text className="font-semibold">{editing ? 'Profil átnevezése' : 'Új profil'}</Text></View>{editing ? <Button accessibilityLabel="Átnevezés megszakítása" variant="ghost" className="h-9 w-9 border-0 bg-transparent p-0" onPress={() => { setEditing(undefined); setName(''); }}><Icon as={X} size={17} /></Button> : null}</View>
-      <Field label={editing ? 'Új profilnév' : 'Új profil neve'} value={name} onChange={setName} />
+      <Field insetLabel label={editing ? 'Új profilnév' : 'Új profil neve'} value={name} onChange={setName} />
       <Button disabled={isSaving} className="self-start" onPress={() => void save()}><Icon as={editing ? Check : Plus} size={18} className="text-primary-foreground" /><Text>{editing ? 'Átnevezés mentése' : 'Profil létrehozása'}</Text></Button>
     </View>
     {error ? <Text accessibilityRole="alert" className="text-destructive">{error}</Text> : null}
