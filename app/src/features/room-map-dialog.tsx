@@ -17,7 +17,7 @@ import { findRoomLocation, hasMappedRoom, locationLink, type RoomLocation } from
 const mapRooms = PLACES.flatMap(place => place.code && !place.range ? [place.code] : []);
 
 function RoomSuggestion({ room, choose }: { room: string; choose: (room: string) => void }) {
-  return <Pressable accessibilityRole="button" accessibilityLabel={`${room} terem kiválasztása`} className="flex-row items-center gap-2 border-b border-border px-3 py-2 last:border-b-0" onPressIn={() => choose(room)} onPress={() => choose(room)}><Icon as={MapPin} size={15} className="text-primary" /><Text>{room}</Text></Pressable>;
+  return <Pressable accessibilityRole="button" accessibilityLabel={`${room} terem kiválasztása`} className="flex-row items-center gap-2 rounded-lg border-b border-border px-3 py-2 hover:bg-primary/5 active:bg-primary/10 last:border-b-0" onPressIn={() => choose(room)} onPress={() => choose(room)}><Icon as={MapPin} size={15} className="text-primary" /><Text>{room}</Text></Pressable>;
 }
 
 export function RoomField({ value, onChange, onOpen, allowMap = true }: { value: string; onChange: (value: string) => void; onOpen: () => void; allowMap?: boolean }) {
