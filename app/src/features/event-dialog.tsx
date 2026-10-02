@@ -67,7 +67,7 @@ function CandidateList({ items, selected, setSelected }: { items: DisplayEvent[]
     setSelected(next);
   }
   return <View className="gap-2"><Text>{selected.size} kijelölt alkalom. A meglévő felülírásokat az új érték felváltja.</Text>
-    <ScrollView nestedScrollEnabled keyboardDismissMode="none" keyboardShouldPersistTaps="handled" style={{ maxHeight: 180 }} contentContainerStyle={{ gap: 12 }}>{items.map(item => <Toggle key={eventIdentity(item)} label={`${wallTime(item.start).slice(0, 16)} ${item.patch ? '(módosítva)' : ''}`} checked={selected.has(eventIdentity(item))} onChange={() => toggle(item)} />)}</ScrollView>
+    <ScrollView nestedScrollEnabled keyboardDismissMode="none" keyboardShouldPersistTaps="handled" style={{ maxHeight: 180 }} contentContainerStyle={{ gap: 12 }}>{items.map(item => <Toggle key={eventIdentity(item)} label={`${wallTime(item.start).slice(0, 16).replace('T', ' ')} ${item.patch ? '(módosítva)' : ''}`} checked={selected.has(eventIdentity(item))} onChange={() => toggle(item)} />)}</ScrollView>
   </View>;
 }
 
