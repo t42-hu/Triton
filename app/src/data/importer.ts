@@ -4,11 +4,12 @@ import { expandIcs } from '../domain/ics-import';
 import { checkpoint, expandJson } from '../domain/json-import';
 import { validateRange } from '../domain/time';
 import { getDatabase, write, transaction } from './database';
+import { searchableText } from '../domain/student';
 
 export type SourceInput = Omit<Source, 'revision'>;
 export type Connection = { url: string; autoSync: number; fetchedAt: number };
 export type StagedSource = { input: SourceInput; revision: string; previousRevision: string | null; count: number; removed: number; added: number; changed: number; lostOverrides: number; connection?: Connection | null; syncAttempt?: number };
-const insertSql = 'INSERT INTO events VALUES (?,?,?,?,?,?,?,?,?,?,?)';
+const insertSql = 'INSERT INTO events(sourceId,revision,key,title,originalTitle,start,end,location,kind,hidden,base,notes,category,searchText) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
 export function uniqueId(): string { return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`; }
 
 /** Stages a complete source without exposing partial rows to calendar queries. */
@@ -68,10 +69,9 @@ async function validatePublication(db: SQLiteDatabase, stage: StagedSource): Pro
   if (!stage.count && stage.removed) throw new Error('Az üres forrás nem írhatja felül a tárolt órarendet.');
   const current = await db.getFirstAsync<{ revision: string }>('SELECT revision FROM sources WHERE id=?', stage.input.id);
   if ((current?.revision ?? null) !== stage.previousRevision) throw new Error('A forrás időközben megváltozott. Készíts új előnézetet.');
-  if (!stage.connection) return;
+  if (!stage.connection || stage.syncAttempt === undefined) return;
   const own = await db.getFirstAsync<{ isOwn: number }>('SELECT isOwn FROM profiles WHERE id=?', stage.input.profileId);
-  if (!own?.isOwn) throw new Error('Naptárlink csak a saját profilhoz kapcsolható.');
-  if (stage.syncAttempt === undefined) return;
+  if (!own?.isOwn) throw new Error('A profil már nem saját; a frissítést megszakítottuk.');
   const active = await db.getFirstAsync<{ url: string; lastAttempt: number }>('SELECT url,lastAttempt FROM source_sync WHERE sourceId=?', stage.input.id);
   if (active?.url !== stage.connection.url || active.lastAttempt !== stage.syncAttempt) throw new Error('A kapcsolat időközben megváltozott.');
 }
@@ -94,7 +94,7 @@ async function applyStoredPatch(db: SQLiteDatabase, id: string, revision: string
   const patch: EventPatch = JSON.parse(row.patch);
   const value = { ...base, ...patch };
   if (value.end < value.start) throw new Error('A forrásváltozás és a helyi időpont együtt érvénytelen. Állítsd vissza az érintett felülírást.');
-  await db.runAsync('UPDATE events SET title=?,start=?,end=?,location=?,hidden=? WHERE sourceId=? AND revision=? AND key=?', value.title, value.start, value.end, value.location, Number(value.hidden ?? false), id, revision, row.key);
+  await db.runAsync('UPDATE events SET title=?,start=?,end=?,location=?,notes=?,hidden=?,category=?,searchText=? WHERE sourceId=? AND revision=? AND key=?', value.title, value.start, value.end, value.location, value.notes ?? '', Number(value.hidden ?? false), value.category ?? 'lesson', searchableText(`${value.title} ${value.location} ${value.notes ?? ''}`), id, revision, row.key);
 }
 export async function discardStages(stages: StagedSource[]): Promise<void> {
   await write(async db => {
@@ -107,7 +107,7 @@ export async function sourceById(id: string): Promise<Source | null> {
 
 async function insertBatch(db: SQLiteDatabase, statement: SQLiteStatement, id: string, revision: string, events: Occurrence[]): Promise<void> {
   async function insert() {
-    for (const event of events) await statement.executeAsync(id, revision, event.key, event.title, event.originalTitle, event.start, event.end, event.location, event.kind, 0, JSON.stringify(event));
+    for (const event of events) await statement.executeAsync(id, revision, event.key, event.title, event.originalTitle, event.start, event.end, event.location, event.kind, 0, JSON.stringify(event), event.notes ?? '', event.category ?? 'lesson', searchableText(`${event.title} ${event.location} ${event.notes ?? ''}`));
   }
   await db.withTransactionAsync(insert);
 }
