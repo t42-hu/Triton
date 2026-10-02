@@ -1,3 +1,5 @@
+import { useContext } from 'react';
+import { PanelScrollContext } from '@/features/panel-scroll';
 import { TextClassContext } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 import { cva, type VariantProps } from 'class-variance-authority';
@@ -91,8 +93,10 @@ const buttonTextVariants = cva(
 type ButtonProps = React.ComponentProps<typeof Pressable> & React.RefAttributes<typeof Pressable> & VariantProps<typeof buttonVariants>;
 
 function Button({ className, variant, size, onPress, ...props }: ButtonProps) {
+  const revealExpandedContent = useContext(PanelScrollContext);
   function press(event: GestureResponderEvent) {
     if (Platform.OS !== 'web') Keyboard.dismiss();
+    if (props.accessibilityState?.expanded === false) revealExpandedContent();
     onPress?.(event);
   }
   return (
