@@ -23,7 +23,7 @@ function Switch({
       hitSlop={12}
       style={rootStyle}
       className={cn(
-        'relative shrink-0',
+        'relative shrink-0 hover:opacity-80 active:opacity-70',
         Platform.select({
           web: 'inline-flex cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed',
         }),
