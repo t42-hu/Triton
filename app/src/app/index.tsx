@@ -54,7 +54,7 @@ export default function TimetableScreen() {
     {dialog === 'import' ? <ImportDialog profileId={importProfileId ?? data.ownId} close={() => { setImportProfileId(undefined); setDialog(null); }} /> : null}
     {dialog === 'manual' ? <ManualDialog profileId={data.ownId} initialCategory={manualCategory} close={() => setDialog(null)} openMap={openRoomMap} /> : null}
     {dialog === 'menu' ? <WorkspaceMenu showMap={showMap} open={openDialog} close={() => setDialog(null)} /> : null}
-    {dialog === 'sync' ? <Modal title="Naptárszinkronizálás" description="A saját órarended frissítése és naptárlinkjének kezelése." close={() => setDialog(null)}><CalendarSyncPanel syncState={syncState} onDisconnected={() => setDialog(null)} /></Modal> : null}
+    {dialog === 'sync' ? <Modal title="Naptárszinkronizálás" close={() => setDialog(null)}><CalendarSyncPanel syncState={syncState} onDisconnected={() => setDialog(null)} /></Modal> : null}
     {dialog === 'settings' ? <SettingsDialog close={() => setDialog(null)} /> : null}
     {dialog === 'reminders' ? <ReminderDialog close={() => setDialog(null)} /> : null}
     {event ? <EventDialog event={event} close={() => setEvent(undefined)} openMap={openRoomMap} /> : null}
