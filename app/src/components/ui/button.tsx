@@ -1,7 +1,7 @@
 import { TextClassContext } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { Platform, Pressable } from 'react-native';
+import { Keyboard, Platform, Pressable, type GestureResponderEvent } from 'react-native';
 
 const buttonVariants = cva(
   cn(
@@ -90,13 +90,18 @@ const buttonTextVariants = cva(
 
 type ButtonProps = React.ComponentProps<typeof Pressable> & React.RefAttributes<typeof Pressable> & VariantProps<typeof buttonVariants>;
 
-function Button({ className, variant, size, ...props }: ButtonProps) {
+function Button({ className, variant, size, onPress, ...props }: ButtonProps) {
+  function press(event: GestureResponderEvent) {
+    if (Platform.OS !== 'web') Keyboard.dismiss();
+    onPress?.(event);
+  }
   return (
     <TextClassContext.Provider value={buttonTextVariants({ variant, size })}>
       <Pressable
         className={cn(props.disabled && 'opacity-50', buttonVariants({ variant, size }), className)}
         role="button"
         {...props}
+        onPress={press}
       />
     </TextClassContext.Provider>
   );
