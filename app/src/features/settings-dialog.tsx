@@ -40,7 +40,7 @@ export function SettingsDialog({ close }: { close: () => void }) {
   }
   function cancel() { controller.current.abort(); void discardStages(stages); close(); }
   const summary = stages.reduce((sum, stage) => ({ added: sum.added + stage.added, removed: sum.removed + stage.removed, lost: sum.lost + stage.lostOverrides }), { added: 0, removed: 0, lost: 0 });
-  return <Modal title="Beállítások" description="Szabd az órarendet a saját hetedhez." close={cancel}>
+  return <Modal title="Beállítások" close={cancel}>
     <SettingsOptions date={date} setDate={setDate} week={week} setWeek={setWeek} busy={busy} error={error} prepare={() => void prepare()} abort={() => controller.current.abort()} />
     {prepared ? <Confirm title="A/B rend módosítása" description={`Létrejön: ${summary.added}, eltűnik: ${summary.removed} alkalom. Törlődő felülírás: ${summary.lost}.`} accept={() => void accept()} cancel={() => { setPrepared(false); void discardStages(stages); }} /> : null}
   </Modal>;
