@@ -33,7 +33,7 @@ function PickerField({ mode, label, value, open, onChange }: { mode: PickerMode;
     input.current?.click();
   }
   return <View className={`relative min-w-0 ${mode === 'date' ? 'flex-[3]' : 'flex-[2]'}`}>
-    <Pressable accessibilityRole="button" accessibilityLabel={`${label} ${mode === 'date' ? 'dátuma' : 'időpontja'}`} accessibilityHint={mode === 'date' ? 'Naptár megnyitása' : 'Időválasztó megnyitása'} className="h-11 flex-row items-center gap-2 rounded-lg border border-input bg-background px-3 active:opacity-70 dark:bg-input/30" onPress={activate}>
+    <Pressable accessibilityRole="button" accessibilityLabel={`${label} ${mode === 'date' ? 'dátuma' : 'időpontja'}`} accessibilityHint={mode === 'date' ? 'Naptár megnyitása' : 'Időválasztó megnyitása'} className="h-11 flex-row items-center gap-2 rounded-lg border border-input bg-background px-3 hover:bg-primary/5 active:bg-primary/10 dark:bg-input/30" onPress={activate}>
       <Icon as={mode === 'date' ? CalendarDays : Clock3} size={18} className="text-primary" />
       <Text className="min-w-0 flex-1 text-base" numberOfLines={1}>{value || (mode === 'date' ? 'Dátum' : 'Időpont')}</Text>
     </Pressable>
