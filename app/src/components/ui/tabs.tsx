@@ -62,7 +62,7 @@ function TabsTrigger({
       )}>
       <TabsPrimitive.Trigger
         className={cn(
-          'flex h-full min-w-14 flex-row items-center justify-center gap-1.5 rounded-md border border-transparent px-3 py-1 shadow-none shadow-black/5',
+          'flex h-full min-w-14 flex-row items-center justify-center gap-1.5 rounded-md border border-transparent px-3 py-1 shadow-none shadow-black/5 hover:bg-primary/10 active:bg-primary/15',
           Platform.select({
             web: 'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring inline-flex cursor-pointer whitespace-nowrap motion-safe:transition-colors duration-150 focus-visible:outline-1 focus-visible:ring-[3px] disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0',
           }),
