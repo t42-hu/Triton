@@ -4,7 +4,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Text } from '@/components/ui/text';
 
 function NoteLink({ link, open }: { link: string; open: (link: string) => void }) {
-  return <Pressable accessibilityRole="link" onPress={() => open(link)}><Text className="text-sm text-primary underline" numberOfLines={2}>{link}</Text></Pressable>;
+  return <Pressable accessibilityRole="link" className="rounded-lg hover:bg-primary/5 active:bg-primary/10" onPress={() => open(link)}><Text className="text-sm text-primary underline" numberOfLines={2}>{link}</Text></Pressable>;
 }
 
 /** Edits lesson notes and exposes their web addresses as tappable links. */
