@@ -41,7 +41,7 @@ export function EventDialog({ event, close, openMap }: { event: DisplayEvent; cl
     <Action quiet expanded={advancedOpen} icon={advancedOpen ? ChevronUp : ChevronDown} onPress={() => setAdvancedOpen(!advancedOpen)}>További műveletek</Action>
     {advancedOpen ? <View className="gap-4 border-t border-border pt-4">
       <Toggle label="Alkalom elrejtése / kihagyása" checked={editor.fields.hidden} onChange={hidden => editor.change({ hidden })} />
-      <Action secondary icon={Repeat2} onPress={() => void suggest()}>Több alkalom módosítása</Action>
+      <Action secondary expanded={editor.candidates.length > 0} icon={Repeat2} onPress={() => void suggest()}>Több alkalom módosítása</Action>
       {editor.candidates.length ? <CandidateList items={editor.candidates} selected={editor.selected} setSelected={editor.setSelected} /> : null}
       {event.patch && !editor.candidates.length ? <Action secondary icon={RotateCcw} onPress={() => void save(true)}>Eredeti adatok visszaállítása</Action> : null}
       {event.sourceId.includes(':manual:') ? <Action secondary icon={Trash2} onPress={() => setDeleting(true)}>Kézi sorozat törlése</Action> : null}
