@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
-import { Check, Plus, Trash2 } from 'lucide-react-native';
+import { Check, Plus, Trash2, Clock3, Info, ChevronDown, ChevronUp, Bell } from 'lucide-react-native';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
@@ -36,13 +36,12 @@ export function ReminderDialog({ event, close }: { event?: DisplayEvent; close: 
     } catch (error) { state.setMessage(`Nem sikerült minden lépés: ${error instanceof Error ? error.message : String(error)}`); }
     finally { state.setBusy(false); }
   }
-  return <Modal title={event ? 'Alkalom értesítései' : 'Óra előtti értesítések'} description={event ? `${event.title} · ${wallTime(event.start).slice(0, 16).replace('T', ' ')}` : 'Jelzések a sajátként kijelölt órarendhez.'} close={close}>
-    {event ? <Text className="text-sm text-muted-foreground">Egyszeri jelzések erre az alkalomra, a mentett kezdés előtt. A sorozat többi óráját nem módosítják. Azonos előjelzési időnél az itteni profil váltja fel a globálisat.</Text> : <View className="flex-row items-center gap-3 rounded-xl border border-border bg-background/40 p-3"><View className="h-10 w-10 items-center justify-center rounded-xl bg-muted"><ReminderBell enabled={state.enabled && state.permissionGranted} size={19} /></View><View className="min-w-0 flex-1"><Text className="font-semibold">Globális jelzések</Text><Text className="text-xs text-muted-foreground">A saját órarended óráihoz</Text></View><Switch accessibilityLabel="Globális óra előtti jelzések" checked={state.enabled} disabled={!state.ready || state.busy} onCheckedChange={value => void toggleGlobal(value, state, app.refresh)} /></View>}
-    {event && isOwn ? <Toggle label="Globális jelzések kizárása erre az alkalomra" checked={state.excluded} onChange={state.setExcluded} /> : null}
+  const footer = <Button accessibilityLabel="Értesítések mentése" disabled={!state.ready || state.busy} onPress={() => void save()}><Icon as={Check} size={17} className="text-primary-foreground" /><Text>{state.busy ? 'Mentés…' : 'Értesítések mentése'}</Text></Button>;
+  return <Modal footer={footer} title={event ? 'Emlékeztetők' : 'Óra előtti értesítések'} description={event ? `${event.title} · ${wallTime(event.start).slice(0, 16).replace('T', ' ')}` : 'Jelzések a sajátként kijelölt órarendhez.'} close={close}>
+    {event ? null : <View className="flex-row items-center gap-3 rounded-xl border border-border bg-background/40 p-3"><View className="h-10 w-10 items-center justify-center rounded-xl bg-muted"><ReminderBell enabled={state.enabled && state.permissionGranted} size={19} /></View><View className="min-w-0 flex-1"><Text className="font-semibold">Globális jelzések</Text><Text className="text-xs text-muted-foreground">A saját órarended óráihoz</Text></View><Switch accessibilityLabel="Globális óra előtti jelzések" checked={state.enabled} disabled={!state.ready || state.busy} onCheckedChange={value => void toggleGlobal(value, state, app.refresh)} /></View>}
+    {event && isOwn ? <Toggle label="Alapértelmezett jelzések kikapcsolása" checked={state.excluded} onChange={state.setExcluded} /> : null}
     {event && !isOwn ? <Text className="text-sm text-muted-foreground">Szaktársi órarend: csak az itt felvett jelzések érvényesek.</Text> : null}
     <RuleEditor rules={state.rules} onChange={state.setRules} />
-    <Button accessibilityLabel="Értesítések mentése" disabled={!state.ready || state.busy} onPress={() => void save()}><Icon as={Check} size={17} className="text-primary-foreground" /><Text>{state.busy ? 'Mentés…' : 'Értesítések mentése'}</Text></Button>
-    <Text className="text-xs text-muted-foreground">1–10080 perc (legfeljebb 7 nap). A múltbeli jelzések nem érkeznek meg; egész napos eseménynél a kezdés budapesti éjfél.</Text>
     {state.message ? <Text accessibilityLiveRegion="polite">{state.message}</Text> : null}
     <ReminderDelivery status={state.status} report={state.setMessage} />
   </Modal>;
@@ -82,27 +81,33 @@ function useReminderForm(event?: DisplayEvent) {
   }, [event]);
   return { rules, setRules, enabled, setEnabled, excluded, setExcluded, permissionGranted, setPermissionGranted, ready, busy, setBusy, message, setMessage, status, setStatus };
 }
-function toDraft(rule: ReminderRule): DraftRule { return { ...rule, minutes: String(rule.minutes) }; }
+function toDraft(rule: ReminderRule): DraftRule { return { ...rule, profile: Platform.OS === 'android' ? rule.profile : 'standard', minutes: String(rule.minutes) }; }
 function RuleEditor({ rules, onChange }: { rules: DraftRule[]; onChange: (rules: DraftRule[]) => void }) {
   function update(index: number, patch: Partial<DraftRule>) { onChange(rules.map((rule, position) => position === index ? { ...rule, ...patch } : rule)); }
   function remove(index: number) { onChange(rules.filter((_, position) => position !== index)); }
   return <View className="gap-3">
-    <View className="overflow-hidden rounded-xl border border-border bg-background/40">{rules.map((rule, index) => <View key={index} className="gap-2 border-b border-border p-3 last:border-b-0">
+    {rules.length ? <View className="overflow-hidden rounded-xl border border-border bg-background/40">{rules.map((rule, index) => <View key={index} className="gap-2 border-b border-border p-3 last:border-b-0">
       <View className="flex-row items-center justify-between"><View className="flex-row items-center gap-2"><View className="h-7 w-7 items-center justify-center rounded-lg bg-muted"><Text className="text-xs font-semibold text-primary">{index + 1}</Text></View><Text className="text-sm font-semibold">Jelzés</Text></View><Button accessibilityLabel={`${index + 1}. jelzés törlése`} variant="ghost" className="h-9 w-9 rounded-lg border-0 bg-transparent p-0" onPress={() => remove(index)}><Icon as={Trash2} size={17} className="text-destructive" /></Button></View>
-      <View className="flex-row gap-3"><View className="min-w-0 flex-1 gap-1"><Text className="text-xs text-muted-foreground">Idő (perc)</Text><Input accessibilityLabel={`${index + 1}. jelzés · perccel kezdés előtt`} keyboardType="number-pad" value={rule.minutes} onChangeText={minutes => update(index, { minutes })} /></View><View className="min-w-0 flex-1 gap-1"><Text className="text-xs text-muted-foreground">Jelzésmód</Text><Choice fullWidth label={`${index + 1}. jelzés · jelzőprofil`} value={rule.profile} options={REMINDER_PROFILES.map(profile => ({ value: profile.value, label: profile.label }))} onChange={value => update(index, { profile: value as ReminderProfile })} /></View></View>
-    </View>)}</View>
+      <View className="flex-row gap-3"><View className="min-w-0 flex-1 gap-1"><Text className="text-xs text-muted-foreground">Idő (perc)</Text><Input accessibilityLabel={`${index + 1}. jelzés · perccel kezdés előtt`} keyboardType="number-pad" value={rule.minutes} onChangeText={minutes => update(index, { minutes })} /></View>{Platform.OS === 'android' ? <View className="min-w-0 flex-1 gap-1"><Text className="text-xs text-muted-foreground">Jelzésmód</Text><Choice fullWidth label={`${index + 1}. jelzés · jelzőprofil`} value={rule.profile} options={REMINDER_PROFILES.map(profile => ({ value: profile.value, label: profile.label }))} onChange={value => update(index, { profile: value as ReminderProfile })} /></View> : null}</View>
+    </View>)}</View> : null}
     <Button accessibilityLabel="Előjelzés hozzáadása" variant="outline" disabled={rules.length >= 20} onPress={() => onChange([...rules, { minutes: '', profile: 'standard' }])}><Icon as={Plus} size={17} /><Text>Jelzés hozzáadása</Text></Button>
-    {!rules.length ? <Action secondary onPress={() => onChange(DEFAULT_REMINDERS.rules.map(toDraft))}>60 / 20 / 5 perces minta</Action> : null}
+    {!rules.length ? <Action secondary icon={Clock3} onPress={() => onChange(DEFAULT_REMINDERS.rules.map(toDraft))}>60 / 20 / 5 perc</Action> : null}
   </View>;
 }
+/** Delivery details stay available without taking over the reminder editor. */
 function ReminderDelivery({ status, report }: { status: ReminderStatus; report: (message: string) => void }) {
+  const [expanded, setExpanded] = useState(false);
   async function open(profile: ReminderProfile) { try { await openReminderChannel(profile); } catch { report('A rendszerbeállításokat nem sikerült megnyitni.'); } }
   async function exactAlarms() { try { await openExactAlarmSettings(); } catch { report('Nyisd meg az Android Beállítások → Ébresztések és emlékeztetők menüt.'); } }
-  if (Platform.OS === 'web') return <Text className="text-sm text-muted-foreground">Weben csak helyi beállításokat tárolunk, értesítést a mobilapp küld. Nincs eszközök közötti szinkron.</Text>;
-  return <View className="gap-2">
-    <Text className="text-sm">{status.count} jelzés ütemezve{status.through ? ` · utolsó: ${wallTime(status.through).slice(0, 16).replace('T', ' ')}` : ''}.</Text>
+  return <View className="gap-3 border-t border-border pt-4">
+    <View className="flex-row items-center gap-2"><Icon as={Bell} size={16} className="text-muted-foreground" /><Text className="flex-1 text-sm text-muted-foreground">{status.count} ütemezett jelzés</Text><Button accessibilityLabel="Értesítésküldés részletei" accessibilityState={{ expanded }} variant="ghost" className="h-9 gap-1 border-0 bg-transparent px-2 py-0" onPress={() => setExpanded(!expanded)}><Icon as={Info} size={15} /><Icon as={expanded ? ChevronUp : ChevronDown} size={14} /></Button></View>
     {status.error ? <Text accessibilityRole="alert" className="text-destructive">{status.error}</Text> : null}
-    <Text className="text-xs text-muted-foreground">A következő 30 napból legfeljebb 60 jelzést készítünk elő. Megnyitáskor és engedélyezett háttérfutáskor bővül a sor. Hosszabb távhoz nyisd meg rendszeresen az appot; az akkukímélés és rendszerengedélyek késleltethetik a kézbesítést.</Text>
-    {Platform.OS === 'android' ? <><Action secondary onPress={() => void exactAlarms()}>Pontos jelzések engedélyezése</Action><Text className="text-sm">Jelzőprofilok: egy, két vagy három rezgés. A hang és a rendszer által támogatott rezgésopciók külön állíthatók.</Text>{REMINDER_PROFILES.map(profile => <Action key={profile.value} secondary onPress={() => void open(profile.value)}>{`${profile.label} · rendszerbeállítások`}</Action>)}</> : <Text className="text-xs text-muted-foreground">iOS-en a három profil közös rendszerhangot használ; az Android csatornánkénti rezgésbeállításai itt nem érhetők el.</Text>}
+    {expanded ? <View className="gap-3 rounded-xl bg-muted/40 p-4">
+      <Text className="text-xs text-muted-foreground">1–10080 perccel kezdés előtt. Múltbeli jelzés nem érkezik meg; egész napos eseménynél a kezdés éjfél.</Text>
+      {status.through ? <Text className="text-xs text-muted-foreground">Előkészítve eddig: {wallTime(status.through).slice(0, 16).replace('T', ' ')}</Text> : null}
+      <Text className="text-xs text-muted-foreground">Legfeljebb 60 jelzés a következő 30 napra. A lista az app megnyitásakor és háttérfrissítéskor bővül.</Text>
+      {Platform.OS === 'web' ? <Text className="text-xs text-muted-foreground">Értesítést a mobilapp küld.</Text> : null}
+      {Platform.OS === 'android' ? <><Action secondary onPress={() => void exactAlarms()}>Pontos jelzések engedélyezése</Action>{REMINDER_PROFILES.map(profile => <Action key={profile.value} secondary onPress={() => void open(profile.value)}>{`${profile.label} · rendszerbeállítások`}</Action>)}</> : <Text className="text-xs text-muted-foreground">iOS-en a jelzésmódok közös rendszerhangot használnak.</Text>}
+    </View> : null}
   </View>;
 }
