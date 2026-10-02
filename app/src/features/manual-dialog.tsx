@@ -38,7 +38,7 @@ export function ManualDialog({ profileId, close, openMap, initialCategory = 'les
   }
   if (created) return <ReminderDialog event={created} close={close} />;
   if (mapOpen) return null;
-  return <Modal title="Új óra vagy esemény" description="Óra, személyes program vagy tanulmányi határidő." close={close}>
+  return <Modal title="Új óra vagy esemény" close={close}>
     <Choice fullWidth icon={eventCategoryIcon(draft.category)} label="Mit szeretnél hozzáadni?" value={draft.category} options={EVENT_CATEGORIES} onChange={category => change({ category: category as EventCategory })} />
     <ManualDetails draft={draft} change={change} openMap={() => { setMapOpen(true); openMap(draft.location, () => setMapOpen(false)); }} />
     <ManualSchedule kind={draft.kind} setKind={kind => change({ kind })} start={times.start} setStart={value => times.changeStart(value, draft.kind === 'allDay')} end={times.end} setEnd={times.setEnd} />
