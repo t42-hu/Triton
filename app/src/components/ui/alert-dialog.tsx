@@ -1,6 +1,7 @@
 import { buttonTextVariants, buttonVariants } from '@/components/ui/button';
 import { NativeOnlyAnimatedView } from '@/components/ui/native-only-animated-view';
 import { TextClassContext } from '@/components/ui/text';
+import { usePanelViewport } from '@/features/panel-viewport';
 import { cn } from '@/lib/utils';
 import * as AlertDialogPrimitive from '@rn-primitives/alert-dialog';
 import * as React from 'react';
@@ -53,9 +54,10 @@ function AlertDialogContent({
 }: React.ComponentProps<typeof AlertDialogPrimitive.Content> & {
     portalHost?: string;
   }) {
+  const viewport = usePanelViewport();
   return (
     <AlertDialogPortal hostName={portalHost}>
-      <AlertDialogOverlay>
+      <AlertDialogOverlay style={{ top: viewport.top, bottom: viewport.bottom }}>
         <AlertDialogPrimitive.Content
           className={cn(
             'bg-background border-border z-50 flex w-full max-w-[calc(100%-2rem)] flex-col gap-4 rounded-lg border p-6 shadow-lg shadow-black/5 sm:max-w-lg',
@@ -65,6 +67,7 @@ function AlertDialogContent({
             className
           )}
           {...props}
+          style={[{ maxHeight: viewport.height }, props.style]}
         />
       </AlertDialogOverlay>
     </AlertDialogPortal>
