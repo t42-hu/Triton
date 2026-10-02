@@ -62,7 +62,7 @@ function DialogContent({
   return (
     <DialogPortal hostName={portalHost} forceMount={forceMount}>
       <View pointerEvents={hidden ? 'none' : 'auto'} accessibilityElementsHidden={hidden} importantForAccessibility={hidden ? 'no-hide-descendants' : 'auto'} style={{ position: 'absolute', top: viewport.top, right: 0, bottom: viewport.bottom, left: 0, opacity: hidden ? 0 : 1 }}>
-        <DialogOverlay forceMount={forceMount} transitionKey={transitionKey}>
+        <DialogOverlay forceMount={forceMount} transitionKey={transitionKey} style={Platform.OS === 'web' ? { top: viewport.top, bottom: viewport.bottom } : undefined}>
           <DialogPrimitive.Content
             forceMount={forceMount}
             className={cn(
