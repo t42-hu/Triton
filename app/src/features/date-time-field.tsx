@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
-import { Keyboard, Modal, Platform, Pressable, View } from 'react-native';
+import { Keyboard, Platform, Pressable, View } from 'react-native';
 import { DateTimePicker } from '@expo/ui/community/datetime-picker';
 import { useColorScheme } from 'nativewind';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Modal as PanelModal } from './controls';
 import { CalendarDays, Check, Clock3 } from 'lucide-react-native';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -43,20 +43,13 @@ function PickerField({ mode, label, value, open, onChange }: { mode: PickerMode;
 
 function NativePicker({ mode, value, onChange, close }: { mode: PickerMode; value: string; onChange: (value: string) => void; close: () => void }) {
   const { colorScheme } = useColorScheme();
-  const { bottom } = useSafeAreaInsets();
   const isAndroid = Platform.OS === 'android';
   const picker = <DateTimePicker value={pickerValue(value)} mode={mode} display={isAndroid ? 'default' : mode === 'date' ? 'inline' : 'spinner'} is24Hour locale="hu_HU" themeVariant={colorScheme === 'dark' ? 'dark' : 'light'} positiveButton={{ label: 'Kész' }} negativeButton={{ label: 'Mégse' }} onValueChange={(_, selected) => { onChange(selectedValue(value, mode, selected)); if (isAndroid) close(); }} onDismiss={close} />;
   if (isAndroid) return picker;
-  return <Modal transparent animationType="slide" presentationStyle="overFullScreen" onRequestClose={close}>
-    <View className="flex-1 justify-end bg-black/50"><Pressable accessibilityLabel="Választó bezárása" className="flex-1" onPress={close} />
-      <View className="gap-2 rounded-t-3xl border-t border-border bg-background px-5 pt-4" style={{ paddingBottom: Math.max(bottom, 16) }}>
-        <View className="flex-row items-center justify-between"><Text className="text-base font-semibold">{mode === 'date' ? 'Dátum kiválasztása' : 'Idő beállítása'}</Text>
-          <Button accessibilityLabel="Választás kész" variant="ghost" className="h-9 gap-1 px-2" onPress={close}><Icon as={Check} size={16} className="text-primary" /><Text className="text-sm">Kész</Text></Button>
-        </View>
-        {picker}
-      </View>
-    </View>
-  </Modal>;
+  return <PanelModal title={mode === 'date' ? 'Dátum kiválasztása' : 'Idő beállítása'} close={close}>
+    {picker}
+    <Button accessibilityLabel="Választás kész" onPress={close}><Icon as={Check} size={16} className="text-primary-foreground" /><Text>Kész</Text></Button>
+  </PanelModal>;
 }
 
 export function DateTimeField({ label, value, onChange, allDay = false }: { label: string; value: string; onChange: (value: string) => void; allDay?: boolean }) {
