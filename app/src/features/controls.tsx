@@ -1,3 +1,4 @@
+import { PanelScrollContext, usePanelScrollController } from './panel-scroll';
 import { useRef, type ReactNode } from 'react';
 import { Check, ChevronRight, X, type LucideIcon } from 'lucide-react-native';
 import { Icon } from '@/components/ui/icon';
@@ -14,8 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from '@/components/ui/alert-dialog';
 
-export function Action({ children, onPress, disabled = false, secondary = false, label, icon = ChevronRight, quiet = false }: { children: string; onPress: () => void; disabled?: boolean; secondary?: boolean; label?: string; icon?: LucideIcon; quiet?: boolean }) {
-  return <Button accessibilityLabel={label ?? children} disabled={disabled} variant={quiet ? 'ghost' : secondary ? 'outline' : 'default'} onPress={onPress}>{icon ? <Icon as={icon} size={17} className={secondary || quiet ? 'text-foreground' : 'text-primary-foreground'} /> : null}<Text>{children}</Text></Button>;
+export function Action({ children, onPress, disabled = false, secondary = false, label, icon = ChevronRight, quiet = false, expanded }: { children: string; onPress: () => void; disabled?: boolean; secondary?: boolean; label?: string; icon?: LucideIcon; quiet?: boolean; expanded?: boolean }) {
+  return <Button accessibilityLabel={label ?? children} accessibilityState={expanded === undefined ? undefined : { expanded }} disabled={disabled} variant={quiet ? 'ghost' : secondary ? 'outline' : 'default'} onPress={onPress}>{icon ? <Icon as={icon} size={17} className={secondary || quiet ? 'text-foreground' : 'text-primary-foreground'} /> : null}<Text>{children}</Text></Button>;
 }
 export function Field({ label, value, onChange, placeholder, insetLabel = false }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; insetLabel?: boolean }) {
   return <View className="relative gap-1.5">{insetLabel ? <View pointerEvents="none" className="absolute left-3 top-2 z-10"><Label nativeID={label} className="text-xs text-muted-foreground">{label}</Label></View> : <Label nativeID={label}>{label}</Label>}<Input className={insetLabel ? 'h-14 pb-2 pt-6 sm:h-14' : undefined} accessibilityLabel={label} aria-labelledby={label} value={value} onChangeText={onChange} placeholder={placeholder} autoCapitalize="none" /></View>;
@@ -33,9 +34,10 @@ export function Modal({ title, description, close, children, footer, wide = fals
   const { width } = useWindowDimensions();
   const viewport = usePanelViewport();
   const keyboardInset = useKeyboardInset();
-  const { scroll, revealFocusedInput, rememberOffset } = useFocusedInputVisibility(open, keyboardInset);
+  const { scroll, requestRevealEnd, revealExpandedContent } = usePanelScrollController();
+  const { revealFocusedInput, rememberOffset } = useFocusedInputVisibility(open, keyboardInset, scroll);
   const availableHeight = viewport.height;
-  const content = <ScrollView ref={scroll} onFocus={revealFocusedInput} onLayout={revealFocusedInput} onScroll={rememberOffset} scrollEventThrottle={16} nestedScrollEnabled directionalLockEnabled keyboardDismissMode="none" style={{ marginRight: -16, maxHeight: Math.max(0, availableHeight - (description ? 144 : 104) - (footer ? 72 : 0)), ...(Platform.OS === 'web' ? { overscrollBehavior: 'contain' as const } : {}) }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 20, paddingRight: 16, paddingBottom: 12 }}>{children}</ScrollView>;
+  const content = <ScrollView ref={scroll} onContentSizeChange={revealExpandedContent} onFocus={revealFocusedInput} onLayout={revealFocusedInput} onScroll={rememberOffset} scrollEventThrottle={16} nestedScrollEnabled directionalLockEnabled keyboardDismissMode="none" style={{ marginRight: -16, maxHeight: Math.max(0, availableHeight - (description ? 144 : 104) - (footer ? 72 : 0)), ...(Platform.OS === 'web' ? { overscrollBehavior: 'contain' as const } : {}) }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 20, paddingRight: 16, paddingBottom: 12 }}><PanelScrollContext.Provider value={requestRevealEnd}>{children}</PanelScrollContext.Provider></ScrollView>;
   return <Dialog open={open} onOpenChange={nextOpen => { if (!nextOpen) close(); }}><DialogContent forceMount={keepMounted ? true : undefined} hidden={!open} transitionKey={title} className={wide ? 'sm:max-w-[960px]' : undefined} style={{ width: Math.min(width - 32, wide ? 960 : 576), maxWidth: wide ? 960 : 576, maxHeight: availableHeight }}>
     <DialogTitle>{title}</DialogTitle>{description ? <DialogDescription>{description}</DialogDescription> : null}
     {scrollGesture ? <GestureDetector gesture={scrollGesture}>{content}</GestureDetector> : content}
@@ -50,8 +52,8 @@ export function Confirm({ title, description, accept, cancel }: { title: string;
 }
 
 /** Resizing a form keeps its focused field visible without dismissing the keyboard during drags. */
-function useFocusedInputVisibility(open: boolean, keyboardInset: number) {
-  const scroll = useRef<ScrollView>(null); const offset = useRef(0); const frame = useRef({ top: 0, bottom: 0 });
+function useFocusedInputVisibility(open: boolean, keyboardInset: number, scroll: React.RefObject<ScrollView | null>) {
+  const offset = useRef(0); const frame = useRef({ top: 0, bottom: 0 });
   function rememberOffset(event: NativeSyntheticEvent<NativeScrollEvent>) { offset.current = event.nativeEvent.contentOffset.y; }
   function measureInput(_x: number, y: number, _width: number, height: number) {
     const overflow = y + height + 12 - frame.current.bottom;
@@ -68,5 +70,5 @@ function useFocusedInputVisibility(open: boolean, keyboardInset: number) {
     if (!open || Platform.OS === 'web' || keyboardInset <= 0 && !Keyboard.isVisible()) return;
     requestAnimationFrame(measure);
   }
-  return { scroll, rememberOffset, revealFocusedInput };
+  return { rememberOffset, revealFocusedInput };
 }
