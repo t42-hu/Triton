@@ -1,8 +1,9 @@
+import { PanelScrollContext, usePanelScrollController } from '@/features/panel-scroll';
 import { MapPinned, Plus, RefreshCw, Settings2, TriangleAlert, Users } from 'lucide-react-native';
 import { PanelViewportProvider, usePanelViewport } from '@/features/panel-viewport';
 import { Icon } from '@/components/ui/icon';
 import { Image } from 'expo-image';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Platform, ScrollView, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui/text';
@@ -37,7 +38,7 @@ export default function TimetableScreen() {
   return <PanelViewportProvider><TimetableWorkspace /></PanelViewportProvider>;
 }
 function TimetableWorkspace() {
-  const app = useApp(); const { width } = useWindowDimensions(); const screenScroll = useRef<ScrollView>(null);
+  const app = useApp(); const { width } = useWindowDimensions(); const { scroll, requestRevealEnd, revealExpandedContent } = usePanelScrollController();
   const [screen, setScreen] = useState<WorkspaceScreen>('today');
   const [dialog, setDialog] = useState<DialogName>(null); const [importProfileId, setImportProfileId] = useState<number>(); const [addingCalendar, setAddingCalendar] = useState(false);
   const [event, setEvent] = useState<DisplayEvent>(); const [notebook, setNotebook] = useState<DisplayEvent>(); const [manualCategory, setManualCategory] = useState<EventCategory>('lesson');
@@ -48,8 +49,8 @@ function TimetableWorkspace() {
   const availableProfiles = app.profileList.filter(profile => profile.id !== data.ownId && !app.view.openProfiles.includes(profile.id));
   function openNew(category: EventCategory) { setManualCategory(category); setDialog('manual'); }
   function openDialog(name: DialogName) { if (name === 'manual') setManualCategory('lesson'); setDialog(name); }
-  function navigate(next: WorkspaceScreen) { setScreen(next); screenScroll.current?.scrollTo({ y: 0, animated: false }); }
-  return <SafeAreaView className="flex-1 bg-background"><WorkspaceHeader create={() => openNew('lesson')} />{width >= 600 ? <StudentNavigation screen={screen} navigate={navigate} openMenu={() => setDialog('menu')} menuOpen={dialog === 'menu'} /> : null}<ScrollView ref={screenScroll} nestedScrollEnabled directionalLockEnabled keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: width < 600 ? 16 : 32, gap: 24, flexGrow: 1, width: '100%', maxWidth: 1600, alignSelf: 'center' }}>
+  function navigate(next: WorkspaceScreen) { setScreen(next); scroll.current?.scrollTo({ y: 0, animated: false }); }
+  return <PanelScrollContext.Provider value={requestRevealEnd}><SafeAreaView className="flex-1 bg-background"><WorkspaceHeader create={() => openNew('lesson')} />{width >= 600 ? <StudentNavigation screen={screen} navigate={navigate} openMenu={() => setDialog('menu')} menuOpen={dialog === 'menu'} /> : null}<ScrollView ref={scroll} onContentSizeChange={revealExpandedContent} nestedScrollEnabled directionalLockEnabled keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: width < 600 ? 16 : 32, gap: 24, flexGrow: 1, width: '100%', maxWidth: 1600, alignSelf: 'center' }}>
 
     {app.error ? <Alert icon={TriangleAlert} variant="destructive"><AlertTitle>Nem sikerült a művelet</AlertTitle><AlertDescription>{app.error}</AlertDescription></Alert> : null}
     {!app.profileList.length ? <EmptyState create={() => setDialog('profiles')} /> : <StudentWorkspace key={data.ownId} profileId={data.ownId} openEvent={setEvent} openNotebook={setNotebook} openNew={openNew} openMap={openRoomMap} screen={screen} openTasks={() => navigate('tasks')} calendar={<CalendarWorkspace data={data} selectEvent={setEvent} selectNotebook={setNotebook} addCalendar={() => setAddingCalendar(true)} />} />}
@@ -64,7 +65,7 @@ function TimetableWorkspace() {
     {event ? <EventDialog event={event} close={() => setEvent(undefined)} openMap={openRoomMap} /> : null}
     {notebook ? <NotebookDialog event={notebook} close={() => setNotebook(undefined)} /> : null}
     {(showMap && Platform.OS === 'ios') || isMapOpen ? <RoomMapDialog location={mapRequest?.location ?? ''} close={closeRoomMap} open={isMapOpen} /> : null}
-  </ScrollView>{width < 600 && app.profileList.length ? <StudentNavigation screen={screen} navigate={navigate} openMenu={() => setDialog('menu')} menuOpen={dialog === 'menu'} /> : null}</SafeAreaView>;
+  </ScrollView>{width < 600 && app.profileList.length ? <StudentNavigation screen={screen} navigate={navigate} openMenu={() => setDialog('menu')} menuOpen={dialog === 'menu'} /> : null}</SafeAreaView></PanelScrollContext.Provider>;
 }
 function CalendarWorkspace({ data, selectEvent, selectNotebook, addCalendar }: { data: ReturnType<typeof useCalendarData>; selectEvent: (event: DisplayEvent) => void; selectNotebook: (event: DisplayEvent) => void; addCalendar: () => void }) {
   const app = useApp(); const { width } = useWindowDimensions();
