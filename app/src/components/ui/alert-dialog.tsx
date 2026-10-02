@@ -5,7 +5,7 @@ import { usePanelViewport } from '@/features/panel-viewport';
 import { cn } from '@/lib/utils';
 import * as AlertDialogPrimitive from '@rn-primitives/alert-dialog';
 import * as React from 'react';
-import { Platform, View, type ViewProps } from 'react-native';
+import { Platform, View, useWindowDimensions, type ViewProps } from 'react-native';
 import { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
 import { FullWindowOverlay as RNFullWindowOverlay } from 'react-native-screens';
 
@@ -55,6 +55,7 @@ function AlertDialogContent({
     portalHost?: string;
   }) {
   const viewport = usePanelViewport();
+  const { width } = useWindowDimensions();
   return (
     <AlertDialogPortal hostName={portalHost}>
       <AlertDialogOverlay style={{ top: viewport.top, bottom: viewport.bottom }}>
@@ -67,7 +68,7 @@ function AlertDialogContent({
             className
           )}
           {...props}
-          style={[{ maxHeight: viewport.height }, props.style]}
+          style={[{ width: Math.min(width - 32, 576), maxWidth: 576, maxHeight: viewport.height }, props.style]}
         />
       </AlertDialogOverlay>
     </AlertDialogPortal>
