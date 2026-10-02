@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { BookOpen, CalendarClock, Repeat2, Save } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { Icon } from '@/components/ui/icon';
@@ -43,7 +43,7 @@ export function ManualDialog({ profileId, close, openMap, initialCategory = 'les
     <ManualDetails draft={draft} change={change} openMap={() => { setMapOpen(true); openMap(draft.location, () => setMapOpen(false)); }} />
     <ManualSchedule kind={draft.kind} setKind={kind => change({ kind })} start={times.start} setStart={value => times.changeStart(value, draft.kind === 'allDay')} end={times.end} setEnd={times.setEnd} />
     <ManualSection icon={Repeat2} title="Ismétlődés"><Choice fullWidth label="Ismétlődés" value={draft.weeks} onChange={weeks => change({ weeks })} options={[{ value: 'once', label: 'Egyszeri' }, { value: 'all', label: 'Minden héten' }, { value: 'A', label: 'A héten' }, { value: 'B', label: 'B héten' }]} />{draft.weeks !== 'once' ? <DateField label="Ismétlődés vége" value={draft.until} onChange={until => change({ until })} /> : null}</ManualSection>
-    <Toggle label="Emlékeztető beállítása mentés után" checked={draft.reminder} onChange={reminder => change({ reminder })} />
+    {Platform.OS !== 'web' ? <Toggle label="Emlékeztető beállítása mentés után" checked={draft.reminder} onChange={reminder => change({ reminder })} /> : null}
     {error ? <Text accessibilityRole="alert" className="text-destructive">{error}</Text> : null}
     <Action icon={Save} disabled={busy || !draft.title.trim()} onPress={() => void save()}>{busy ? 'Mentés…' : `${eventCategoryName(draft.category)} mentése`}</Action>
   </Modal>;
