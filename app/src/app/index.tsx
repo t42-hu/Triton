@@ -1,4 +1,5 @@
 import { MapPinned, Plus, RefreshCw, Settings2, TriangleAlert, Users } from 'lucide-react-native';
+import { PanelViewportProvider, usePanelViewport } from '@/features/panel-viewport';
 import { Icon } from '@/components/ui/icon';
 import { Image } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
@@ -33,6 +34,9 @@ import { lessonRooms } from '@/data/student-repository';
 
 type DialogName = 'profiles' | 'import' | 'manual' | 'settings' | 'reminders' | 'map' | 'menu' | 'sync' | null;
 export default function TimetableScreen() {
+  return <PanelViewportProvider><TimetableWorkspace /></PanelViewportProvider>;
+}
+function TimetableWorkspace() {
   const app = useApp(); const { width } = useWindowDimensions(); const screenScroll = useRef<ScrollView>(null);
   const [screen, setScreen] = useState<WorkspaceScreen>('today');
   const [dialog, setDialog] = useState<DialogName>(null); const [importProfileId, setImportProfileId] = useState<number>(); const [addingCalendar, setAddingCalendar] = useState(false);
@@ -134,16 +138,17 @@ function EmptyState({ create }: { create: () => void }) {
 }
 
 function WorkspaceHeader({ create }: { create: () => void }) {
-  return <View className="border-b border-border px-4 py-3 sm:px-8">
+  const { measureHeader } = usePanelViewport();
+  return <View onLayout={measureHeader} className="border-b border-border px-4 py-3 sm:px-8">
     <View className="flex-row items-center justify-between gap-3"><View className="flex-row items-center gap-2"><Image source={require('@/assets/images/triton-v15.png')} accessibilityLabel="Triton logó" contentFit="contain" style={{ width: 44, height: 44 }} /><Text className="text-xl font-semibold">Triton</Text></View><Button accessibilityLabel="Új óra / esemény" className="h-10 gap-1.5 rounded-lg px-3" onPress={create}><Icon as={Plus} size={17} className="text-primary-foreground" /><Text className="text-[12px]">Új óra / esemény</Text></Button></View>
   </View>;
 }
 function WorkspaceMenu({ showMap, open, close }: { showMap: boolean; open: (dialog: DialogName) => void; close: () => void }) {
   const { remindersEnabled, profileList } = useApp();
   const source = useSourceStatus(profileList.find(profile => profile.isOwn)?.id ?? 0);
-  return <Modal title="Menü" description="Órarend profilok, értesítések és beállítások." close={close}>
+  return <Modal title="Menü" close={close}>
     <Button accessibilityLabel="Profilok" variant="ghost" className="justify-start border-0 bg-transparent" onPress={() => open('profiles')}><Icon as={Users} size={19} /><Text>Profilok</Text></Button>
-    <Button accessibilityLabel="Értesítések" variant="ghost" className="justify-start border-0 bg-transparent" onPress={() => open('reminders')}><ReminderBell enabled={remindersEnabled} size={19} /><Text>Értesítések</Text></Button>
+    {Platform.OS !== 'web' ? <Button accessibilityLabel="Értesítések" variant="ghost" className="justify-start border-0 bg-transparent" onPress={() => open('reminders')}><ReminderBell enabled={remindersEnabled} size={19} /><Text>Értesítések</Text></Button> : null}
     <Button accessibilityLabel="Beállítások" variant="ghost" className="justify-start border-0 bg-transparent" onPress={() => open('settings')}><Icon as={Settings2} size={19} /><Text>Beállítások</Text></Button>
     {showMap ? <Button accessibilityLabel="Térkép" variant="ghost" className="justify-start border-0 bg-transparent" onPress={() => open('map')}><Icon as={MapPinned} size={19} /><Text>Térkép</Text></Button> : null}
     {source?.url && Platform.OS !== 'web' ? <Button accessibilityLabel="Naptárszinkronizálás" variant="ghost" className="justify-start border-0 bg-transparent" onPress={() => open('sync')}><Icon as={RefreshCw} size={19} /><Text>Naptárszinkronizálás</Text></Button> : null}
