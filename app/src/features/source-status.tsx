@@ -42,14 +42,14 @@ function timestamp(time: number): string {
 }
 export function SourceStamp({ profileId }: { profileId: number }) {
   const status = useSourceStatus(profileId);
-  if (!status) return null;
-  return <View className="flex-row items-center gap-1.5 border-b border-border px-5 pb-3"><Icon as={Clock3} size={13} className="text-muted-foreground" /><Text className="shrink text-xs text-muted-foreground">{status.url ? 'Frissítve' : 'Importálva'}: {new Date(status.lastSuccess).toLocaleTimeString('hu-HU', { timeZone: 'Europe/Budapest', hour: '2-digit', minute: '2-digit' })}{!status.url ? ' · ICS-fájl' : ''}</Text></View>;
+  if (!status?.url) return null;
+  return <View className="flex-row items-center gap-1.5 border-b border-border px-5 pb-3"><Icon as={Clock3} size={13} className="text-muted-foreground" /><Text className="shrink text-xs text-muted-foreground">Frissítve: {new Date(status.lastSuccess).toLocaleTimeString('hu-HU', { timeZone: 'Europe/Budapest', hour: '2-digit', minute: '2-digit' })}</Text></View>;
 }
 export function CalendarSyncPanel({ syncState, onDisconnected }: { syncState: ReturnType<typeof useCalendarSync>; onDisconnected?: () => void }) {
   const app = useApp();
   const owner = app.profileList.find(profile => profile.isOwn);
   const status = useSourceStatus(owner?.id ?? 0);
-  const { busy, background, sync } = syncState;
+  const { busy, sync } = syncState;
   const [notifications, setNotifications] = useState(false);
   const [message, setMessage] = useState('');
   function reportSettingsError() { setMessage('Nem sikerült betölteni az értesítési beállítást.'); }
@@ -64,13 +64,17 @@ export function CalendarSyncPanel({ syncState, onDisconnected }: { syncState: Re
   }
   if (!status?.url || Platform.OS === 'web') return null;
   const next = status.lastAttempt + SYNC_INTERVAL;
-  return <View className="gap-2 rounded-xl border border-border bg-card p-4">
+  return <View className="gap-6 rounded-xl border border-border bg-card p-5">
     <Text className="font-semibold">Saját órarend · {owner?.name}</Text>
-    <Text className="text-sm text-muted-foreground">Frissítve: {timestamp(status.lastSuccess)}. Új lekérés legkorábban: {timestamp(next)}.</Text>
-    <Text className="text-xs text-muted-foreground">{background}</Text>
+    <View className="gap-4"><SyncTimestamp label="Frissítve" time={status.lastSuccess} /><SyncTimestamp label="Következő szinkronizáció" time={next} /></View>
     {status.lastChange ? <Text accessibilityLiveRegion="polite">{status.lastChange}</Text> : null}
     {status.lastError || message ? <Text accessibilityRole="alert" className="text-destructive">{status.lastError || message}</Text> : null}
-    <View className="flex-row flex-wrap gap-2"><Action secondary disabled={busy} onPress={() => void sync()}>{busy ? 'Frissítés…' : 'Frissítés ellenőrzése'}</Action><Action quiet onPress={() => void disconnect()}>Link leválasztása</Action></View>
+    <View className="gap-3"><Action secondary disabled={busy} onPress={() => void sync()}>{busy ? 'Frissítés…' : 'Frissítés ellenőrzése'}</Action><Action quiet onPress={() => void disconnect()}>Link leválasztása</Action></View>
     <Toggle label="Értesítés órarendváltozáskor" checked={notifications} onChange={value => void toggle(value)} />
   </View>;
+}
+
+/** Separates scheduling labels from their readable timestamp values. */
+function SyncTimestamp({ label, time }: { label: string; time: number }) {
+  return <View className="gap-1"><Text className="text-xs text-muted-foreground">{label}</Text><Text className="text-sm font-medium">{timestamp(time)}</Text></View>;
 }
