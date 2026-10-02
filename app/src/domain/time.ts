@@ -38,6 +38,24 @@ export function weekAt(date: string, anchor: Anchor): 'A' | 'B' {
   const distance = Math.round((Date.parse(monday(date)) - Date.parse(anchor.date)) / 604800000);
   return Math.abs(distance % 2) === 0 ? anchor.week : anchor.week === 'A' ? 'B' : 'A';
 }
+/** Counts calendar weeks from a profile's first imported week, starting at one. */
+export function importedWeekNumber(date: string, firstDate: string): number | null {
+  if (!validDate(date) || !validDate(firstDate)) return null;
+  const distance = Math.round((Date.parse(monday(date)) - Date.parse(monday(firstDate))) / 604800000);
+  return distance < 0 ? null : distance + 1;
+}
+/** Moves an event's end by the start's change while keeping its elapsed duration. */
+export function shiftedEnd(previousStart: string, previousEnd: string, nextStart: string, allDay = false): string | null {
+  if (allDay) {
+    if (![previousStart, previousEnd, nextStart].every(value => validDate(value.slice(0, 10)))) return null;
+    const days = Math.round((Date.parse(previousEnd.slice(0, 10)) - Date.parse(previousStart.slice(0, 10))) / 86400000);
+    return `${addDays(nextStart.slice(0, 10), days)}T00:00`;
+  }
+  try {
+    const duration = fromWall(previousEnd) - fromWall(previousStart);
+    return wallTime(fromWall(nextStart) + duration).slice(0, 16);
+  } catch { return null; }
+}
 export function today(): string { return wallTime(Date.now()).slice(0, 10); }
 export function clockTime(timestamp: number): string { return wallTime(timestamp).slice(11, 16); }
 export function dateLabel(date: string): string {

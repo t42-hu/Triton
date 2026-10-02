@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { expandIcs } from '../src/domain/ics-import';
 import { expandJson, parseJson } from '../src/domain/json-import';
-import { addDays, fromWall, monday, wallTime, weekAt } from '../src/domain/time';
+import { addDays, fromWall, importedWeekNumber, monday, shiftedEnd, wallTime, weekAt } from '../src/domain/time';
 import { commonKeys, eventIdentity, patchForTarget } from '../src/domain/comparison';
 import { dayLayout } from '../src/features/calendar-layout';
 import { lessonType } from '../src/domain/lesson-type';
@@ -32,6 +32,21 @@ test('Budapest conversion and A/B weeks do not drift across DST or year boundari
   assert.equal(monday('2026-09-13'), '2026-09-07');
   assert.equal(addDays('2026-12-31', 1), '2027-01-01');
   assert.equal(weekAt('2026-09-14', anchor), 'B');
+});
+test('changing the start keeps elapsed duration and imported weeks start at one', () => {
+  assert.equal(shiftedEnd('2026-07-08T12:30', '2026-07-09T11:30', '2026-07-09T13:45'), '2026-07-10T12:45');
+  assert.equal(shiftedEnd('2026-07-08T12:30', '2026-07-09T11:30', '2026-07-0'), null);
+  assert.equal(shiftedEnd('2026-03-28T00:00', '2026-03-30T00:00', '2026-04-04T00:00', true), '2026-04-06T00:00');
+  assert.equal(importedWeekNumber('2026-09-01', '2026-09-01'), 1);
+  assert.equal(importedWeekNumber('2026-09-07', '2026-09-01'), 2);
+  assert.equal(importedWeekNumber('2026-09-14', '2026-09-01'), 3);
+  assert.equal(importedWeekNumber('2026-08-24', '2026-09-01'), null);
+});
+test('imported descriptions remain available as lesson notes', async () => {
+  const [fromIcs] = await collect(expandIcs(calendar(event(`${base}\r\nDESCRIPTION:Topic and https://example.com`)), range, control()));
+  assert.equal(fromIcs.notes, 'Topic and https://example.com');
+  const [fromJson] = await collect(expandJson(json([{ ...jsonEvent, notes: 'Vizsgaanyag https://example.com' }]), range, anchor, control()));
+  assert.equal(fromJson.notes, 'Vizsgaanyag https://example.com');
 });
 test('weekly JSON keeps wall clock times over DST and supports A-only recurrence', async () => {
   const events = await collect(expandJson(json([jsonEvent]), range, anchor, control()));
@@ -115,4 +130,17 @@ test('calendar clips timed events to 07:00–20:00 without changing their stored
   assert.equal(result[0].top, 0); assert.equal(result[0].height, 30);
   assert.equal(result[1].top, 750); assert.equal(result[1].height, 30);
   assert.equal(result[0].event.start, early.start); assert.equal(result[1].event.end, late.end);
+});
+
+test('calendar lanes are stable for unsorted overlapping events from different sources', async () => {
+  const [item] = await collect(expandIcs(calendar(event(base)), range, control()));
+  const first = display(item);
+  const make = (key: string, start: string, end: string) => ({ ...first, key, start: fromWall(`2026-09-07T${start}`), end: fromWall(`2026-09-07T${end}`) });
+  const events = [make('later', '11:00', '12:00'), make('early', '08:00', '10:00'), make('overlap', '09:00', '11:30')];
+  const positioned = dayLayout(events, '2026-09-07');
+  const early = positioned.find(item => item.event.key === 'early')!;
+  const overlap = positioned.find(item => item.event.key === 'overlap')!;
+  assert.equal(early.lanes, 2);
+  assert.notEqual(early.lane, overlap.lane);
+  assert.deepEqual(events.map(item => item.key), ['later', 'early', 'overlap']);
 });
