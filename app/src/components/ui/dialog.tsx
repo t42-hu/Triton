@@ -25,7 +25,6 @@ function DialogOverlay({
 }: Omit<React.ComponentProps<typeof DialogPrimitive.Overlay>, 'asChild'> & {
   children?: React.ReactNode;
 }) {
-  const keyboardInset = useKeyboardInset();
   return (
       <DialogPrimitive.Overlay
         className={cn(
@@ -36,7 +35,6 @@ function DialogOverlay({
           className
         )}
         {...props}
-        style={state => [typeof props.style === 'function' ? props.style(state) : props.style, { bottom: keyboardInset }]}
         onPress={onPress}
         asChild={Platform.OS !== 'web'}>
         <NativeOnlyAnimatedView
@@ -52,43 +50,44 @@ function DialogOverlay({
       </DialogPrimitive.Overlay>
   );
 }
+type DialogContentProps = React.ComponentProps<typeof DialogPrimitive.Content> & { portalHost?: string; hidden?: boolean };
 function DialogContent({
-  className,
-  portalHost,
+  className, portalHost,
   children,
+  forceMount,
+  hidden = false,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content> & {
-  portalHost?: string;
-}) {
+}: DialogContentProps) {
+  const keyboardInset = useKeyboardInset();
   return (
-    <DialogPortal hostName={portalHost}>
-      <DialogOverlay>
-        <DialogPrimitive.Content
-          className={cn(
-            'bg-card border-border z-50 mx-auto flex w-full max-w-[calc(100%-2rem)] flex-col gap-4 rounded-2xl border p-6 shadow-lg shadow-black/5 sm:max-w-lg',
-            Platform.select({
-              web: 'motion-safe:animate-in fade-in-0 zoom-in-95 duration-200',
-            }),
-            className
-          )}
-          {...props}>
-          <>{children}</>
-          <DialogPrimitive.Close
+    <DialogPortal hostName={portalHost} forceMount={forceMount}>
+      <View pointerEvents={hidden ? 'none' : 'auto'} accessibilityElementsHidden={hidden} importantForAccessibility={hidden ? 'no-hide-descendants' : 'auto'} style={{ position: 'absolute', top: 0, right: 0, bottom: keyboardInset, left: 0, opacity: hidden ? 0 : 1 }}>
+        <DialogOverlay forceMount={forceMount}>
+          <DialogPrimitive.Content
+            forceMount={forceMount}
             className={cn(
-              'absolute right-4 top-4 rounded opacity-70 active:opacity-100',
-              Platform.select({
-                web: 'ring-offset-background focus:ring-ring data-[state=open]:bg-accent transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2',
-              })
+              'bg-card border-border z-50 mx-auto flex w-full max-w-[calc(100%-2rem)] flex-col gap-4 rounded-2xl border p-6 shadow-lg shadow-black/5 sm:max-w-lg',
+              className
             )}
-            hitSlop={12}>
-            <Icon
-              as={X}
-              className={cn('text-accent-foreground web:pointer-events-none size-4 shrink-0')}
-            />
-            <Text className="sr-only">Bezárás</Text>
-          </DialogPrimitive.Close>
-        </DialogPrimitive.Content>
-      </DialogOverlay>
+            {...props}>
+            <>{children}</>
+            <DialogPrimitive.Close
+              className={cn(
+                'absolute right-4 top-4 rounded opacity-70 active:opacity-100',
+                Platform.select({
+                  web: 'ring-offset-background focus:ring-ring data-[state=open]:bg-accent transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2',
+                })
+              )}
+              hitSlop={12}>
+              <Icon
+                as={X}
+                className={cn('text-accent-foreground web:pointer-events-none size-4 shrink-0')}
+              />
+              <Text className="sr-only">Bezárás</Text>
+            </DialogPrimitive.Close>
+          </DialogPrimitive.Content>
+        </DialogOverlay>
+      </View>
     </DialogPortal>
   );
 }
@@ -111,7 +110,7 @@ function DialogFooter({ className, ...props }: ViewProps) {
 function DialogTitle({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Title>) {
   return (
     <DialogPrimitive.Title
-      className={cn('text-foreground text-lg font-semibold leading-none', className)}
+      className={cn('text-foreground text-lg font-semibold leading-snug pr-6', className)}
       {...props}
     />
   );
