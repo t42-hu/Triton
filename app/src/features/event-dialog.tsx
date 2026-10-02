@@ -1,10 +1,12 @@
 import { ReminderDialog } from './reminder-dialog';
-import { NotebookPen, Bell, Repeat2, Save, RotateCcw, Trash2 } from 'lucide-react-native';
-import { EVENT_CATEGORIES, categoryLabel } from '../domain/student';
+import { NotebookPen, Bell, Repeat2, Save, RotateCcw, Trash2, BookOpen, FileText, ListTodo, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { EVENT_CATEGORIES } from '../domain/student';
 import { LessonTasks } from './lesson-tasks';
 import { NotebookDialog } from './notebook-dialog';
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Platform, ScrollView, View } from 'react-native';
+import { Tabs, SlidingTabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import type { DisplayEvent, EventCategory, EventPatch } from '../domain/model';
 import { fromWall, wallTime } from '../domain/time';
@@ -21,7 +23,7 @@ import { eventCategoryIcon, eventCategoryName } from './event-presentation';
 export function EventDialog({ event, close, openMap }: { event: DisplayEvent; close: () => void; openMap: (location: string, onClose: () => void) => void }) {
   const app = useApp(); const editor = useEventEditor(event);
   const [remindersOpen, setRemindersOpen] = useState(false); const [mapOpen, setMapOpen] = useState(false); const [deleting, setDeleting] = useState(false);
-  const [notebookOpen, setNotebookOpen] = useState(false);
+  const [notebookOpen, setNotebookOpen] = useState(false); const [advancedOpen, setAdvancedOpen] = useState(false);
   async function save(reset = false) {
     try {
       const changes = editor.candidates.length ? editor.candidates.filter(item => editor.selected.has(eventIdentity(item))).map(item => ({ event: item, patch: patchForTarget(createPatch(event, editor.fields, true), item) })) : [{ event, patch: reset ? null : createPatch(event, editor.fields, false) }];
@@ -33,23 +35,44 @@ export function EventDialog({ event, close, openMap }: { event: DisplayEvent; cl
   if (remindersOpen) return <ReminderDialog event={event} close={() => setRemindersOpen(false)} />;
   if (notebookOpen) return <NotebookDialog event={event} close={() => setNotebookOpen(false)} />;
   if (mapOpen) return null;
-  return <Modal title={`${eventCategoryName(editor.fields.category)} részletei`} description={`${categoryLabel(event.category)} · ${event.location || 'Nincs helyszín megadva'}`} close={close}>
-    <View className="flex-row flex-wrap gap-2"><Action secondary icon={NotebookPen} onPress={() => setNotebookOpen(true)}>Jegyzetfüzet</Action><Action secondary icon={Bell} onPress={() => setRemindersOpen(true)}>Emlékeztető</Action></View>
-    <Choice fullWidth icon={eventCategoryIcon(editor.fields.category)} label="Esemény kategóriája" value={editor.fields.category} options={EVENT_CATEGORIES} onChange={category => editor.change({ category: category as EventCategory })} />
-    <Field label={`${eventCategoryName(editor.fields.category)} neve`} value={editor.fields.title} onChange={title => editor.change({ title })} />
-    <RoomField allowMap={editor.fields.category === 'lesson'} value={editor.fields.location} onChange={location => editor.change({ location })} onOpen={() => { setMapOpen(true); openMap(editor.fields.location, () => setMapOpen(false)); }} />
-    <EventNotesField value={editor.fields.notes} onChange={notes => editor.change({ notes })} />
-    <DateTimeField label="Kezdés" value={editor.fields.start} onChange={value => editor.changeStart(value, event.kind === 'allDay')} allDay={event.kind === 'allDay'} /><DateTimeField label="Befejezés" value={editor.fields.end} onChange={editor.setEnd} allDay={event.kind === 'allDay'} />
-    <Toggle label="Alkalom elrejtése / kihagyása" checked={editor.fields.hidden} onChange={hidden => editor.change({ hidden })} />
-    <Action secondary icon={Repeat2} onPress={() => void suggest()}>Tartós módosítás: alkalmak kiválasztása</Action>
-    {editor.candidates.length ? <CandidateList items={editor.candidates} selected={editor.selected} setSelected={editor.setSelected} /> : null}
+  return <Modal title={`${eventCategoryName(editor.fields.category)} részletei`} close={close} footer={<Action icon={Save} disabled={editor.candidates.length > 0 && !editor.selected.size} onPress={() => void save()}>Módosítások mentése</Action>}>
+    <View className="flex-row gap-2"><Action secondary icon={NotebookPen} onPress={() => setNotebookOpen(true)}>Jegyzetfüzet</Action>{Platform.OS !== 'web' ? <Action secondary icon={Bell} onPress={() => setRemindersOpen(true)}>Emlékeztető</Action> : null}</View>
+    <EventEditorSections event={event} editor={editor} openMap={() => { setMapOpen(true); openMap(editor.fields.location, () => setMapOpen(false)); }} />
+    <Action quiet icon={advancedOpen ? ChevronUp : ChevronDown} onPress={() => setAdvancedOpen(!advancedOpen)}>További műveletek</Action>
+    {advancedOpen ? <View className="gap-4 border-t border-border pt-4">
+      <Toggle label="Alkalom elrejtése / kihagyása" checked={editor.fields.hidden} onChange={hidden => editor.change({ hidden })} />
+      <Action secondary icon={Repeat2} onPress={() => void suggest()}>Több alkalom módosítása</Action>
+      {editor.candidates.length ? <CandidateList items={editor.candidates} selected={editor.selected} setSelected={editor.setSelected} /> : null}
+      {event.patch && !editor.candidates.length ? <Action secondary icon={RotateCcw} onPress={() => void save(true)}>Eredeti adatok visszaállítása</Action> : null}
+      {event.sourceId.includes(':manual:') ? <Action secondary icon={Trash2} onPress={() => setDeleting(true)}>Kézi sorozat törlése</Action> : null}
+    </View> : null}
     {editor.error ? <Text accessibilityRole="alert" className="text-destructive">{editor.error}</Text> : null}
-    <Action icon={Save} disabled={editor.candidates.length > 0 && !editor.selected.size} onPress={() => void save()}>Módosítás jóváhagyása</Action>
-    {event.patch && !editor.candidates.length ? <Action secondary icon={RotateCcw} onPress={() => void save(true)}>Eredeti adatok visszaállítása</Action> : null}
-    <LessonTasks event={event} />
-    {event.sourceId.includes(':manual:') ? <Action secondary icon={Trash2} onPress={() => setDeleting(true)}>Kézi sorozat törlése</Action> : null}
     {deleting ? <Confirm title="Kézi sorozat törlése" description="A kézzel létrehozott esemény összes alkalma és feladata törlődik." accept={() => void remove()} cancel={() => setDeleting(false)} /> : null}
   </Modal>;
+}
+
+/** Keeps editing focused on one group while retaining the full draft between tabs. */
+function EventEditorSections({ event, editor, openMap }: { event: DisplayEvent; editor: ReturnType<typeof useEventEditor>; openMap: () => void }) {
+  const [section, setSection] = useState('details');
+  return <View className="gap-4">
+    <Tabs value={section} onValueChange={setSection}><SlidingTabsList values={['details', 'notes', 'tasks']} className="w-full border-0 bg-muted">
+      <TabsTrigger value="details" className="flex-1 px-1"><Icon as={BookOpen} size={15} /><Text>Adatok</Text></TabsTrigger>
+      <TabsTrigger value="notes" className="flex-1 px-1"><Icon as={FileText} size={15} /><Text>Jegyzetek</Text></TabsTrigger>
+      <TabsTrigger value="tasks" className="flex-1 px-1"><Icon as={ListTodo} size={15} /><Text>Feladatok</Text></TabsTrigger>
+    </SlidingTabsList></Tabs>
+    {section === 'details' ? <EventDetails event={event} editor={editor} openMap={openMap} /> : null}
+    {section === 'notes' ? <EventNotesField value={editor.fields.notes} onChange={notes => editor.change({ notes })} /> : null}
+    {section === 'tasks' ? <LessonTasks event={event} /> : null}
+  </View>;
+}
+function EventDetails({ event, editor, openMap }: { event: DisplayEvent; editor: ReturnType<typeof useEventEditor>; openMap: () => void }) {
+  return <View className="gap-4">
+    <Choice fullWidth icon={eventCategoryIcon(editor.fields.category)} label="Esemény kategóriája" value={editor.fields.category} options={EVENT_CATEGORIES} onChange={category => editor.change({ category: category as EventCategory })} />
+    <Field label={`${eventCategoryName(editor.fields.category)} neve`} value={editor.fields.title} onChange={title => editor.change({ title })} />
+    <RoomField allowMap={editor.fields.category === 'lesson'} value={editor.fields.location} onChange={location => editor.change({ location })} onOpen={openMap} />
+    <DateTimeField label="Kezdés" value={editor.fields.start} onChange={value => editor.changeStart(value, event.kind === 'allDay')} allDay={event.kind === 'allDay'} />
+    <DateTimeField label="Befejezés" value={editor.fields.end} onChange={editor.setEnd} allDay={event.kind === 'allDay'} />
+  </View>;
 }
 
 type EventFields = { title: string; location: string; notes: string; start: string; end: string; hidden: boolean; category: EventCategory };
