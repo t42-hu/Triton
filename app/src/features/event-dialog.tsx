@@ -38,7 +38,7 @@ export function EventDialog({ event, close, openMap }: { event: DisplayEvent; cl
   return <Modal title={`${eventCategoryName(editor.fields.category)} részletei`} close={close} footer={<Action icon={Save} disabled={editor.candidates.length > 0 && !editor.selected.size} onPress={() => void save()}>Módosítások mentése</Action>}>
     <View className="flex-row gap-2"><Action secondary icon={NotebookPen} onPress={() => setNotebookOpen(true)}>Jegyzetfüzet</Action>{Platform.OS !== 'web' ? <Action secondary icon={Bell} onPress={() => setRemindersOpen(true)}>Emlékeztető</Action> : null}</View>
     <EventEditorSections event={event} editor={editor} openMap={() => { setMapOpen(true); openMap(editor.fields.location, () => setMapOpen(false)); }} />
-    <Action quiet icon={advancedOpen ? ChevronUp : ChevronDown} onPress={() => setAdvancedOpen(!advancedOpen)}>További műveletek</Action>
+    <Action quiet expanded={advancedOpen} icon={advancedOpen ? ChevronUp : ChevronDown} onPress={() => setAdvancedOpen(!advancedOpen)}>További műveletek</Action>
     {advancedOpen ? <View className="gap-4 border-t border-border pt-4">
       <Toggle label="Alkalom elrejtése / kihagyása" checked={editor.fields.hidden} onChange={hidden => editor.change({ hidden })} />
       <Action secondary icon={Repeat2} onPress={() => void suggest()}>Több alkalom módosítása</Action>
