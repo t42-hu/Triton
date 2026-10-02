@@ -9,6 +9,7 @@ export type PositionedEvent = { event: DisplayEvent; top: number; height: number
 export function dayLayout(events: DisplayEvent[], date: string): PositionedEvent[] {
   const start = fromWall(`${date}T07:00`); const end = fromWall(`${date}T20:00`);
   const items = events.filter(event => event.kind === 'timed' && event.start < end && (event.end > start || event.start === event.end && event.start >= start));
+  items.sort((first, second) => first.start - second.start || second.end - first.end);
   const positioned: PositionedEvent[] = []; let group: PositionedEvent[] = []; let laneEnds: number[] = [];
   for (const event of items) {
     const top = event.start < start ? 0 : minutes(event.start) - GRID_START;
