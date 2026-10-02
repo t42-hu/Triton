@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react';
+import Animated from 'react-native-reanimated';
+import { usePeriodTransition } from '@/hooks/use-motion-value';
 import { Platform, Pressable, ScrollView, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { BookOpen, CalendarDays, ChevronLeft, ChevronRight, MapPin, Monitor, PencilLine, Presentation, X, NotebookPen, CalendarClock, ClipboardCheck, GraduationCap } from 'lucide-react-native';
 import { Icon } from '@/components/ui/icon';
@@ -20,6 +22,7 @@ import { SourceStamp, useFirstImportedWeek } from './source-status';
 type Props = { side: 'left' | 'right'; date: string; profileId: number; profileName: string; panelWidth: number; outerHorizontalScroll?: boolean; events: DisplayEvent[]; common: Set<string>; selectEvent: (event: DisplayEvent) => void; selectNotebook: (event: DisplayEvent) => void; onClose?: () => void };
 export function CalendarPanel(props: Props) {
   const { view, setView, anchor } = useApp();
+  const periodStyle = usePeriodTransition(props.date);
   const days = view.mode === 'day' ? 1 : 7;
   const dates = Array.from({ length: days }, (_, index) => addDays(props.date, index));
   const commonOnly = view.common && view.openProfiles.length > 0;
@@ -31,12 +34,12 @@ export function CalendarPanel(props: Props) {
   const pinch = Gesture.Pinch().simultaneousWithExternalGesture(verticalScroll, horizontalScroll).runOnJS(true).onChange(event => setView(changeZoom(event.scaleChange)));
   const panelWidth = props.panelWidth;
   const dayWidth = Math.max(days === 1 ? panelWidth - 56 : 148, (panelWidth - 56) / days);
-  const grid = <View style={{ width: dayWidth * days + 56, flex: 1 }}>
+  const grid = <Animated.View style={[{ width: dayWidth * days + 56, flex: 1 }, periodStyle]}>
     <View className="flex-row border-b border-border bg-muted/40" style={{ paddingLeft: 56 }}>{dates.map(date => <DayHeading key={date} date={date} width={dayWidth} events={visible} common={props.common} selectEvent={props.selectEvent} selectNotebook={props.selectNotebook} />)}</View>
     <GestureDetector gesture={verticalScroll}><ScrollView ref={scroll} accessibilityLabel="Órarend időrács" nestedScrollEnabled directionalLockEnabled className="bg-background/50 dark:bg-[#15181D]" style={{ height: panelViewport, ...(Platform.OS === 'web' ? { overscrollBehavior: 'contain' as const } : {}) }} scrollEventThrottle={100} onScroll={onScroll}>
       <View style={{ height: GRID_MINUTES * view.zoom, flexDirection: 'row' }}><TimeAxis zoom={view.zoom} />{dates.map(date => <DayColumn key={date} date={date} width={dayWidth} zoom={view.zoom} events={visible} common={props.common} selectEvent={props.selectEvent} selectNotebook={props.selectNotebook} />)}</View>
     </ScrollView></GestureDetector>
-  </View>;
+  </Animated.View>;
   function move(amount: number) {
     const date = addDays(props.date, amount * days);
     if (view.sync) { setView({ leftDate: date, rightDate: date }); return; }
@@ -89,9 +92,10 @@ function CalendarHeader({ profileId, profileName, own, date, week, panelWidth, m
   </View></View>;
 }
 function PeriodNavigator({ date, week, weekNumber, compact, move }: { date: string; week: 'A' | 'B'; weekNumber: number | null; compact: boolean; move: (amount: number) => void }) {
-  return <View className="h-[44px] flex-row items-center rounded-xl border border-border bg-background/70" style={{ width: compact ? '100%' : 304 }}>
+  const periodStyle = usePeriodTransition(date);
+  return <View className="h-[44px] overflow-hidden flex-row items-center rounded-xl border border-border bg-background/70" style={{ width: compact ? '100%' : 304 }}>
     <PeriodArrow next={false} onPress={() => move(-1)} />
-    <View className="min-w-0 flex-1 flex-row items-center justify-center gap-2"><Text className="shrink text-center text-[14px] font-medium" numberOfLines={1}>{dateLabel(date)}</Text><Badge variant="secondary"><Text>{weekNumber === null ? `${week} hét` : `${week} · ${weekNumber}. hét`}</Text></Badge></View>
+    <Animated.View style={periodStyle} className="min-w-0 flex-1 flex-row items-center justify-center gap-2"><Text className="shrink text-center text-[14px] font-medium" numberOfLines={1}>{dateLabel(date)}</Text><Badge variant="secondary"><Text>{weekNumber === null ? `${week} hét` : `${week} · ${weekNumber}. hét`}</Text></Badge></Animated.View>
     <PeriodArrow next onPress={() => move(1)} />
   </View>;
 }
@@ -107,7 +111,7 @@ function DayHeading({ date, width, events, common, selectEvent, selectNotebook }
   const weekday = new Intl.DateTimeFormat('hu-HU', { weekday: 'short', timeZone: 'Europe/Budapest' }).format(new Date(fromWall(`${date}T12:00`)));
   const month = new Intl.DateTimeFormat('hu-HU', { month: 'short', timeZone: 'Europe/Budapest' }).format(new Date(fromWall(`${date}T12:00`)));
   return <View className={`gap-1 border-l border-border px-3 py-2 ${isToday ? 'bg-primary/10' : ''}`} style={{ width }}><View className="flex-row items-center gap-2"><Text className={isToday ? 'text-2xl font-bold text-primary' : 'text-2xl font-semibold text-foreground'}>{Number(date.slice(8))}</Text><View><Text className="text-xs font-semibold text-muted-foreground">{weekday}</Text><Text className="text-xs text-muted-foreground">{month}</Text></View></View>
-    {allDay.map(event => <View key={eventIdentity(event)} className="relative rounded bg-accent"><Pressable accessibilityRole="button" accessibilityLabel={`${event.title}, ${lessonLabel(event)}${common.has(eventIdentity(event)) ? ', közös óra' : ''}`} onPress={() => selectEvent(event)} className="rounded p-1 pr-7"><View className="flex-row items-start gap-1"><Icon as={lessonIcon(event)} size={13} className="mt-0.5 shrink-0 text-primary" /><Text className="shrink text-xs" numberOfLines={2}>{event.title}</Text></View></Pressable><CalendarNotebookButton event={event} selectNotebook={selectNotebook} /></View>)}
+    {allDay.map(event => <View key={eventIdentity(event)} className="relative rounded bg-accent"><Pressable accessibilityRole="button" accessibilityLabel={`${event.title}, ${lessonLabel(event)}${common.has(eventIdentity(event)) ? ', közös óra' : ''}`} onPress={() => selectEvent(event)} className="rounded p-1 pr-7 hover:bg-primary/10 active:bg-primary/15"><View className="flex-row items-start gap-1"><Icon as={lessonIcon(event)} size={13} className="mt-0.5 shrink-0 text-primary" /><Text className="shrink text-xs" numberOfLines={2}>{event.title}</Text></View></Pressable><CalendarNotebookButton event={event} selectNotebook={selectNotebook} /></View>)}
   </View>;
 }
 function TimeAxis({ zoom }: { zoom: number }) {
@@ -125,7 +129,7 @@ function EventBlock({ item, zoom, shared, selectEvent, selectNotebook }: { item:
   const height = Math.max(18, item.height * zoom - 2);
   const dense = height < 60;
   return <View className={`absolute overflow-hidden rounded-lg border ${item.lanes > 1 && !event.hidden ? 'border-destructive/60' : 'border-primary/30'} bg-secondary dark:bg-[#2C343F] ${shared ? 'border-l-[3px] border-l-primary' : ''} ${event.hidden ? 'opacity-40' : ''}`} style={{ top: item.top * zoom + 1, height, left: `${item.lane * 100 / item.lanes}%`, width: `${100 / item.lanes}%` }}>
-    <Pressable accessibilityRole="button" accessibilityLabel={`${event.title}, ${lessonLabel(event)}, ${clockTime(event.start)}, terem: ${event.location || 'nincs'}, ${shared ? 'közös óra' : ''}`} onPress={() => selectEvent(event)} className="h-full p-2 pr-7 active:opacity-70">{dense ? <View className="flex-row items-center gap-1"><Icon as={lessonIcon(event)} size={12} className="shrink-0 text-primary" /><Text className="shrink text-[11px] font-bold text-primary" numberOfLines={1}>{clockTime(event.start)} · {event.title}</Text></View> : <><View className="flex-row items-center gap-1"><Icon as={lessonIcon(event)} size={14} className="shrink-0 text-primary" /><Text className="shrink text-[11px] font-bold text-primary" style={{ fontVariant: ['tabular-nums'] }}>{clockTime(event.start)}–{clockTime(event.end)}</Text></View><Text className="mt-1 text-[13px] font-semibold leading-[17px] text-foreground" numberOfLines={height > 105 ? 3 : 2}>{event.title}</Text>{height > 82 && event.location ? <View className="mt-1 flex-row items-center gap-1"><Icon as={MapPin} size={12} className="text-muted-foreground" /><Text className="shrink text-[11px] text-muted-foreground" numberOfLines={1}>{event.location}</Text></View> : null}</>}
+    <Pressable accessibilityRole="button" accessibilityLabel={`${event.title}, ${lessonLabel(event)}, ${clockTime(event.start)}, terem: ${event.location || 'nincs'}, ${shared ? 'közös óra' : ''}`} onPress={() => selectEvent(event)} className="h-full rounded-lg p-2 pr-7 hover:bg-primary/10 active:bg-primary/15">{dense ? <View className="flex-row items-center gap-1"><Icon as={lessonIcon(event)} size={12} className="shrink-0 text-primary" /><Text className="shrink text-[11px] font-bold text-primary" numberOfLines={1}>{clockTime(event.start)} · {event.title}</Text></View> : <><View className="flex-row items-center gap-1"><Icon as={lessonIcon(event)} size={14} className="shrink-0 text-primary" /><Text className="shrink text-[11px] font-bold text-primary" style={{ fontVariant: ['tabular-nums'] }}>{clockTime(event.start)}–{clockTime(event.end)}</Text></View><Text className="mt-1 text-[13px] font-semibold leading-[17px] text-foreground" numberOfLines={height > 105 ? 3 : 2}>{event.title}</Text>{height > 82 && event.location ? <View className="mt-1 flex-row items-center gap-1"><Icon as={MapPin} size={12} className="text-muted-foreground" /><Text className="shrink text-[11px] text-muted-foreground" numberOfLines={1}>{event.location}</Text></View> : null}</>}
     </Pressable><CalendarNotebookButton event={event} selectNotebook={selectNotebook} />
   </View>;
 }
