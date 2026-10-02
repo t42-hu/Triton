@@ -1,12 +1,12 @@
 import { Icon } from '@/components/ui/icon';
 import { NativeOnlyAnimatedView } from '@/components/ui/native-only-animated-view';
 import { cn } from '@/lib/utils';
-import { useKeyboardInset } from '@/hooks/use-keyboard-inset';
+import { usePanelViewport } from '@/features/panel-viewport';
 import * as DialogPrimitive from '@rn-primitives/dialog';
 import { X } from 'lucide-react-native';
 import * as React from 'react';
 import { Platform, Text, View, type ViewProps } from 'react-native';
-import { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
+import { FadeIn, FadeOut, FadeInRight, FadeOutLeft, ReduceMotion } from 'react-native-reanimated';
 
 const Dialog = DialogPrimitive.Root;
 
@@ -20,10 +20,10 @@ const DialogClose = DialogPrimitive.Close;
 function DialogOverlay({
   className,
   children,
-  onPress,
+  onPress, transitionKey,
   ...props
 }: Omit<React.ComponentProps<typeof DialogPrimitive.Overlay>, 'asChild'> & {
-  children?: React.ReactNode;
+  children?: React.ReactNode; transitionKey?: string;
 }) {
   return (
       <DialogPrimitive.Overlay
@@ -42,34 +42,35 @@ function DialogOverlay({
           exiting={FadeOut.duration(150).reduceMotion(ReduceMotion.System)}
           as="Pressable">
           <NativeOnlyAnimatedView
-            entering={FadeIn.duration(180).reduceMotion(ReduceMotion.System)}
-            exiting={FadeOut.duration(150).reduceMotion(ReduceMotion.System)}>
+            key={transitionKey}
+            collapsable={false}
+            entering={FadeInRight.duration(180).withInitialValues({ translateX: 16 }).reduceMotion(ReduceMotion.System)}
+            exiting={FadeOutLeft.duration(100).reduceMotion(ReduceMotion.System)}>
             <>{children}</>
           </NativeOnlyAnimatedView>
         </NativeOnlyAnimatedView>
       </DialogPrimitive.Overlay>
   );
 }
-type DialogContentProps = React.ComponentProps<typeof DialogPrimitive.Content> & { portalHost?: string; hidden?: boolean };
+type DialogContentProps = React.ComponentProps<typeof DialogPrimitive.Content> & { portalHost?: string; hidden?: boolean; transitionKey?: string };
 function DialogContent({
-  className, portalHost,
-  children,
-  forceMount,
-  hidden = false,
+  className, portalHost, transitionKey,
+  children, forceMount, hidden = false,
   ...props
 }: DialogContentProps) {
-  const keyboardInset = useKeyboardInset();
+  const viewport = usePanelViewport();
   return (
     <DialogPortal hostName={portalHost} forceMount={forceMount}>
-      <View pointerEvents={hidden ? 'none' : 'auto'} accessibilityElementsHidden={hidden} importantForAccessibility={hidden ? 'no-hide-descendants' : 'auto'} style={{ position: 'absolute', top: 0, right: 0, bottom: keyboardInset, left: 0, opacity: hidden ? 0 : 1 }}>
-        <DialogOverlay forceMount={forceMount}>
+      <View pointerEvents={hidden ? 'none' : 'auto'} accessibilityElementsHidden={hidden} importantForAccessibility={hidden ? 'no-hide-descendants' : 'auto'} style={{ position: 'absolute', top: viewport.top, right: 0, bottom: viewport.bottom, left: 0, opacity: hidden ? 0 : 1 }}>
+        <DialogOverlay forceMount={forceMount} transitionKey={transitionKey}>
           <DialogPrimitive.Content
             forceMount={forceMount}
             className={cn(
-              'bg-card border-border z-50 mx-auto flex w-full max-w-[calc(100%-2rem)] flex-col gap-4 rounded-2xl border p-6 shadow-lg shadow-black/5 sm:max-w-lg',
+              'web:animate-in web:fade-in-0 web:slide-in-from-right-4 web:duration-150 bg-card border-border z-50 mx-auto flex w-full max-w-[calc(100%-2rem)] flex-col gap-4 rounded-2xl border p-6 shadow-lg shadow-black/5 sm:max-w-lg',
               className
             )}
-            {...props}>
+            {...props}
+            style={[{ maxHeight: viewport.height }, props.style]}>
             <>{children}</>
             <DialogPrimitive.Close
               className={cn(
