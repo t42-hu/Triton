@@ -50,7 +50,7 @@ function NavigationButton({ label, icon, selected, onPress }: { label: string; i
   const progress = useMotionValue(selected ? 1 : 0);
   const labelStyle = useAnimatedStyle(() => ({ color: interpolateColor(progress.value, [0, 1], [`${theme.text}AA`, theme.textSecondary]) }));
   const selectedIconStyle = useAnimatedStyle(() => ({ opacity: progress.value }));
-  return <Button accessibilityLabel={label} role={label === 'Menü' ? 'button' : 'tab'} accessibilityState={{ selected }} variant="ghost" className="h-14 min-w-0 flex-1 flex-col gap-1 rounded-none border-0 bg-transparent px-1 shadow-none sm:h-12 sm:flex-row sm:gap-2" onPress={onPress}>
+  return <Button accessibilityLabel={label} role={label === 'Menü' ? 'button' : 'tab'} accessibilityState={{ selected }} variant="ghost" className="h-14 min-w-0 flex-1 flex-col gap-1 rounded-xl border-0 bg-transparent px-1 shadow-none sm:h-12 sm:flex-row sm:gap-2" onPress={onPress}>
     <View><Icon as={icon} size={19} color={`${theme.text}AA`} /><Animated.View pointerEvents="none" style={[{ position: 'absolute', inset: 0 }, selectedIconStyle]}><Icon as={icon} size={19} color={theme.textSecondary} /></Animated.View></View>
     <Animated.Text style={[{ fontSize: 12, fontWeight: selected ? '600' : '400' }, labelStyle]} numberOfLines={1}>{label}</Animated.Text>
   </Button>;
