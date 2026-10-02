@@ -1,3 +1,4 @@
+import { Input } from '@/components/ui/input';
 import { useState } from 'react';
 import { View, useWindowDimensions } from 'react-native';
 import { CalendarDays, Check, Pencil, Plus, Star, Trash2, Upload, X } from 'lucide-react-native';
@@ -7,7 +8,7 @@ import { Text } from '@/components/ui/text';
 import { Badge } from '@/components/ui/badge';
 import { deleteProfile, ownProfile, saveProfile } from '../data/repository';
 import type { Profile } from '../domain/model';
-import { Confirm, Field, Modal } from './controls';
+import { Confirm, Modal } from './controls';
 import { useApp } from './app-state';
 
 export function ProfilesDialog({ close, onCreated, onImport }: { close: () => void; onCreated: (id: number) => void; onImport: (id: number) => void }) {
@@ -41,7 +42,7 @@ export function ProfilesDialog({ close, onCreated, onImport }: { close: () => vo
     </View>
     <View className="gap-3 rounded-xl bg-muted p-4">
       <View className="flex-row items-center justify-between gap-2"><View className="flex-row items-center gap-2"><Icon as={editing ? Pencil : Plus} size={18} className="text-primary" /><Text className="font-semibold">{editing ? 'Profil átnevezése' : 'Új profil'}</Text></View>{editing ? <Button accessibilityLabel="Átnevezés megszakítása" variant="ghost" className="h-9 w-9 border-0 bg-transparent p-0" onPress={() => { setEditing(undefined); setName(''); }}><Icon as={X} size={17} /></Button> : null}</View>
-      <Field insetLabel label={editing ? 'Új profilnév' : 'Új profil neve'} value={name} onChange={setName} />
+      <Input accessibilityLabel={editing ? 'Új profilnév' : 'Új profil neve'} placeholder={editing ? 'Új profilnév' : 'Új profil neve'} value={name} onChangeText={setName} autoCapitalize="none" />
       <Button disabled={isSaving} className="self-start" onPress={() => void save()}><Icon as={editing ? Check : Plus} size={18} className="text-primary-foreground" /><Text>{editing ? 'Átnevezés mentése' : 'Profil létrehozása'}</Text></Button>
     </View>
     {error ? <Text accessibilityRole="alert" className="text-destructive">{error}</Text> : null}
