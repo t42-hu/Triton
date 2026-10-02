@@ -4,6 +4,7 @@ Usage: python3 scripts/check-mobile-panels.py keyboard 'Field label' -- DEVICE_F
        python3 scripts/check-mobile-panels.py keyboard-scroll -- DEVICE_FLAGS
        python3 scripts/check-mobile-panels.py calendar -- DEVICE_FLAGS
        python3 scripts/check-mobile-panels.py panel -- DEVICE_FLAGS
+       python3 scripts/check-mobile-panels.py expand 'Toggle label' 'Final control' -- DEVICE_FLAGS
 Set TRITON_AGENT_DEVICE when agent-device is not on PATH.
 """
 
@@ -11,6 +12,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 
 
 def run_device(*command):
@@ -97,9 +99,26 @@ def check_panel():
     print('PASS: the panel stays between the navigation bars')
 
 
+def check_expansion(toggle_label, final_label):
+    """Opening a disclosure automatically reveals its last action inside the panel."""
+    before = snapshot()['nodes']
+    toggle = next(node for node in before if node.get('label') == toggle_label)
+    run_device('click', '@' + toggle['ref'])
+    time.sleep(0.5)
+    nodes = snapshot()['nodes']
+    close_action = next(node for node in nodes if node.get('label') == 'Bezárás')
+    panel = next(node for node in nodes if node['type'] == 'ScrollView' and node['index'] > close_action['index'])
+    final_action = next(node for node in nodes if node.get('label') == final_label)
+    assert final_action['rect']['y'] >= panel['rect']['y'], 'The final action is above the panel'
+    assert final_action['rect']['y'] + final_action['rect']['height'] <= panel['rect']['y'] + panel['rect']['height'], 'The final action needs manual scrolling'
+    print('PASS: opening the disclosure reveals its final action automatically')
+
+
 if __name__ == '__main__':
     if sys.argv[1] == 'keyboard':
         check_keyboard(sys.argv[2])
+    elif sys.argv[1] == 'expand':
+        check_expansion(sys.argv[2], sys.argv[3])
     elif sys.argv[1] == 'panel':
         check_panel()
     elif sys.argv[1] == 'keyboard-scroll':
