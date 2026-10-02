@@ -1,10 +1,8 @@
-'use dom';
-
 import { useEffect, useRef } from 'react';
 import { roomMapHtml, type MapMode, type MapTheme } from './room-map-html';
 import { FLOORS, type FloorId } from './nik-map-data';
 
-type Props = { mode: MapMode; floor: FloorId; theme: MapTheme; placeId?: string; height: number; onFloorChange: (floor: FloorId) => Promise<void>; dom?: import('expo/dom').DOMProps };
+type Props = { mode: MapMode; floor: FloorId; theme: MapTheme; placeId?: string; height: number; onFloorChange: (floor: FloorId) => Promise<void> };
 
 function isFloorMessage(value: unknown): value is { type: 'triton-floor-change'; floor: FloorId } {
   if (!value || typeof value !== 'object') return false;
