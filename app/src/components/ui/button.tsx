@@ -5,7 +5,7 @@ import { Keyboard, Platform, Pressable, type GestureResponderEvent } from 'react
 
 const buttonVariants = cva(
   cn(
-    'group shrink-0 flex-row items-center justify-center gap-2 rounded-xl shadow-none',
+    'group shrink-0 flex-row items-center justify-center gap-2 overflow-hidden rounded-xl shadow-none',
     Platform.select({
       web: "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive whitespace-nowrap outline-none motion-safe:transition-colors duration-150 focus-visible:ring-[3px] disabled:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
     })
@@ -14,7 +14,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: cn(
-          'bg-primary active:bg-primary/90 shadow-sm shadow-black/5',
+          'bg-primary hover:bg-primary/90 active:bg-primary/80 shadow-sm shadow-black/5',
           Platform.select({ web: 'hover:bg-primary/90' })
         ),
         destructive: cn(
@@ -24,20 +24,20 @@ const buttonVariants = cva(
           })
         ),
         outline: cn(
-          'border-foreground/50 bg-card active:bg-accent border',
+          'border-foreground/50 bg-card hover:bg-accent/60 active:bg-accent border',
           Platform.select({
             web: 'hover:bg-accent dark:hover:bg-input/50',
           })
         ),
         secondary: cn(
-          'border border-foreground/50 bg-secondary active:bg-secondary/80',
+          'border border-foreground/50 bg-secondary hover:bg-accent/60 active:bg-accent',
           Platform.select({ web: 'hover:bg-secondary/80' })
         ),
         ghost: cn(
-          'border border-foreground/50 bg-card active:bg-accent',
+          'border border-foreground/50 bg-card hover:bg-accent/60 active:bg-accent',
           Platform.select({ web: 'hover:bg-accent dark:hover:bg-accent/50' })
         ),
-        link: '',
+        link: 'hover:bg-primary/5 active:bg-primary/10',
       },
       size: {
         default: cn('h-[44px] px-4 py-2', Platform.select({ web: 'has-[>svg]:px-3' })),
