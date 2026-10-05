@@ -16,23 +16,24 @@ import { useApp } from './app-state';
 import { hasMappedRoom } from './room-location';
 import { StudentEventRow, type EventActions } from './student-event-row';
 import { StudentTaskRow } from './student-tasks-screen';
+import { TodayLayout } from './today-layout';
 
 type Props = EventActions & { profileId: number; openFreeTime: () => void; openTasks: () => void; openMap: (location: string, onClose: () => void) => void };
 export function TodayScreen(props: Props) {
   const data = useTodayData(props.profileId); const analysis = dailyAnalysis(data.events, data.date);
   const next = data.events.find(event => event.kind === 'timed' && event.end > data.now && event.category !== 'assignment');
   const pendingTasks = data.tasks.filter(task => !task.completed);
-  return <View className="gap-7">
-    <WorkspaceHeading icon={House} title="Mai nap" detail={dateLabel(data.date)} />
-    {data.loading ? <Text>Nap betöltése…</Text> : <NextEvent event={next} now={data.now} {...props} />}
-    {data.events.length ? <DailySummary analysis={analysis} /> : null}
-    {analysis.conflicts.length ? <WorkspaceSection icon={TriangleAlert} title="Ütközések" count={analysis.conflicts.length}>{analysis.conflicts.map(item => <View className="rounded-lg border-l-2 border-destructive bg-destructive/5 px-3" key={`${item.first.sourceId}:${item.first.key}:${item.second.sourceId}:${item.second.key}`}><Text className="pt-3 text-xs font-medium text-destructive">{clockTime(item.start)}–{clockTime(item.end)}</Text><StudentEventRow event={item.first} openEvent={props.openEvent} openNotebook={props.openNotebook} /><StudentEventRow event={item.second} openEvent={props.openEvent} openNotebook={props.openNotebook} /></View>)}</WorkspaceSection> : null}
-    {data.events.length ? <WorkspaceSection icon={CalendarDays} title="Mai program" count={data.events.length}>{data.events.map(event => <StudentEventRow key={`${event.sourceId}:${event.key}`} event={event} openEvent={props.openEvent} openNotebook={props.openNotebook} />)}</WorkspaceSection> : null}
-    {data.assessments.length ? <WorkspaceSection icon={ClipboardCheck} title="Közelgő határidők" count={data.assessments.length}>{data.assessments.slice(0, 5).map(event => <StudentEventRow key={`${event.sourceId}:${event.key}`} event={event} showDate openEvent={props.openEvent} openNotebook={props.openNotebook} />)}</WorkspaceSection> : null}
-    {pendingTasks.length ? <WorkspaceSection icon={ListTodo} title="Teendők" count={pendingTasks.length}>{pendingTasks.slice(0, 5).map(task => <StudentTaskRow key={task.id} task={task} openEvent={props.openEvent} report={data.setError} />)}</WorkspaceSection> : null}
-    <View className="gap-2 border-t border-border pt-4"><Action quiet icon={ListTodo} onPress={props.openTasks}>Feladatok és határidők</Action><Action quiet icon={UsersRound} onPress={props.openFreeTime}>Közös szabad idő</Action></View>
-    {data.error ? <Text accessibilityRole="alert" className="text-destructive">{data.error}</Text> : null}
-  </View>;
+  return <TodayLayout
+    heading={<WorkspaceHeading icon={House} title="Mai nap" detail={dateLabel(data.date)} />}
+    next={data.loading ? <Text>Nap betöltése…</Text> : <NextEvent event={next} now={data.now} {...props} />}
+    summary={data.events.length ? <DailySummary analysis={analysis} /> : null}
+    conflicts={analysis.conflicts.length ? <WorkspaceSection icon={TriangleAlert} title="Ütközések" count={analysis.conflicts.length}>{analysis.conflicts.map(item => <View className="rounded-lg border-l-2 border-destructive bg-destructive/5 px-3" key={`${item.first.sourceId}:${item.first.key}:${item.second.sourceId}:${item.second.key}`}><Text className="pt-3 text-xs font-medium text-destructive">{clockTime(item.start)}–{clockTime(item.end)}</Text><StudentEventRow event={item.first} openEvent={props.openEvent} openNotebook={props.openNotebook} /><StudentEventRow event={item.second} openEvent={props.openEvent} openNotebook={props.openNotebook} /></View>)}</WorkspaceSection> : null}
+    agenda={data.events.length ? <WorkspaceSection icon={CalendarDays} title="Mai program" count={data.events.length}>{data.events.map(event => <StudentEventRow key={`${event.sourceId}:${event.key}`} event={event} openEvent={props.openEvent} openNotebook={props.openNotebook} />)}</WorkspaceSection> : null}
+    deadlines={data.assessments.length ? <WorkspaceSection icon={ClipboardCheck} title="Közelgő határidők" count={data.assessments.length}>{data.assessments.slice(0, 5).map(event => <StudentEventRow key={`${event.sourceId}:${event.key}`} event={event} showDate openEvent={props.openEvent} openNotebook={props.openNotebook} />)}</WorkspaceSection> : null}
+    tasks={pendingTasks.length ? <WorkspaceSection icon={ListTodo} title="Teendők" count={pendingTasks.length}>{pendingTasks.slice(0, 5).map(task => <StudentTaskRow key={task.id} task={task} openEvent={props.openEvent} report={data.setError} />)}</WorkspaceSection> : null}
+    error={data.error ? <Text accessibilityRole="alert" className="text-destructive">{data.error}</Text> : null}
+    actions={<View className="gap-2 border-t border-border pt-4"><Action quiet icon={ListTodo} onPress={props.openTasks}>Feladatok és határidők</Action><Action quiet icon={UsersRound} onPress={props.openFreeTime}>Közös szabad idő</Action></View>}
+  />;
 
 }
 
