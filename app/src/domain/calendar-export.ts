@@ -26,7 +26,7 @@ function eventLines(event: DisplayEvent, timestamp: string): string[] {
 }
 /** Exports effective visible occurrences; all-day end dates remain exclusive. */
 export function exportCalendar(profile: Profile, events: DisplayEvent[], now = Date.now()): string {
-  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Triton//Timetable//HU', 'CALSCALE:GREGORIAN', `X-WR-CALNAME:${escapeText(profile.name)}`,
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Triton42//Timetable//HU', 'CALSCALE:GREGORIAN', `X-WR-CALNAME:${escapeText(profile.name)}`,
     ...events.filter(event => !event.hidden).flatMap(event => eventLines(event, utcDate(now))), 'END:VCALENDAR'];
   return lines.map(foldCalendarLine).join('\r\n') + '\r\n';
 }
