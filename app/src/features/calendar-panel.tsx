@@ -36,7 +36,7 @@ export function CalendarPanel(props: Props) {
   const dayWidth = Math.max(days === 1 ? panelWidth - 56 : 148, (panelWidth - 56) / days);
   const grid = <Animated.View style={[{ width: dayWidth * days + 56, flex: 1 }, periodStyle]}>
     <View className="flex-row border-b border-border bg-muted/40" style={{ paddingLeft: 56 }}>{dates.map(date => <DayHeading key={date} date={date} width={dayWidth} events={visible} common={props.common} selectEvent={props.selectEvent} selectNotebook={props.selectNotebook} />)}</View>
-    <GestureDetector gesture={verticalScroll}><ScrollView ref={scroll} accessibilityLabel="Órarend időrács" nestedScrollEnabled directionalLockEnabled className="bg-background/50 dark:bg-[#15181D]" style={{ height: panelViewport, ...(Platform.OS === 'web' ? { overscrollBehavior: 'contain' as const } : {}) }} scrollEventThrottle={100} onScroll={onScroll}>
+    <GestureDetector gesture={verticalScroll} touchAction="manipulation"><ScrollView ref={scroll} accessibilityLabel="Órarend időrács" nestedScrollEnabled directionalLockEnabled className="bg-background/50 dark:bg-[#15181D]" style={{ height: panelViewport, ...(Platform.OS === 'web' ? { overscrollBehaviorY: 'contain' as const, overscrollBehaviorX: 'auto' as const } : {}) }} scrollEventThrottle={100} onScroll={onScroll}>
       <View style={{ height: GRID_MINUTES * view.zoom, flexDirection: 'row' }}><TimeAxis zoom={view.zoom} />{dates.map(date => <DayColumn key={date} date={date} width={dayWidth} zoom={view.zoom} events={visible} common={props.common} selectEvent={props.selectEvent} selectNotebook={props.selectNotebook} />)}</View>
     </ScrollView></GestureDetector>
   </Animated.View>;
@@ -49,7 +49,7 @@ export function CalendarPanel(props: Props) {
     <CalendarHeader profileId={props.profileId} profileName={props.profileName} own={props.side === 'left'} date={props.date} week={weekAt(props.date, anchor)} panelWidth={panelWidth} outerHorizontalScroll={props.outerHorizontalScroll} move={move} onClose={props.onClose} />
     <SourceStamp profileId={props.profileId} />
     {!visible.length ? <View className="border-b border-border bg-muted px-5 py-3"><Text className="text-sm text-muted-foreground">{commonOnly && props.events.length ? 'Nincs közös óra ebben az időszakban. Kapcsold ki a szűrőt az összes óra megjelenítéséhez.' : 'Ebben az időszakban nincs megjeleníthető óra.'}</Text></View> : null}
-    <GestureDetector gesture={pinch}><View collapsable={false}>{props.outerHorizontalScroll ? grid : <GestureDetector gesture={horizontalScroll}><ScrollView horizontal nestedScrollEnabled directionalLockEnabled contentContainerStyle={{ minWidth: '100%' }}>{grid}</ScrollView></GestureDetector>}</View></GestureDetector>
+    <GestureDetector gesture={pinch} touchAction="manipulation"><View collapsable={false}>{props.outerHorizontalScroll ? grid : <GestureDetector gesture={horizontalScroll} touchAction="manipulation"><ScrollView horizontal nestedScrollEnabled directionalLockEnabled contentContainerStyle={{ minWidth: '100%' }}>{grid}</ScrollView></GestureDetector>}</View></GestureDetector>
     <CalendarInsights dates={dates} events={visible} />
   </View>;
 }
