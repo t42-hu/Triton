@@ -90,13 +90,13 @@ const buttonTextVariants = cva(
   }
 );
 
-type ButtonProps = React.ComponentProps<typeof Pressable> & React.RefAttributes<typeof Pressable> & VariantProps<typeof buttonVariants>;
+type ButtonProps = React.ComponentProps<typeof Pressable> & React.RefAttributes<typeof Pressable> & VariantProps<typeof buttonVariants> & { revealOnExpand?: boolean };
 
-function Button({ className, variant, size, onPress, ...props }: ButtonProps) {
+function Button({ className, variant, size, onPress, revealOnExpand = true, ...props }: ButtonProps) {
   const revealExpandedContent = useContext(PanelScrollContext);
   function press(event: GestureResponderEvent) {
     if (Platform.OS !== 'web') Keyboard.dismiss();
-    if (props.accessibilityState?.expanded === false) revealExpandedContent();
+    if (revealOnExpand && props.accessibilityState?.expanded === false) revealExpandedContent();
     onPress?.(event);
   }
   return (

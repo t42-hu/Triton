@@ -1,12 +1,14 @@
+import { AnimatedDisclosure } from './animated-disclosure';
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { Check, Palette, RotateCcw } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { Icon } from '@/components/ui/icon';
 import { Action, Choice, Field, Modal, Toggle } from './controls';
+import { ColorField } from './color-picker';
 import { useApp } from './app-state';
 import type { DisplayEvent } from '../domain/model';
-import { colorOccurrenceKey, colorSeriesKey, DEFAULT_EVENT_COLORS, EVENT_PALETTE, isDeadline, isHexColor, validateUrgencyRules, type UrgencyRules } from '../domain/event-colors';
+import { colorOccurrenceKey, colorSeriesKey, DEFAULT_EVENT_COLORS, isDeadline, isHexColor, validateUrgencyRules, type UrgencyRules } from '../domain/event-colors';
 
 /** Keeps global countdown rules editable independently for lessons and deadlines. */
 export function GlobalColorEditor() {
@@ -19,8 +21,8 @@ export function GlobalColorEditor() {
   }
   return <View className="gap-3 rounded-xl border border-border p-4"><View className="flex-row items-center gap-2"><Icon as={Palette} size={19} className="text-primary" /><Text className="font-semibold">Közelgő események színei</Text></View>
     <Choice fullWidth label="Színezés típusa" value={category} onChange={setCategory} options={[{ value: 'lesson', label: 'Tanórák' }, { value: 'deadline', label: 'Beadandók, ZH-k, vizsgák és feladatok' }]} />
-    <Action secondary expanded={open} onPress={() => setOpen(!open)}>Színek és küszöbök</Action>
-    {open ? <UrgencyEditor key={key} initial={app.eventColors[key]} deadline={key === 'deadline'} save={rules => void save(rules)} /> : null}
+    <Action secondary revealOnExpand={false} expanded={open} onPress={() => setOpen(!open)}>Színek és küszöbök</Action>
+    <AnimatedDisclosure expanded={open} gap={12}><UrgencyEditor key={key} initial={app.eventColors[key]} deadline={key === 'deadline'} save={rules => void save(rules)} /></AnimatedDisclosure>
     {error ? <Text accessibilityRole="alert" className="text-destructive">{error}</Text> : null}
   </View>;
 }
@@ -69,7 +71,4 @@ function UrgencyEditor({ initial, deadline, save }: { initial: UrgencyRules; dea
     <Action secondary icon={RotateCcw} onPress={() => setRules(deadline ? DEFAULT_EVENT_COLORS.deadline : DEFAULT_EVENT_COLORS.lesson)}>Alapértelmezett értékek</Action>
     <Action icon={Check} onPress={() => save(rules)}>Színezés mentése</Action>
   </View>;
-}
-function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (color: string) => void }) {
-  return <View className="gap-2"><Text className="text-sm font-medium">{label}</Text><View className="flex-row flex-wrap gap-2">{EVENT_PALETTE.map(color => <Pressable key={color} accessibilityRole="button" accessibilityLabel={`${label}: ${color}`} accessibilityState={{ selected: value.toLowerCase() === color }} onPress={() => onChange(color)} style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: color, alignItems: 'center', justifyContent: 'center' }}>{value.toLowerCase() === color ? <Icon as={Check} size={18} color="#111827" /> : null}</Pressable>)}</View><Field label={`${label} – egyéni színkód`} value={value} onChange={onChange} placeholder="#4ade80" /></View>;
 }

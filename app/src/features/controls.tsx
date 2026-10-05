@@ -11,13 +11,23 @@ import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import { useMotionValue } from '@/hooks/use-motion-value';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from '@/components/ui/alert-dialog';
 
-export function Action({ children, onPress, disabled = false, secondary = false, label, icon = ChevronRight, quiet = false, expanded }: { children: string; onPress: () => void; disabled?: boolean; secondary?: boolean; label?: string; icon?: LucideIcon; quiet?: boolean; expanded?: boolean }) {
-  return <Button accessibilityLabel={label ?? children} accessibilityState={expanded === undefined ? undefined : { expanded }} disabled={disabled} variant={quiet ? 'ghost' : secondary ? 'outline' : 'default'} onPress={onPress}>{icon ? <Icon as={icon} size={17} className={secondary || quiet ? 'text-foreground' : 'text-primary-foreground'} /> : null}<Text>{children}</Text></Button>;
+export function Action({ children, onPress, disabled = false, secondary = false, label, icon = ChevronRight, quiet = false, expanded, revealOnExpand = true }: { children: string; onPress: () => void; disabled?: boolean; secondary?: boolean; label?: string; icon?: LucideIcon; quiet?: boolean; expanded?: boolean; revealOnExpand?: boolean }) {
+  const iconClass = secondary || quiet ? 'text-foreground' : 'text-primary-foreground';
+  return <Button revealOnExpand={revealOnExpand} accessibilityLabel={label ?? children} accessibilityState={expanded === undefined ? undefined : { expanded }} disabled={disabled} variant={quiet ? 'ghost' : secondary ? 'outline' : 'default'} onPress={onPress}>{expanded !== undefined && icon === ChevronRight ? <DisclosureChevron expanded={expanded} className={iconClass} /> : icon ? <Icon as={icon} size={17} className={iconClass} /> : null}<Text>{children}</Text></Button>;
+}
+
+/** Keeps the disclosure indicator synchronized with the content transition. */
+function DisclosureChevron({ expanded, className }: { expanded: boolean; className: string }) {
+  const progress = useMotionValue(Number(expanded));
+  const style = useAnimatedStyle(() => ({ transform: [{ rotate: `${progress.value * 90}deg` }] }));
+  return <Animated.View style={style}><Icon as={ChevronRight} size={17} className={className} /></Animated.View>;
 }
 export function Field({ label, value, onChange, placeholder, insetLabel = false }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; insetLabel?: boolean }) {
   return <View className="relative gap-1.5">{insetLabel ? <View pointerEvents="none" className="absolute left-3 top-2 z-10"><Label nativeID={label} className="text-xs text-muted-foreground">{label}</Label></View> : <Label nativeID={label}>{label}</Label>}<Input className={insetLabel ? 'h-14 pb-2 pt-6 sm:h-14' : undefined} accessibilityLabel={label} aria-labelledby={label} value={value} onChangeText={onChange} placeholder={placeholder} autoCapitalize="none" /></View>;
