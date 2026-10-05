@@ -1,5 +1,6 @@
+import { EventColorDialog } from './event-color-editor';
 import { ReminderDialog } from './reminder-dialog';
-import { NotebookPen, Bell, Repeat2, Save, RotateCcw, Trash2, BookOpen, FileText, ListTodo, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { NotebookPen, Palette, Bell, Repeat2, Save, RotateCcw, Trash2, BookOpen, FileText, ListTodo, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { EVENT_CATEGORIES } from '../domain/student';
 import { LessonTasks } from './lesson-tasks';
 import { NotebookDialog } from './notebook-dialog';
@@ -22,6 +23,7 @@ import { eventCategoryIcon, eventCategoryName } from './event-presentation';
 
 export function EventDialog({ event, close, openMap }: { event: DisplayEvent; close: () => void; openMap: (location: string, onClose: () => void) => void }) {
   const app = useApp(); const editor = useEventEditor(event);
+  const [colorsOpen, setColorsOpen] = useState(false);
   const [remindersOpen, setRemindersOpen] = useState(false); const [mapOpen, setMapOpen] = useState(false); const [deleting, setDeleting] = useState(false);
   const [notebookOpen, setNotebookOpen] = useState(false); const [advancedOpen, setAdvancedOpen] = useState(false);
   async function save(reset = false) {
@@ -32,11 +34,13 @@ export function EventDialog({ event, close, openMap }: { event: DisplayEvent; cl
   }
   async function suggest() { try { const items = await futureEvents(event); editor.setCandidates(items); editor.setSelected(new Set(items.map(eventIdentity))); } catch (error) { editor.setError(String(error)); } }
   async function remove() { try { await deleteManualSource(event.sourceId); await app.refresh(); close(); } catch (error) { editor.setError(String(error)); } }
+  if (colorsOpen) return <EventColorDialog event={event} close={() => setColorsOpen(false)} />;
   if (remindersOpen) return <ReminderDialog event={event} close={() => setRemindersOpen(false)} />;
   if (notebookOpen) return <NotebookDialog event={event} close={() => setNotebookOpen(false)} />;
   if (mapOpen) return null;
   return <Modal title={`${eventCategoryName(editor.fields.category)} részletei`} close={close} footer={<Action icon={Save} disabled={editor.candidates.length > 0 && !editor.selected.size} onPress={() => void save()}>Módosítások mentése</Action>}>
     <View className="flex-row gap-2"><Action secondary icon={NotebookPen} onPress={() => setNotebookOpen(true)}>Jegyzetfüzet</Action>{Platform.OS !== 'web' ? <Action secondary icon={Bell} onPress={() => setRemindersOpen(true)}>Emlékeztető</Action> : null}</View>
+    <Action secondary icon={Palette} onPress={() => setColorsOpen(true)}>Színezés</Action>
     <EventEditorSections event={event} editor={editor} openMap={() => { setMapOpen(true); openMap(editor.fields.location, () => setMapOpen(false)); }} />
     <Action quiet expanded={advancedOpen} icon={advancedOpen ? ChevronUp : ChevronDown} onPress={() => setAdvancedOpen(!advancedOpen)}>További műveletek</Action>
     {advancedOpen ? <View className="gap-4 border-t border-border pt-4">

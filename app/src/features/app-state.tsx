@@ -1,3 +1,5 @@
+import { DEFAULT_EVENT_COLORS, type EventColors } from '../domain/event-colors';
+import { useCurrentTime } from '@/hooks/use-current-time';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Platform, View } from 'react-native';
 import { Image } from 'expo-image';
@@ -20,13 +22,15 @@ const initialAnchor: Anchor = { date: monday(today()), week: 'A' };
 type AppState = {
   view: ViewState; setView: (patch: Partial<ViewState> | ((current: ViewState) => Partial<ViewState>)) => void; anchor: Anchor;
   profileList: Profile[]; version: number; refresh: () => Promise<void>;
-  remindersEnabled: boolean;
+  remindersEnabled: boolean; eventColors: EventColors; now: number; saveEventColors: (colors: EventColors) => Promise<void>;
   error: string; setError: (message: string) => void;
 };
 const Context = createContext<AppState | null>(null);
 
 /** Restores durable UI state only after SQLite has initialized successfully. */
 export function AppProvider({ children }: { children: ReactNode }) {
+  const now = useCurrentTime();
+  const [eventColors, setEventColors] = useState(DEFAULT_EVENT_COLORS);
   const [view, updateView] = useState(initialView);
   const [anchor, setAnchor] = useState(initialAnchor);
   const [profileList, setProfiles] = useState<Profile[]>([]);
@@ -35,9 +39,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
   async function refresh() {
-    const [nextProfiles, reminders, permissionGranted, nextAnchor] = await Promise.all([profiles(), globalReminders(), reminderPermissionGranted(), readSetting('anchor', initialAnchor)]);
-    setProfiles(nextProfiles); setRemindersEnabled(reminders.enabled && permissionGranted); updateView(current => resolveProfiles(current, nextProfiles)); setAnchor(nextAnchor); setVersion(value => value + 1);
+    const [nextProfiles, reminders, permissionGranted, nextAnchor, colors] = await Promise.all([profiles(), globalReminders(), reminderPermissionGranted(), readSetting('anchor', initialAnchor), readSetting('eventColors', DEFAULT_EVENT_COLORS)]);
+    setEventColors(colors); setProfiles(nextProfiles); setRemindersEnabled(reminders.enabled && permissionGranted); updateView(current => resolveProfiles(current, nextProfiles)); setAnchor(nextAnchor); setVersion(value => value + 1);
   }
+  async function saveEventColors(colors: EventColors) { await saveSetting('eventColors', colors); setEventColors(colors); }
   function reportError(error: unknown) { setError(String(error)); }
   useEffect(() => {
     async function restore() {
@@ -48,7 +53,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => { if (ready) void saveSetting('view', view).catch(reportError); }, [view, ready]);
   if (!ready) return <View className="flex-1 items-center justify-center gap-3 bg-background p-6"><Image source={require('@/assets/images/triton-v15.png')} contentFit="contain" style={{ width: 88, height: 88 }} />{!error ? <ActivityIndicator /> : null}<Text className="text-center">{error ? startupError(error) : 'Órarend megnyitása…'}</Text>{error && Platform.OS === 'web' ? <Button onPress={() => window.location.reload()}><Text>Újrapróbálás</Text></Button> : null}</View>;
   const setView = (patch: Partial<ViewState> | ((current: ViewState) => Partial<ViewState>)) => updateView(current => ({ ...current, ...(typeof patch === 'function' ? patch(current) : patch) }));
-  return <Context.Provider value={{ view, setView, anchor, profileList, remindersEnabled, version, refresh, error, setError }}>{children}</Context.Provider>;
+  return <Context.Provider value={{ view, setView, anchor, profileList, remindersEnabled, eventColors, now, saveEventColors, version, refresh, error, setError }}>{children}</Context.Provider>;
 }
 function startupError(error: string): string {
   if (error.includes('NoModificationAllowedError') || error.includes('Access Handle')) return 'A helyi adatbázis egy másik Triton böngészőfülön van megnyitva. Zárd be azt a fület, majd próbáld újra.';

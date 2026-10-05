@@ -1,3 +1,4 @@
+import { GlobalColorEditor } from './event-color-editor';
 import { useEffect, useRef, useState } from 'react';
 import { View, useWindowDimensions } from 'react-native';
 import { CalendarRange, Eye, Palette, RefreshCw } from 'lucide-react-native';
@@ -50,6 +51,7 @@ function SettingsOptions({ date, setDate, week, setWeek, busy, error, prepare, a
   const app = useApp();
   const compact = useWindowDimensions().width < 600;
   return <>
+    <GlobalColorEditor />
     <View className="gap-4 rounded-xl border border-border bg-background/40 p-4">
       <View className="flex-row items-center gap-2"><Icon as={Palette} size={19} className="text-primary" /><Text className="font-semibold">Megjelenés</Text></View>
       <View className={compact ? 'gap-2' : 'flex-row items-center justify-between gap-3'}><Text className="text-sm">Téma</Text><Choice fullWidth={compact} label="Megjelenés" value={app.view.theme} onChange={theme => app.setView({ theme: theme as 'system' | 'light' | 'dark' })} options={[{ value: 'system', label: 'Rendszer témája' }, { value: 'light', label: 'Világos' }, { value: 'dark', label: 'Sötét' }]} /></View>

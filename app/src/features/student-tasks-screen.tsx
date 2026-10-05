@@ -1,6 +1,11 @@
+import { EventColorDialog } from './event-color-editor';
+import { taskColorEvent } from '../domain/task-colors';
+import { Button } from '@/components/ui/button';
+import { Icon } from '@/components/ui/icon';
+import { useTaskColor } from './use-event-appearance';
 import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
-import { ListTodo, CalendarClock, ClipboardCheck } from 'lucide-react-native';
+import { Palette, ListTodo, CalendarClock, ClipboardCheck } from 'lucide-react-native';
 import { WorkspaceHeading, WorkspaceSection } from './workspace-section';
 import { Text } from '@/components/ui/text';
 import type { DisplayEvent, EventCategory } from '../domain/model';
@@ -44,7 +49,10 @@ export function StudentTasksScreen(props: Props) {
 
 export function StudentTaskRow({ task, openEvent, report }: { task: LessonTask; openEvent: (event: DisplayEvent) => void; report: (message: string) => void }) {
   const app = useApp();
+  const [colorsOpen, setColorsOpen] = useState(false);
+  const colorEvent = taskColorEvent(task);
+  const color = useTaskColor(task.due, Boolean(task.completed), colorEvent);
   async function complete(value: boolean) { try { await setTaskCompleted(task.id, value); await app.refresh(); } catch { report('Nem sikerült menteni a feladat állapotát.'); } }
   async function open() { try { const event = await taskEvent(task); if (!event) { report('Ez az alkalom már nincs az importált órarendben. A feladatod megmaradt.'); return; } openEvent(event); } catch { report('Nem sikerült megnyitni az eseményt.'); } }
-  return <View className="gap-2 border-b border-border py-3"><Toggle label={task.title} checked={Boolean(task.completed)} onChange={value => void complete(value)} /><Pressable accessibilityRole="button" className="rounded-lg hover:bg-primary/5 active:bg-primary/10" accessibilityLabel={`${task.eventTitle} kapcsolódó esemény`} onPress={() => void open()}><Text className="text-xs text-primary">{task.eventTitle} · {wallTime(task.due).slice(0, 16).replace('T', ' ')}</Text></Pressable></View>;
+  return <View style={{ borderColor: color, borderWidth: color ? 1 : undefined, borderRadius: color ? 10 : undefined, paddingHorizontal: color ? 8 : undefined, marginVertical: color ? 4 : undefined }} className="gap-2 border-b border-border py-3"><View className="flex-row items-center justify-between gap-2"><View className="min-w-0 flex-1"><Toggle label={task.title} checked={Boolean(task.completed)} onChange={value => void complete(value)} /></View><Button variant="ghost" size="icon" accessibilityLabel={`${task.title} színezése`} onPress={() => setColorsOpen(true)}><Icon as={Palette} size={16} /></Button></View><Pressable accessibilityRole="button" className="rounded-lg hover:bg-primary/5 active:bg-primary/10" accessibilityLabel={`${task.eventTitle} kapcsolódó esemény`} onPress={() => void open()}><Text style={{ color }} className="text-xs text-primary">{task.eventTitle} · {wallTime(task.due).slice(0, 16).replace('T', ' ')}</Text></Pressable>{colorsOpen ? <EventColorDialog event={colorEvent} close={() => setColorsOpen(false)} /> : null}</View>;
 }

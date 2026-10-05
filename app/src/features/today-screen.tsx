@@ -1,3 +1,4 @@
+import { useEventAppearance } from './use-event-appearance';
 import { useEffect, useState } from 'react';
 import { AppState, View } from 'react-native';
 import { Clock3, MapPinned, UsersRound, ListTodo, NotebookPen, CalendarDays, ClipboardCheck, CheckCircle2, Coffee, ChevronDown, ChevronUp, TriangleAlert, House } from 'lucide-react-native';
@@ -60,9 +61,10 @@ function useTodayData(profileId: number) {
 }
 
 function NextEvent({ event, now, openEvent, openNotebook, openMap }: Props & { event?: DisplayEvent; now: number }) {
-  if (!event) return <View className="items-center gap-3 rounded-2xl bg-muted/40 px-6 py-8"><Icon as={CheckCircle2} size={30} className="text-primary" /><Text className="text-lg font-semibold">Mára nincs több program</Text></View>;
+  const appearance = useEventAppearance(event);
+  if (!event) return <View className="items-center gap-3 rounded-2xl bg-muted/40 px-6 py-8"><Icon as={CheckCircle2} size={30} className="text-primary" /><Text className="text-lg font-semibold">Mára nincs több esemény</Text></View>;
   const remaining = Math.max(1, Math.ceil((event.start - now) / 60000));
-  return <View className="gap-4 rounded-2xl border border-primary/25 bg-primary/5 p-5"><View className="flex-row items-center gap-2"><Icon as={Clock3} size={17} className="text-primary" /><Text className="text-sm font-semibold text-primary">{event.start <= now ? 'Most tart' : `${remaining} perc múlva`}</Text><Text className="ml-auto text-sm text-muted-foreground">{clockTime(event.start)}–{clockTime(event.end)}</Text></View><Text className="text-xl font-semibold" numberOfLines={3}>{event.title}</Text>{event.location ? <Text className="text-sm text-muted-foreground" numberOfLines={1}>{event.location}</Text> : null}<View className="flex-row flex-wrap gap-2"><Action icon={Clock3} onPress={() => openEvent(event)}>Megnyitás</Action><Action quiet icon={NotebookPen} onPress={() => openNotebook(event)}>Jegyzetfüzet</Action>{(event.category ?? 'lesson') === 'lesson' && hasMappedRoom(event.location) ? <Action quiet icon={MapPinned} onPress={() => openMap(event.location, () => undefined)}>Térkép</Action> : null}</View></View>;
+  return <View style={{ borderColor: appearance.urgency ?? appearance.color, borderLeftColor: appearance.color, borderLeftWidth: appearance.color ? 3 : undefined }} className="gap-4 rounded-2xl border border-primary/25 bg-primary/5 p-5"><View className="flex-row items-center gap-2"><Icon as={Clock3} size={17} color={appearance.urgency ?? appearance.color} className="text-primary" /><Text style={{ color: appearance.urgency ?? appearance.color }} className="text-sm font-semibold text-primary">{event.start <= now ? 'Most tart' : `${remaining} perc múlva`}</Text><Text style={{ color: appearance.urgency ?? appearance.color }} className="ml-auto text-sm text-muted-foreground">{clockTime(event.start)}–{clockTime(event.end)}</Text></View><Text className="text-xl font-semibold" numberOfLines={3}>{event.title}</Text>{event.location ? <Text className="text-sm text-muted-foreground" numberOfLines={1}>{event.location}</Text> : null}<View className="flex-row flex-wrap gap-2"><Action icon={Clock3} onPress={() => openEvent(event)}>Megnyitás</Action><Action quiet icon={NotebookPen} onPress={() => openNotebook(event)}>Jegyzetfüzet</Action>{(event.category ?? 'lesson') === 'lesson' && hasMappedRoom(event.location) ? <Action quiet icon={MapPinned} onPress={() => openMap(event.location, () => undefined)}>Térkép</Action> : null}</View></View>;
 }
 
 
