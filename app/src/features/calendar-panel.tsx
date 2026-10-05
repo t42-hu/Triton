@@ -1,3 +1,4 @@
+import { AnimatedDisclosure } from './animated-disclosure';
 import { useWorkspaceSwipeGesture } from './navigation-swipe';
 import { CurrentTimeLine } from './current-time-line';
 import { useEventAppearance } from './use-event-appearance';
@@ -26,7 +27,7 @@ type Props = { side: 'left' | 'right'; date: string; profileId: number; profileN
 export function CalendarPanel(props: Props) {
   const { view, setView, anchor } = useApp();
   const periodStyle = usePeriodTransition(props.date);
-  const days = view.mode === 'day' ? 1 : 7;
+  const days = view.mode === 'day' ? 1 : view.showWeekends ? 7 : 5;
   const dates = Array.from({ length: days }, (_, index) => addDays(props.date, index));
   const commonOnly = view.common && view.openProfiles.length > 0;
   const visible = commonOnly ? props.events.filter(event => props.common.has(eventIdentity(event))) : props.events;
@@ -46,7 +47,7 @@ export function CalendarPanel(props: Props) {
     </ScrollView></GestureDetector>
   </Animated.View>;
   function move(amount: number) {
-    const date = addDays(props.date, amount * days);
+    const date = addDays(props.date, amount * (view.mode === 'day' ? 1 : 7));
     if (view.sync) { setView({ leftDate: date, rightDate: date }); return; }
     setView(props.side === 'left' ? { leftDate: date } : { rightDate: date });
   }
@@ -170,7 +171,7 @@ function CalendarInsights({ dates, events }: { dates: string[]; events: DisplayE
   if (!analyses.some(analysis => analysis.lessonCount > 0 || analysis.minutes > 0)) return null;
   return <View className="gap-2 border-t border-border p-3">
     {<Button variant="ghost" accessibilityLabel="Napi terhelés és szünetek" aria-expanded={expanded} accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} className="justify-start border-0 bg-transparent px-1"><Icon as={CalendarDays} size={17} className="text-primary" /><Text className="flex-1 text-sm font-semibold">Napi terhelés és szünetek</Text><Icon as={expanded ? ChevronUp : ChevronDown} size={16} /></Button>}
-    {expanded ? dates.map(date => <DayInsight key={date} date={date} events={events} />) : null}
+    <AnimatedDisclosure expanded={expanded} gap={8}><View className="gap-2">{dates.map(date => <DayInsight key={date} date={date} events={events} />)}</View></AnimatedDisclosure>
   </View>;
 }
 function DayInsight({ date, events }: { date: string; events: DisplayEvent[] }) {

@@ -14,10 +14,10 @@ import { Button } from '@/components/ui/button';
 
 export type ViewState = {
   left: number; right: number; openProfiles: number[]; leftDate: string; rightDate: string; mode: 'day' | 'week';
-  compare: boolean; arrangement: 'row' | 'column'; sync: boolean; common: boolean; hidden: boolean; zoom: number;
+  compare: boolean; arrangement: 'row' | 'column'; sync: boolean; common: boolean; hidden: boolean; showWeekends: boolean; zoom: number;
   leftScroll: number; rightScroll: number; theme: 'system' | 'light' | 'dark';
 };
-const initialView: ViewState = { left: 0, right: 0, openProfiles: [], leftDate: today(), rightDate: today(), mode: 'week', compare: false, arrangement: 'column', sync: true, common: false, hidden: false, zoom: 1, leftScroll: 420, rightScroll: 420, theme: 'system' };
+const initialView: ViewState = { left: 0, right: 0, openProfiles: [], leftDate: today(), rightDate: today(), mode: 'week', compare: false, arrangement: 'column', sync: true, common: false, hidden: false, showWeekends: true, zoom: 1, leftScroll: 420, rightScroll: 420, theme: 'system' };
 const initialAnchor: Anchor = { date: monday(today()), week: 'A' };
 type AppState = {
   view: ViewState; setView: (patch: Partial<ViewState> | ((current: ViewState) => Partial<ViewState>)) => void; anchor: Anchor;

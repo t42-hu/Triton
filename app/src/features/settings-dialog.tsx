@@ -12,7 +12,7 @@ import { sources } from '../data/repository';
 import { discardStages, publishStages, stageSource, type StagedSource } from '../data/importer';
 import { useApp } from './app-state';
 import { DateField } from './date-time-field';
-import { Action, Choice, Confirm, Modal } from './controls';
+import { Action, Choice, Confirm, Modal, Toggle } from './controls';
 
 export function SettingsDialog({ close }: { close: () => void }) {
   const app = useApp();
@@ -55,6 +55,7 @@ function SettingsOptions({ date, setDate, week, setWeek, busy, error, prepare, a
     <View className="gap-4 rounded-xl border border-border bg-background/40 p-4">
       <View className="flex-row items-center gap-2"><Icon as={Palette} size={19} className="text-primary" /><Text className="font-semibold">Megjelenés</Text></View>
       <View className={compact ? 'gap-2' : 'flex-row items-center justify-between gap-3'}><Text className="text-sm">Téma</Text><Choice fullWidth={compact} label="Megjelenés" value={app.view.theme} onChange={theme => app.setView({ theme: theme as 'system' | 'light' | 'dark' })} options={[{ value: 'system', label: 'Rendszer témája' }, { value: 'light', label: 'Világos' }, { value: 'dark', label: 'Sötét' }]} /></View>
+      <View className="border-t border-border pt-3"><Toggle label="Hétvégék mutatása" checked={app.view.showWeekends} onChange={showWeekends => app.setView({ showWeekends })} /></View>
       <View className="flex-row items-center justify-between gap-3 border-t border-border pt-3"><View className="min-w-0 flex-1 flex-row items-center gap-2"><Icon as={Eye} size={17} className="text-muted-foreground" /><Text className="shrink text-sm">Elrejtett alkalmak mutatása</Text></View><Switch accessibilityLabel="Elrejtett alkalmak mutatása" checked={app.view.hidden} onCheckedChange={hidden => app.setView({ hidden })} /></View>
     </View>
     <View className="gap-4 rounded-xl border border-border bg-background/40 p-4">
