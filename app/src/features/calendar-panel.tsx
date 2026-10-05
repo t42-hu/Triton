@@ -153,7 +153,8 @@ function CalendarNotebookButton({ event, selectNotebook }: { event: DisplayEvent
 }
 function CalendarInsights({ dates, events }: { dates: string[]; events: DisplayEvent[] }) {
   const [expanded, setExpanded] = useState(false);
-  const isWeb = Platform.OS === 'web';
+  const { width } = useWindowDimensions();
+  const isWeb = Platform.OS === 'web' && width >= 600;
   return <View className="gap-2 border-t border-border p-3">
     {isWeb ? <Button variant="ghost" accessibilityLabel="Napi terhelés és szünetek" aria-expanded={expanded} accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} className="justify-start border-0 bg-transparent px-1"><Icon as={CalendarDays} size={17} className="text-primary" /><Text className="flex-1 text-sm font-semibold">Napi terhelés és szünetek</Text><Icon as={expanded ? ChevronUp : ChevronDown} size={16} /></Button> : <Text className="text-sm font-semibold">Napi terhelés és szünetek</Text>}
     {!isWeb || expanded ? dates.map(date => <DayInsight key={date} date={date} events={events} />) : null}
