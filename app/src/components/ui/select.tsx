@@ -68,15 +68,15 @@ function SelectTrigger({
 const FullWindowOverlay = Platform.OS === 'ios' ? RNFullWindowOverlay : React.Fragment;
 
 function SelectViewport({ position, children }: { position: 'item-aligned' | 'popper'; children: React.ReactNode }) {
-  const className = cn('p-1', position === 'popper' && cn('w-full', Platform.select({ web: 'h-[var(--radix-select-trigger-height)] min-w-[var(--radix-select-trigger-width)]' })));
+  const className = cn('p-1', position === 'popper' && 'w-full');
   return <SelectPrimitive.Viewport className={className}>{children}</SelectPrimitive.Viewport>;
 }
 
 function SelectContent({ className, children, position = 'popper', portalHost, ...props }: React.ComponentProps<typeof SelectPrimitive.Content> & { className?: string; portalHost?: string }) {
   const { triggerPosition } = SelectPrimitive.useRootContext();
   const contentClassName = cn(
-    'bg-popover border-border relative z-50 min-w-[8rem] rounded-md border shadow-md shadow-black/5',
-    Platform.select({ web: cn('animate-in fade-in-0 zoom-in-95 origin-(--radix-select-content-transform-origin) max-h-52 overflow-y-auto overflow-x-hidden', props.side === 'bottom' && 'slide-in-from-top-2', props.side === 'top' && 'slide-in-from-bottom-2'), native: 'p-1' }),
+    'bg-popover border-border relative z-50 rounded-md border shadow-md shadow-black/5',
+    Platform.select({ web: cn('w-[var(--radix-select-trigger-width)] min-w-0 max-w-[var(--radix-select-trigger-width)] animate-in fade-in-0 zoom-in-95 origin-(--radix-select-content-transform-origin) max-h-52 overflow-y-auto overflow-x-hidden', props.side === 'bottom' && 'slide-in-from-top-2', props.side === 'top' && 'slide-in-from-bottom-2'), native: 'p-1' }),
     position === 'popper' && Platform.select({ web: cn(props.side === 'bottom' && 'translate-y-1', props.side === 'top' && '-translate-y-1') }),
     className
   );
@@ -142,7 +142,7 @@ function SelectItem({
           <Icon as={Check} className="text-muted-foreground size-4 shrink-0" />
         </SelectPrimitive.ItemIndicator>
       </View>
-      <SelectPrimitive.ItemText className="text-foreground group-active:text-accent-foreground select-none text-sm" />
+      <SelectPrimitive.ItemText className="text-foreground group-active:text-accent-foreground min-w-0 shrink select-none text-sm" />
     </SelectPrimitive.Item>
   );
 }
