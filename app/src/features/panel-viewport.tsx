@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
-import { useWindowDimensions, type LayoutChangeEvent } from 'react-native';
+import { Platform, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeyboardInset } from '@/hooks/use-keyboard-inset';
 
@@ -13,7 +13,8 @@ export function PanelViewportProvider({ children }: { children: ReactNode }) {
   const keyboardInset = useKeyboardInset();
   const [headerHeight, setHeaderHeight] = useState(69);
   const [navigationHeight, setNavigationHeight] = useState(64);
-  const top = insets.top + headerHeight + (width >= 600 ? navigationHeight : 0) + 8;
+  const hasTopNavigation = width >= 600 && !(Platform.OS === 'web' && width >= 960);
+  const top = insets.top + headerHeight + (hasTopNavigation ? navigationHeight : 0) + 8;
   const bottom = Math.max(keyboardInset, insets.bottom + (width < 600 ? navigationHeight : 0)) + 8;
   function measureHeader(event: LayoutChangeEvent) { setHeaderHeight(event.nativeEvent.layout.height); }
   function measureNavigation(event: LayoutChangeEvent) { setNavigationHeight(event.nativeEvent.layout.height); }

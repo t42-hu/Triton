@@ -5,7 +5,7 @@ import { Icon } from '@/components/ui/icon';
 import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
 import { Platform, ScrollView, View, useWindowDimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { WorkspaceFrame } from '@/features/workspace-frame';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -50,7 +50,7 @@ function TimetableWorkspace() {
   function openNew(category: EventCategory) { setManualCategory(category); setDialog('manual'); }
   function openDialog(name: DialogName) { if (name === 'manual') setManualCategory('lesson'); setDialog(name); }
   function navigate(next: WorkspaceScreen) { setScreen(next); scroll.current?.scrollTo({ y: 0, animated: false }); }
-  return <PanelScrollContext.Provider value={requestRevealEnd}><SafeAreaView className="flex-1 bg-background"><WorkspaceHeader create={() => openNew('lesson')} />{width >= 600 ? <StudentNavigation screen={screen} navigate={navigate} openMenu={() => setDialog('menu')} menuOpen={dialog === 'menu'} /> : null}<ScrollView ref={scroll} onContentSizeChange={revealExpandedContent} nestedScrollEnabled directionalLockEnabled keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: width < 600 ? 16 : 32, gap: 24, flexGrow: 1, width: '100%', maxWidth: 1600, alignSelf: 'center' }}>
+  return <PanelScrollContext.Provider value={requestRevealEnd}><WorkspaceFrame screen={screen} navigate={navigate} create={() => openNew('lesson')} openProfiles={() => setDialog('profiles')} openSettings={() => setDialog('settings')} openMap={() => setDialog('map')} showMap={showMap} header={<WorkspaceHeader create={() => openNew('lesson')} />} navigation={width >= 600 ? <StudentNavigation screen={screen} navigate={navigate} openMenu={() => setDialog('menu')} menuOpen={dialog === 'menu'} /> : null} footer={width < 600 && app.profileList.length ? <StudentNavigation screen={screen} navigate={navigate} openMenu={() => setDialog('menu')} menuOpen={dialog === 'menu'} /> : null}><ScrollView ref={scroll} onContentSizeChange={revealExpandedContent} nestedScrollEnabled directionalLockEnabled keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: width < 600 ? 16 : 32, gap: 24, flexGrow: 1, width: '100%', maxWidth: Platform.OS === 'web' ? 1280 : 1600, alignSelf: 'center' }}>
 
     {app.error ? <Alert icon={TriangleAlert} variant="destructive"><AlertTitle>Nem sikerült a művelet</AlertTitle><AlertDescription>{app.error}</AlertDescription></Alert> : null}
     {!app.profileList.length ? <EmptyState create={() => setDialog('profiles')} /> : <StudentWorkspace key={data.ownId} profileId={data.ownId} openEvent={setEvent} openNotebook={setNotebook} openNew={openNew} openMap={openRoomMap} screen={screen} openTasks={() => navigate('tasks')} calendar={<CalendarWorkspace data={data} selectEvent={setEvent} selectNotebook={setNotebook} addCalendar={() => setAddingCalendar(true)} />} />}
@@ -65,11 +65,12 @@ function TimetableWorkspace() {
     {event ? <EventDialog event={event} close={() => setEvent(undefined)} openMap={openRoomMap} /> : null}
     {notebook ? <NotebookDialog event={notebook} close={() => setNotebook(undefined)} /> : null}
     {(showMap && Platform.OS === 'ios') || isMapOpen ? <RoomMapDialog location={mapRequest?.location ?? ''} close={closeRoomMap} open={isMapOpen} /> : null}
-  </ScrollView>{width < 600 && app.profileList.length ? <StudentNavigation screen={screen} navigate={navigate} openMenu={() => setDialog('menu')} menuOpen={dialog === 'menu'} /> : null}</SafeAreaView></PanelScrollContext.Provider>;
+  </ScrollView></WorkspaceFrame></PanelScrollContext.Provider>;
 }
 function CalendarWorkspace({ data, selectEvent, selectNotebook, addCalendar }: { data: ReturnType<typeof useCalendarData>; selectEvent: (event: DisplayEvent) => void; selectNotebook: (event: DisplayEvent) => void; addCalendar: () => void }) {
   const app = useApp(); const { width } = useWindowDimensions();
-  const contentWidth = Math.min(width, 1600) - (width < 600 ? 32 : 64); const sideBySide = app.view.arrangement === 'row' && data.extras.length > 0;
+  const workspaceWidth = Platform.OS === 'web' ? Math.min(width - (width >= 960 ? 216 : 0), 1280) : Math.min(width, 1600);
+  const contentWidth = workspaceWidth - (width < 600 ? 32 : 64); const sideBySide = app.view.arrangement === 'row' && data.extras.length > 0;
   const nativeRow = sideBySide && Platform.OS !== 'web'; const panelWidth = sideBySide ? Math.max(nativeRow && app.view.mode === 'week' ? 1092 : 320, (contentWidth - 24) / 2) : contentWidth;
   const { closeCalendar } = calendarActions(app, data.ownId, () => undefined);
   const panels = <><CalendarPanel side="left" date={data.ownDate} profileId={data.ownId} profileName={profileName(app.profileList, data.ownId)} panelWidth={panelWidth} outerHorizontalScroll={nativeRow} events={data.ownEvents} common={data.ownCommon} selectEvent={selectEvent} selectNotebook={selectNotebook} />{data.extras.map(extra => <CalendarPanel key={extra.id} side="right" date={extra.date} profileId={extra.id} profileName={profileName(app.profileList, extra.id)} panelWidth={panelWidth} outerHorizontalScroll={nativeRow} events={extra.events} common={extra.common} selectEvent={selectEvent} selectNotebook={selectNotebook} onClose={closeCalendar.bind(null, extra.id)} />)}</>;
