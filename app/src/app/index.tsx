@@ -5,6 +5,7 @@ import { Icon } from '@/components/ui/icon';
 import { Image } from 'expo-image';
 import { useWorkspaceNavigation } from '@/features/workspace-navigation';
 import { NavigationSwipe } from '@/features/navigation-swipe';
+import { WorkspaceScroll } from '@/features/workspace-scroll';
 import { WorkspacePages } from '@/features/workspace-pages';
 import { useEffect, useState } from 'react';
 import { Platform, ScrollView, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
@@ -55,10 +56,10 @@ function TimetableWorkspace() {
   function openNew(category: EventCategory) { setManualCategory(category); setDialog('manual'); }
   function openDialog(name: DialogName) { if (name === 'manual') setManualCategory('lesson'); setDialog(name); }
   function navigate(next: WorkspaceScreen) { changeScreen(next); scroll.current?.scrollTo({ y: 0, animated: false }); }
-  return <WorkspaceFrame screen={screen} navigate={navigate} create={() => openNew('lesson')} openProfiles={() => setDialog('profiles')} openSettings={() => setDialog('settings')} openMap={() => setDialog('map')} showMap={showMap} header={<WorkspaceHeader create={() => openNew('lesson')} />} navigation={Platform.OS !== 'web' && width >= 600 ? <StudentNavigation screen={screen} navigate={navigate} openMenu={() => setDialog('menu')} menuOpen={dialog === 'menu'} /> : null} footer={hasBottomNavigation && (Platform.OS === 'web' || app.profileList.length) ? <StudentNavigation bottom screen={screen} navigate={navigate} openMenu={() => setDialog('menu')} menuOpen={dialog === 'menu'} /> : null}><NavigationSwipe screen={screen} navigate={navigate} openMenu={() => setDialog('menu')} enabled={Platform.OS === 'ios' && screen === 'calendar'} edgeOnly fill><ScrollView ref={scroll} nestedScrollEnabled directionalLockEnabled keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: width < 600 ? 16 : 32, gap: 24, flexGrow: 1, width: '100%', maxWidth: Platform.OS === 'web' ? 1280 : 1600, alignSelf: 'center' }}>
+  return <WorkspaceFrame screen={screen} navigate={navigate} create={() => openNew('lesson')} openProfiles={() => setDialog('profiles')} openSettings={() => setDialog('settings')} openMap={() => setDialog('map')} showMap={showMap} header={<WorkspaceHeader create={() => openNew('lesson')} />} navigation={Platform.OS !== 'web' && width >= 600 ? <StudentNavigation screen={screen} navigate={navigate} openMenu={() => setDialog('menu')} menuOpen={dialog === 'menu'} /> : null} footer={hasBottomNavigation && (Platform.OS === 'web' || app.profileList.length) ? <StudentNavigation bottom screen={screen} navigate={navigate} openMenu={() => setDialog('menu')} menuOpen={dialog === 'menu'} /> : null}><NavigationSwipe screen={screen} navigate={navigate} openMenu={() => setDialog('menu')} enabled={hasBottomNavigation} fill><WorkspaceScroll scrollRef={scroll} nestedScrollEnabled directionalLockEnabled keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: width < 600 ? 16 : 32, gap: 24, flexGrow: 1, width: '100%', maxWidth: Platform.OS === 'web' ? 1280 : 1600, alignSelf: 'center' }}>
 
     {app.error ? <Alert icon={TriangleAlert} variant="destructive"><AlertTitle>Nem sikerült a művelet</AlertTitle><AlertDescription>{app.error}</AlertDescription></Alert> : null}
-    {!app.profileList.length ? <EmptyState create={() => setDialog('profiles')} /> : <WorkspacePages screen={screen} navigate={navigate} openMenu={() => setDialog('menu')} swipeEnabled={hasBottomNavigation} renderPage={page => <StudentWorkspace key={data.ownId} profileId={data.ownId} openEvent={setEvent} openNotebook={setNotebook} openNew={openNew} openMap={openRoomMap} screen={page} openTasks={() => navigate('tasks')} calendar={<CalendarWorkspace data={data} selectEvent={setEvent} selectNotebook={setNotebook} addCalendar={() => setAddingCalendar(true)} />} />} />}
+    {!app.profileList.length ? <EmptyState create={() => setDialog('profiles')} /> : <WorkspacePages screen={screen} renderPage={page => <StudentWorkspace key={data.ownId} profileId={data.ownId} openEvent={setEvent} openNotebook={setNotebook} openNew={openNew} openMap={openRoomMap} screen={page} openTasks={() => navigate('tasks')} calendar={<CalendarWorkspace data={data} selectEvent={setEvent} selectNotebook={setNotebook} addCalendar={() => setAddingCalendar(true)} />} />} />}
     {addingCalendar ? <Modal title="Órarend hozzáadása" description="Válassz egy még meg nem nyitott órarendet." close={() => setAddingCalendar(false)}>{availableProfiles.map(profile => <Action key={profile.id} secondary onPress={() => addCalendar(profile.id)}>{profile.name}</Action>)}</Modal> : null}
     {dialog === 'profiles' ? <ProfilesDialog close={() => setDialog(null)} onCreated={id => { setImportProfileId(id); setDialog('import'); }} onImport={id => { setImportProfileId(id); setDialog('import'); }} /> : null}
     {dialog === 'import' ? <ImportDialog profileId={importProfileId ?? data.ownId} close={() => { setImportProfileId(undefined); setDialog(null); }} /> : null}
@@ -70,7 +71,7 @@ function TimetableWorkspace() {
     {event ? <EventDialog event={event} close={() => setEvent(undefined)} openMap={openRoomMap} /> : null}
     {notebook ? <NotebookDialog event={notebook} close={() => setNotebook(undefined)} /> : null}
     {(showMap && Platform.OS === 'ios') || isMapOpen ? <RoomMapDialog location={mapRequest?.location ?? ''} close={closeRoomMap} open={isMapOpen} /> : null}
-  </ScrollView></NavigationSwipe></WorkspaceFrame>;
+  </WorkspaceScroll></NavigationSwipe></WorkspaceFrame>;
 }
 function CalendarWorkspace({ data, selectEvent, selectNotebook, addCalendar }: { data: ReturnType<typeof useCalendarData>; selectEvent: (event: DisplayEvent) => void; selectNotebook: (event: DisplayEvent) => void; addCalendar: () => void }) {
   const app = useApp(); const { width } = useWindowDimensions();

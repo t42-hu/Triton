@@ -1,3 +1,4 @@
+import { useWorkspaceSwipeGesture } from './navigation-swipe';
 import { CurrentTimeLine } from './current-time-line';
 import { useEventAppearance } from './use-event-appearance';
 import { useEffect, useRef, useState } from 'react';
@@ -32,7 +33,9 @@ export function CalendarPanel(props: Props) {
   const { scroll, onScroll } = usePanelScroll(props.side, view.zoom, props.side === 'left' ? view.leftScroll : view.rightScroll, setView);
   const panelViewport = usePanelHeight(560);
   const verticalScroll = Gesture.Native();
+  const workspaceSwipe = useWorkspaceSwipeGesture();
   const horizontalScroll = Gesture.Native();
+  if (workspaceSwipe) horizontalScroll.blocksExternalGesture(workspaceSwipe);
   const pinch = Gesture.Pinch().simultaneousWithExternalGesture(verticalScroll, horizontalScroll).runOnJS(true).onChange(event => setView(changeZoom(event.scaleChange)));
   const panelWidth = props.panelWidth;
   const dayWidth = Math.max(days === 1 ? panelWidth - 56 : 148, (panelWidth - 56) / days);
