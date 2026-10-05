@@ -1,4 +1,6 @@
+import { usePanelLock } from './panel-lock';
 import type { ReactNode } from 'react';
+import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { WorkspaceScreen } from './student-workspace';
 
@@ -18,5 +20,6 @@ export type WorkspaceFrameProps = {
 
 /** Preserves the native navigation chrome around the shared workspace. */
 export function WorkspaceFrame({ children, header, navigation, footer }: WorkspaceFrameProps) {
-  return <SafeAreaView className="flex-1 bg-background">{header}{navigation}{children}{footer}</SafeAreaView>;
+  const isPanelOpen = usePanelLock();
+  return <SafeAreaView className="flex-1 bg-background"><View pointerEvents={isPanelOpen ? 'none' : 'auto'} accessibilityElementsHidden={isPanelOpen} importantForAccessibility={isPanelOpen ? 'no-hide-descendants' : 'auto'} style={{ flex: 1 }}>{header}{navigation}{children}{footer}</View></SafeAreaView>;
 }

@@ -1,3 +1,4 @@
+import { usePanelLock } from './panel-lock';
 import { Image } from 'expo-image';
 import { useState, type PointerEvent } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,13 +21,14 @@ const destinations: { screen: WorkspaceScreen; label: string; icon: LucideIcon }
 
 /** Expands the desktop icon rail over content so hover never shifts the workspace. */
 export function WorkspaceFrame(props: WorkspaceFrameProps) {
+  const isPanelOpen = usePanelLock();
   const { width } = useWindowDimensions();
   const [collapsed, setCollapsed] = useState(true);
   function toggleSidebar() { setCollapsed(current => !current); }
   function expandOnHover(event: PointerEvent<HTMLDivElement>) { if (event.pointerType !== 'mouse') return; setCollapsed(false); }
   function collapseOnLeave(event: PointerEvent<HTMLDivElement>) { if (event.pointerType !== 'mouse') return; setCollapsed(true); }
-  if (width < 960) return <SafeAreaView className="flex-1 bg-background">{props.header}{props.navigation}{props.children}{props.footer}</SafeAreaView>;
-  return <View testID="desktop-workspace" className="flex-1 flex-row bg-background">
+  if (width < 960) return <SafeAreaView pointerEvents={isPanelOpen ? 'none' : 'auto'} aria-hidden={isPanelOpen} className="flex-1 bg-background">{props.header}{props.navigation}{props.children}{props.footer}</SafeAreaView>;
+  return <View pointerEvents={isPanelOpen ? 'none' : 'auto'} aria-hidden={isPanelOpen} testID="desktop-workspace" className="flex-1 flex-row bg-background">
     <div className="relative flex w-[76px] shrink-0" onPointerEnter={expandOnHover} onPointerLeave={collapseOnLeave}><Sidebar {...props} collapsed={collapsed} toggleSidebar={toggleSidebar} /></div>
     <View className="min-w-0 flex-1"><DesktopHeader {...props} />{props.children}</View>
   </View>;

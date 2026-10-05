@@ -1,3 +1,4 @@
+import { NavigationSwipe } from './navigation-swipe';
 import { useState, type ReactNode } from 'react';
 import { Platform, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { interpolateColor, useAnimatedStyle } from 'react-native-reanimated';
@@ -40,11 +41,11 @@ export function StudentNavigation({ screen, navigate, openMenu, menuOpen = false
   const theme = Colors[useColorScheme()];
   const underlineStyle = useAnimatedStyle(() => ({ transform: [{ translateX: progress.value * width / 5 }] }));
   function measure(event: LayoutChangeEvent) { setWidth(event.nativeEvent.layout.width); }
-  return <View onLayout={measureNavigation} className={bottom ? "border-t border-border bg-background px-3 pt-2" : "border-t border-border bg-background px-3 pt-2 sm:border-b sm:border-t-0 sm:pt-0"}><View accessibilityRole="tablist" onLayout={measure} className="relative w-full max-w-[720px] flex-row self-center">
+  return <NavigationSwipe screen={screen} navigate={navigate} openMenu={openMenu}><View onLayout={measureNavigation} className={bottom ? "border-t border-border bg-background px-3 pt-2" : "border-t border-border bg-background px-3 pt-2 sm:border-b sm:border-t-0 sm:pt-0"}><View accessibilityRole="tablist" onLayout={measure} className="relative w-full max-w-[720px] flex-row self-center">
     <Animated.View pointerEvents="none" style={[{ position: 'absolute', bottom: 0, left: Math.max(0, width / 10 - 12), width: 24, height: 2, borderRadius: 1, backgroundColor: theme.textSecondary }, underlineStyle]} />
     {screens.map((item, index) => <NavigationButton key={item.value} label={item.label} icon={item.icon} selected={selectedIndex === index} onPress={() => navigate(item.value)} />)}
     <NavigationButton label="Menü" icon={Menu} selected={menuOpen} onPress={openMenu} />
-  </View></View>;
+  </View></View></NavigationSwipe>;
 }
 
 function NavigationButton({ label, icon, selected, onPress }: { label: string; icon: LucideIcon; selected: boolean; onPress: () => void }) {

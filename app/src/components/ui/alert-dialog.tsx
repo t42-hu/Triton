@@ -58,7 +58,7 @@ function AlertDialogContent({
   const { width } = useWindowDimensions();
   return (
     <AlertDialogPortal hostName={portalHost}>
-      <AlertDialogOverlay style={{ top: viewport.top, bottom: viewport.bottom }}>
+      <AlertDialogOverlay style={{ paddingTop: viewport.top + 8, paddingBottom: viewport.bottom + 8 }}>
         <AlertDialogPrimitive.Content
           className={cn(
             'bg-background border-border z-50 flex w-full max-w-[calc(100%-2rem)] flex-col gap-4 rounded-lg border p-6 shadow-lg shadow-black/5 sm:max-w-lg',

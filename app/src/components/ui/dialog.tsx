@@ -52,17 +52,17 @@ function DialogOverlay({
       </DialogPrimitive.Overlay>
   );
 }
-type DialogContentProps = React.ComponentProps<typeof DialogPrimitive.Content> & { portalHost?: string; hidden?: boolean; transitionKey?: string; dismissible?: boolean };
+type DialogContentProps = React.ComponentProps<typeof DialogPrimitive.Content> & { portalHost?: string; hidden?: boolean; transitionKey?: string; dismissible?: boolean; onClose?: () => void };
 function DialogContent({
   className, portalHost, transitionKey,
-  children, forceMount, hidden = false, dismissible = true,
+  children, forceMount, hidden = false, dismissible = true, onClose,
   ...props
 }: DialogContentProps) {
   const viewport = usePanelViewport();
   return (
     <DialogPortal hostName={portalHost} forceMount={forceMount}>
-      <View pointerEvents={hidden ? 'none' : 'auto'} accessibilityElementsHidden={hidden} importantForAccessibility={hidden ? 'no-hide-descendants' : 'auto'} style={{ position: 'absolute', top: viewport.top, right: 0, bottom: viewport.bottom, left: 0, opacity: hidden ? 0 : 1 }}>
-        <DialogOverlay forceMount={forceMount} transitionKey={transitionKey} style={Platform.OS === 'web' ? { top: viewport.top, bottom: viewport.bottom } : undefined}>
+      <View pointerEvents={hidden ? 'none' : 'auto'} accessibilityElementsHidden={hidden} importantForAccessibility={hidden ? 'no-hide-descendants' : 'auto'} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, opacity: hidden ? 0 : 1 }}>
+        <DialogOverlay forceMount={forceMount} transitionKey={transitionKey} closeOnPress={false} style={{ paddingTop: viewport.top + 8, paddingBottom: viewport.bottom + 8 }}>
           <DialogPrimitive.Content
             forceMount={forceMount}
             className={cn(
@@ -72,7 +72,7 @@ function DialogContent({
             {...props}
             style={[{ maxHeight: viewport.height }, props.style]}>
             <>{children}</>
-            {dismissible ? <DialogPrimitive.Close
+            {dismissible ? <DialogPrimitive.Close onPress={onClose}
               className={cn(
                 'absolute right-4 top-4 rounded-lg p-1 opacity-70 hover:bg-accent/60 active:bg-accent active:opacity-100',
                 Platform.select({
