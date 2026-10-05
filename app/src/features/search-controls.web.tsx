@@ -8,12 +8,13 @@ import { Text } from '@/components/ui/text';
 import { Choice } from './controls';
 import { useApp } from './app-state';
 import { lessonRooms } from '@/data/student-repository';
-import type { SearchControlsProps } from './search-controls';
+import { SearchControls as MobileSearchControls, type SearchControlsProps } from './search-controls-shared';
 
 /** Keeps profile scope beside the query and offers shortcuts to real rooms. */
 export function SearchControls(props: SearchControlsProps) {
   const { width } = useWindowDimensions();
   const rooms = useRoomSuggestions(props.scope);
+  if (width < 600) return <MobileSearchControls {...props} />;
   return <View className="gap-5">
     <View className={width >= 1100 ? 'flex-row items-center gap-3' : 'gap-3'}>
       <View className="min-w-0 flex-1 flex-row items-center gap-3 rounded-xl border border-input bg-card px-4 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15"><Icon as={Search} size={21} className="text-primary" /><Input accessibilityLabel="Mit keresel?" value={props.query} onChangeText={props.setQuery} placeholder="Tantárgy, terem, feladat vagy jegyzet…" className="h-14 min-w-0 flex-1 rounded-none border-0 bg-transparent px-0 text-base shadow-none focus:border-0 focus:ring-0 dark:bg-transparent" />{props.query ? <Button accessibilityLabel="Keresés törlése" variant="ghost" size="icon" className="border-0 bg-transparent" onPress={() => props.setQuery('')}><Icon as={X} size={16} /></Button> : null}</View>
