@@ -68,7 +68,7 @@ def check_keyboard_scroll():
 def check_calendar():
     """Reach the final hour without scrolling the surrounding page."""
     before = snapshot()['nodes']
-    header = next(node for node in before if node.get('label') == 'Triton')
+    header = next(node for node in before if node.get('label') == 'Triton42')
     panel = next(node for node in before
                  if node['type'] == 'ScrollView' and node['depth'] == max(
                      item['depth'] for item in before if item['type'] == 'ScrollView'))
@@ -80,7 +80,7 @@ def check_calendar():
                    str(round(frame['x'] + frame['width'] / 2)), str(round(end_y)))
     after = snapshot()['nodes']
     assert any(node.get('label') == '20:00' for node in after), 'The final hour is unreachable'
-    next_header = next(node for node in after if node.get('label') == 'Triton')
+    next_header = next(node for node in after if node.get('label') == 'Triton42')
     assert abs(next_header['rect']['y'] - header['rect']['y']) < 2, 'The outer page scrolled'
     print('PASS: the final hour is reachable and the outer page stayed still')
 

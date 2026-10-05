@@ -32,8 +32,8 @@ build_apk() {
   restore_package
   trap - EXIT
   (cd android && ./gradlew :app:assembleRelease --no-daemon --console=plain)
-  cp android/app/build/outputs/apk/release/app-release.apk "$output_dir/Triton-$version.apk"
-  printf 'APK: %s\n' "$output_dir/Triton-$version.apk"
+  cp android/app/build/outputs/apk/release/app-release.apk "$output_dir/Triton42-$version.apk"
+  printf 'APK: %s\n' "$output_dir/Triton42-$version.apk"
 }
 
 build_ipa() {
@@ -44,7 +44,7 @@ build_ipa() {
 
   local archive_url temporary_ipa
   archive_url="$(npx eas-cli@latest build:list --platform ios --build-profile preview --status finished --limit 1 --json | node -e 'const builds = JSON.parse(require("node:fs").readFileSync(0, "utf8")); const url = builds[0]?.artifacts?.buildUrl; if (!url || !new URL(url).pathname.endsWith(".ipa")) { console.error("EAS did not return an IPA URL."); process.exit(1); } process.stdout.write(url)')"
-  temporary_ipa="$(mktemp "$output_dir/.Triton.XXXXXX")"
+  temporary_ipa="$(mktemp "$output_dir/.Triton42.XXXXXX")"
   if ! curl --fail --location --output "$temporary_ipa" "$archive_url"; then
     rm "$temporary_ipa"
     return 1
@@ -54,8 +54,8 @@ build_ipa() {
     printf 'Downloaded IPA is invalid.\n' >&2
     return 1
   fi
-  mv "$temporary_ipa" "$output_dir/Triton-$version.ipa"
-  printf 'IPA: %s\n' "$output_dir/Triton-$version.ipa"
+  mv "$temporary_ipa" "$output_dir/Triton42-$version.ipa"
+  printf 'IPA: %s\n' "$output_dir/Triton42-$version.ipa"
 }
 
 if (( $# > 1 )); then
