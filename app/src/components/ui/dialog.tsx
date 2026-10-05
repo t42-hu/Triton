@@ -52,10 +52,10 @@ function DialogOverlay({
       </DialogPrimitive.Overlay>
   );
 }
-type DialogContentProps = React.ComponentProps<typeof DialogPrimitive.Content> & { portalHost?: string; hidden?: boolean; transitionKey?: string };
+type DialogContentProps = React.ComponentProps<typeof DialogPrimitive.Content> & { portalHost?: string; hidden?: boolean; transitionKey?: string; dismissible?: boolean };
 function DialogContent({
   className, portalHost, transitionKey,
-  children, forceMount, hidden = false,
+  children, forceMount, hidden = false, dismissible = true,
   ...props
 }: DialogContentProps) {
   const viewport = usePanelViewport();
@@ -72,7 +72,7 @@ function DialogContent({
             {...props}
             style={[{ maxHeight: viewport.height }, props.style]}>
             <>{children}</>
-            <DialogPrimitive.Close
+            {dismissible ? <DialogPrimitive.Close
               className={cn(
                 'absolute right-4 top-4 rounded-lg p-1 opacity-70 hover:bg-accent/60 active:bg-accent active:opacity-100',
                 Platform.select({
@@ -85,7 +85,7 @@ function DialogContent({
                 className={cn('text-accent-foreground web:pointer-events-none size-4 shrink-0')}
               />
               <Text className="sr-only">Bezárás</Text>
-            </DialogPrimitive.Close>
+            </DialogPrimitive.Close> : null}
           </DialogPrimitive.Content>
         </DialogOverlay>
       </View>

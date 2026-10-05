@@ -11,7 +11,7 @@ import type { Profile } from '../domain/model';
 import { Confirm, Modal } from './controls';
 import { useApp } from './app-state';
 
-export function ProfilesDialog({ close, onCreated, onImport }: { close: () => void; onCreated: (id: number) => void; onImport: (id: number) => void }) {
+export function ProfilesDialog({ close, onCreated, onImport, required = false }: { required?: boolean; close: () => void; onCreated: (id: number) => void | Promise<void>; onImport: (id: number) => void }) {
   const app = useApp();
   const [name, setName] = useState('');
   const [editing, setEditing] = useState<number>();
@@ -29,17 +29,18 @@ export function ProfilesDialog({ close, onCreated, onImport }: { close: () => vo
   async function save() {
     setError(''); setIsSaving(true);
     try {
-      const id = await saveProfile(name, editing);
+      const id = await saveProfile(name, editing, required);
+      if (required && editing === undefined) { await onCreated(id); return; }
       await app.refresh(); setName(''); setEditing(undefined);
       if (editing === undefined) onCreated(id); else close();
     } catch (error) { setError(error instanceof Error ? error.message : String(error)); }
     finally { setIsSaving(false); }
   }
   async function remove(profile: Profile) { setDeleting(undefined); await perform(deleteProfile(profile.id)); }
-  return <Modal title="Órarend profilok" description="Az órarendjeid ezen az eszközön vannak." close={close}>
-    <View className="overflow-hidden rounded-xl border border-border bg-background">
+  return <Modal dismissible={!required} title={required ? "Első profil létrehozása" : "Órarend profilok"} description={required ? "Hozz létre egy profilt, majd importáld az órarendedet." : "Az órarendjeid ezen az eszközön vannak."} close={close}>
+    {!required ? <View className="overflow-hidden rounded-xl border border-border bg-background">
       {app.profileList.map(profile => <ProfileRow key={profile.id} profile={profile} compact={compact} importCalendar={() => onImport(profile.id)} rename={() => { setEditing(profile.id); setName(profile.name); }} makeOwn={() => void perform(ownProfile(profile.id))} remove={() => setDeleting(profile)} />)}
-    </View>
+    </View> : null}
     <View className="gap-3 rounded-xl bg-muted p-4">
       <View className="flex-row items-center justify-between gap-2"><View className="flex-row items-center gap-2"><Icon as={editing ? Pencil : Plus} size={18} className="text-primary" /><Text className="font-semibold">{editing ? 'Profil átnevezése' : 'Új profil'}</Text></View>{editing ? <Button accessibilityLabel="Átnevezés megszakítása" variant="ghost" className="h-9 w-9 border-0 bg-transparent p-0" onPress={() => { setEditing(undefined); setName(''); }}><Icon as={X} size={17} /></Button> : null}</View>
       <Input accessibilityLabel={editing ? 'Új profilnév' : 'Új profil neve'} placeholder={editing ? 'Új profilnév' : 'Új profil neve'} value={name} onChangeText={setName} autoCapitalize="none" />

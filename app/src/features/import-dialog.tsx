@@ -11,15 +11,15 @@ import { useApp } from './app-state';
 import { useImport, type ImportDraft } from './use-import';
 import { DateField } from './date-time-field';
 
-export function ImportDialog({ profileId, close }: { profileId: number; close: () => void }) {
+export function ImportDialog({ profileId, close, required = false }: { required?: boolean; profileId: number; close: () => void }) {
   const { profileList } = useApp();
   const state = useImport(profileId, close);
   const { draft, update, stage, busy, count, error } = state;
   const own = profileList.find(profile => profile.id === profileId)?.isOwn;
   const options = [{ value: 'url', label: 'Naptárlink' }, { value: 'file', label: 'ICS / JSON fájl' }];
   const compact = useWindowDimensions().width < 600;
-  function finish() { if (busy) { state.cancel(); return; } close(); }
-  return <Modal title={`${profileList.find(profile => profile.id === profileId)?.name ?? 'Órarend'} importálása`} description="Naptárlinkből vagy fájlból. A kézi órák megmaradnak." close={finish}>
+  function finish() { if (required) return; if (busy) { state.cancel(); return; } close(); }
+  return <Modal dismissible={!required} title={`${profileList.find(profile => profile.id === profileId)?.name ?? 'Órarend'} importálása`} description="Naptárlinkből vagy fájlból. A kézi órák megmaradnak." close={finish}>
     <View pointerEvents={busy || stage ? 'none' : 'auto'} className="gap-4">
       <View className={`gap-3 rounded-xl border border-border bg-background/40 p-4 ${compact ? '' : 'flex-row'}`}>
 

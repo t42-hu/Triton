@@ -30,7 +30,7 @@ export function Choice({ label, value, options, onChange, fullWidth = false, ico
 export function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
   return <View className="flex-row items-center gap-2"><Switch accessibilityLabel={label} checked={checked} onCheckedChange={onChange} /><Text className="min-w-0 flex-1 text-sm">{label}</Text></View>;
 }
-export function Modal({ title, description, close, children, footer, wide = false, maxWidth, scrollGesture, open = true, keepMounted = false }: { title: string; description?: string; close: () => void; children: ReactNode; footer?: ReactNode; wide?: boolean; maxWidth?: number; scrollGesture?: ReturnType<typeof Gesture.Native>; open?: boolean; keepMounted?: boolean }) {
+export function Modal({ title, description, close, children, footer, wide = false, maxWidth, scrollGesture, open = true, keepMounted = false, dismissible = true }: { dismissible?: boolean; title: string; description?: string; close: () => void; children: ReactNode; footer?: ReactNode; wide?: boolean; maxWidth?: number; scrollGesture?: ReturnType<typeof Gesture.Native>; open?: boolean; keepMounted?: boolean }) {
   const { width } = useWindowDimensions();
   const viewport = usePanelViewport();
   const keyboardInset = useKeyboardInset();
@@ -39,7 +39,7 @@ export function Modal({ title, description, close, children, footer, wide = fals
   const availableHeight = viewport.height;
   const panelWidth = maxWidth ?? (wide ? 960 : 576);
   const content = <ScrollView ref={scroll} onContentSizeChange={revealExpandedContent} onFocus={revealFocusedInput} onLayout={revealFocusedInput} onScroll={rememberOffset} scrollEventThrottle={16} nestedScrollEnabled directionalLockEnabled keyboardDismissMode="none" style={{ marginRight: -16, maxHeight: Math.max(0, availableHeight - (description ? 144 : 104) - (footer ? 72 : 0)), ...(Platform.OS === 'web' ? { overscrollBehavior: 'contain' as const } : {}) }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 20, paddingRight: 16, paddingBottom: 12 }}><PanelScrollContext.Provider value={requestRevealEnd}>{children}</PanelScrollContext.Provider></ScrollView>;
-  return <Dialog open={open} onOpenChange={nextOpen => { if (!nextOpen) close(); }}><DialogContent forceMount={keepMounted ? true : undefined} hidden={!open} transitionKey={title} className={wide ? 'sm:max-w-[960px]' : undefined} style={{ width: Math.min(width - 32, panelWidth), maxWidth: panelWidth, maxHeight: availableHeight }}>
+  return <Dialog open={open} onOpenChange={nextOpen => { if (!nextOpen && dismissible) close(); }}><DialogContent dismissible={dismissible} forceMount={keepMounted ? true : undefined} hidden={!open} transitionKey={title} className={wide ? 'sm:max-w-[960px]' : undefined} style={{ width: Math.min(width - 32, panelWidth), maxWidth: panelWidth, maxHeight: availableHeight }}>
     <DialogTitle>{title}</DialogTitle>{description ? <DialogDescription>{description}</DialogDescription> : null}
     {scrollGesture ? <GestureDetector gesture={scrollGesture}>{content}</GestureDetector> : content}
     {footer ? <View className="border-t border-border pt-3">{footer}</View> : null}

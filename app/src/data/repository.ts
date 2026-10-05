@@ -1,6 +1,6 @@
 import type { DisplayEvent, EventPatch, Occurrence, Profile, Source } from '../domain/model';
 import { addDays, fromWall } from '../domain/time';
-import { getDatabase, write, transaction } from './database';
+import { getDatabase, transaction } from './database';
 import { EVENT_CATEGORIES, searchableText } from '../domain/student';
 
 const selection = `SELECT e.*,s.profileId,o.patch FROM events e JOIN sources s ON s.id=e.sourceId AND s.revision=e.revision
@@ -8,9 +8,10 @@ const selection = `SELECT e.*,s.profileId,o.patch FROM events e JOIN sources s O
 export async function profiles(): Promise<Profile[]> {
   return (await getDatabase()).getAllAsync<Profile>('SELECT * FROM profiles ORDER BY isOwn DESC,name,id');
 }
-export async function saveProfile(name: string, id?: number): Promise<number> {
+/** Stores the required first import in the same transaction as profile creation. */
+export async function saveProfile(name: string, id?: number, requiresImport = false): Promise<number> {
   if (!name.trim()) throw new Error('Adj nevet a profilnak.');
-  return write(async db => {
+  return transaction(async db => {
     const existing = await db.getAllAsync<Profile>('SELECT * FROM profiles');
     const normalizedName = name.trim().normalize('NFC').toLocaleLowerCase('hu');
     for (const profile of existing) {
@@ -18,6 +19,7 @@ export async function saveProfile(name: string, id?: number): Promise<number> {
     }
     if (id) { await db.runAsync('UPDATE profiles SET name=? WHERE id=?', name.trim(), id); return id; }
     const result = await db.runAsync('INSERT INTO profiles(name,isOwn) SELECT ?,CASE WHEN EXISTS(SELECT 1 FROM profiles) THEN 0 ELSE 1 END', name.trim());
+    if (requiresImport) await db.runAsync('INSERT OR REPLACE INTO settings VALUES (?,?)', 'setupProfileId', JSON.stringify(result.lastInsertRowId));
     return result.lastInsertRowId;
   });
 }

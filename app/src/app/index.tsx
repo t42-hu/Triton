@@ -6,6 +6,7 @@ import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
 import { Platform, ScrollView, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
 import { WorkspaceFrame } from '@/features/workspace-frame';
+import { WorkspaceSetupGate } from '@/features/workspace-setup-gate';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -35,7 +36,7 @@ import { lessonRooms } from '@/data/student-repository';
 
 type DialogName = 'profiles' | 'import' | 'manual' | 'settings' | 'reminders' | 'map' | 'menu' | 'sync' | null;
 export default function TimetableScreen() {
-  return <PanelViewportProvider><TimetableWorkspace /></PanelViewportProvider>;
+  return <PanelViewportProvider><WorkspaceSetupGate><TimetableWorkspace /></WorkspaceSetupGate></PanelViewportProvider>;
 }
 function TimetableWorkspace() {
   const app = useApp(); const { width } = useWindowDimensions(); const { scroll, requestRevealEnd, revealExpandedContent } = usePanelScrollController();
