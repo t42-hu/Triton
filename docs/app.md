@@ -138,3 +138,13 @@ A naptár piros idővonala az aktuális budapesti időt jelöli a mai oszlopban.
 Sidebar nélküli nézetben a lapok sorrendje Mai nap, Órarend, Teendők, Keresés. Egy vízszintes sorban mozognak, a közös fejléc és navigáció megmarad. A naptárrács megtartja a saját vízszintes görgetését; a navbaron lehet lapot húzni, iOS-en a bal képernyőszélről visszalépni. Androidon a rendszer vissza gombja az előző munkalapra lép. A webes sidebar lapváltáskor megtartja a hover állapotát.
 
 Nyitott panel blokkolja a háttér műveleteit és a lapváltási gesztusokat. Külső érintés, Escape és rendszer-visszalépés nem csukja be. Az X és a panel saját befejező műveletei használhatók. Első induláskor a profil létrehozása, majd az import kötelező; újraindítással sem kerülhető meg.
+
+## Hétvégék, napi szabad sávok és színválasztó
+
+A Megjelenés beállítások Hétvégék mutatása kapcsolója a heti rácsban szabályozza a szombat és vasárnap oszlopát. Alapértelmezésben bekapcsolt, eszközönként megmarad. Kikapcsolva öt oszlop látszik; a heti lapozás továbbra is hét napot lép. A napi nézet bármely napot meg tudja mutatni.
+
+A közös szabad idő keresése minden ellenőrzött budapesti naptári napot külön vizsgál. Az esti és a következő reggeli szabad sáv nem adódik össze a minimum időtartam eléréséhez; a napváltás a nyári időszámítást is követi.
+
+Minden eseményszín közös választót használ: névvel ellátott minták, az időpont és a körvonal élő előnézete, külön lenyitható egyéni színkód. A Kész alkalmazza a választást, az X elveti a választóban tett módosítást. A külső színezési panel mentése továbbra is szükséges.
+
+A lenyíló tartalmak rövid, rugózás nélküli magasság- és áttűnési animációt használnak, és tiszteletben tartják a rendszer csökkentett mozgás beállítását. A Színek és küszöbök nyila nyitva lefelé mutat; ez a gomb és az Egyéni szín nem indít automatikus legörgetést. A többi panelen belüli lenyitás a tartalom végleges mérete után görget. A legördülő választólisták a mező szélességét követik.
