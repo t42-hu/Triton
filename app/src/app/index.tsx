@@ -4,7 +4,7 @@ import { PanelViewportProvider, usePanelViewport } from '@/features/panel-viewpo
 import { Icon } from '@/components/ui/icon';
 import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
-import { Platform, ScrollView, View, useWindowDimensions } from 'react-native';
+import { Platform, ScrollView, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
 import { WorkspaceFrame } from '@/features/workspace-frame';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
@@ -39,6 +39,7 @@ export default function TimetableScreen() {
 }
 function TimetableWorkspace() {
   const app = useApp(); const { width } = useWindowDimensions(); const { scroll, requestRevealEnd, revealExpandedContent } = usePanelScrollController();
+  const hasBottomNavigation = Platform.OS === 'web' ? width < 960 : width < 600;
   const [screen, setScreen] = useState<WorkspaceScreen>('today');
   const [dialog, setDialog] = useState<DialogName>(null); const [importProfileId, setImportProfileId] = useState<number>(); const [addingCalendar, setAddingCalendar] = useState(false);
   const [event, setEvent] = useState<DisplayEvent>(); const [notebook, setNotebook] = useState<DisplayEvent>(); const [manualCategory, setManualCategory] = useState<EventCategory>('lesson');
@@ -50,7 +51,7 @@ function TimetableWorkspace() {
   function openNew(category: EventCategory) { setManualCategory(category); setDialog('manual'); }
   function openDialog(name: DialogName) { if (name === 'manual') setManualCategory('lesson'); setDialog(name); }
   function navigate(next: WorkspaceScreen) { setScreen(next); scroll.current?.scrollTo({ y: 0, animated: false }); }
-  return <PanelScrollContext.Provider value={requestRevealEnd}><WorkspaceFrame screen={screen} navigate={navigate} create={() => openNew('lesson')} openProfiles={() => setDialog('profiles')} openSettings={() => setDialog('settings')} openMap={() => setDialog('map')} showMap={showMap} header={<WorkspaceHeader create={() => openNew('lesson')} />} navigation={width >= 600 ? <StudentNavigation screen={screen} navigate={navigate} openMenu={() => setDialog('menu')} menuOpen={dialog === 'menu'} /> : null} footer={width < 600 && app.profileList.length ? <StudentNavigation screen={screen} navigate={navigate} openMenu={() => setDialog('menu')} menuOpen={dialog === 'menu'} /> : null}><ScrollView ref={scroll} onContentSizeChange={revealExpandedContent} nestedScrollEnabled directionalLockEnabled keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: width < 600 ? 16 : 32, gap: 24, flexGrow: 1, width: '100%', maxWidth: Platform.OS === 'web' ? 1280 : 1600, alignSelf: 'center' }}>
+  return <PanelScrollContext.Provider value={requestRevealEnd}><WorkspaceFrame screen={screen} navigate={navigate} create={() => openNew('lesson')} openProfiles={() => setDialog('profiles')} openSettings={() => setDialog('settings')} openMap={() => setDialog('map')} showMap={showMap} header={<WorkspaceHeader create={() => openNew('lesson')} />} navigation={Platform.OS !== 'web' && width >= 600 ? <StudentNavigation screen={screen} navigate={navigate} openMenu={() => setDialog('menu')} menuOpen={dialog === 'menu'} /> : null} footer={hasBottomNavigation && (Platform.OS === 'web' || app.profileList.length) ? <StudentNavigation bottom screen={screen} navigate={navigate} openMenu={() => setDialog('menu')} menuOpen={dialog === 'menu'} /> : null}><ScrollView ref={scroll} onContentSizeChange={revealExpandedContent} nestedScrollEnabled directionalLockEnabled keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: width < 600 ? 16 : 32, gap: 24, flexGrow: 1, width: '100%', maxWidth: Platform.OS === 'web' ? 1280 : 1600, alignSelf: 'center' }}>
 
     {app.error ? <Alert icon={TriangleAlert} variant="destructive"><AlertTitle>Nem sikerült a művelet</AlertTitle><AlertDescription>{app.error}</AlertDescription></Alert> : null}
     {!app.profileList.length ? <EmptyState create={() => setDialog('profiles')} /> : <StudentWorkspace key={data.ownId} profileId={data.ownId} openEvent={setEvent} openNotebook={setNotebook} openNew={openNew} openMap={openRoomMap} screen={screen} openTasks={() => navigate('tasks')} calendar={<CalendarWorkspace data={data} selectEvent={setEvent} selectNotebook={setNotebook} addCalendar={() => setAddingCalendar(true)} />} />}
@@ -70,11 +71,13 @@ function TimetableWorkspace() {
 function CalendarWorkspace({ data, selectEvent, selectNotebook, addCalendar }: { data: ReturnType<typeof useCalendarData>; selectEvent: (event: DisplayEvent) => void; selectNotebook: (event: DisplayEvent) => void; addCalendar: () => void }) {
   const app = useApp(); const { width } = useWindowDimensions();
   const workspaceWidth = Platform.OS === 'web' ? Math.min(width - (width >= 960 ? 216 : 0), 1280) : Math.min(width, 1600);
-  const contentWidth = workspaceWidth - (width < 600 ? 32 : 64); const sideBySide = app.view.arrangement === 'row' && data.extras.length > 0;
-  const nativeRow = sideBySide && Platform.OS !== 'web'; const panelWidth = sideBySide ? Math.max(nativeRow && app.view.mode === 'week' ? 1092 : 320, (contentWidth - 24) / 2) : contentWidth;
+  const [measuredWidth, setMeasuredWidth] = useState(0);
+  function measureWorkspace(event: LayoutChangeEvent) { setMeasuredWidth(event.nativeEvent.layout.width); }
+  const contentWidth = Platform.OS === 'web' && measuredWidth ? measuredWidth : workspaceWidth - (width < 600 ? 32 : 64); const sideBySide = app.view.arrangement === 'row' && data.extras.length > 0;
+  const nativeRow = sideBySide && (Platform.OS !== 'web' || width < 600); const panelWidth = sideBySide ? Math.max(nativeRow && app.view.mode === 'week' ? 1092 : 320, (contentWidth - 24) / 2) : contentWidth;
   const { closeCalendar } = calendarActions(app, data.ownId, () => undefined);
   const panels = <><CalendarPanel side="left" date={data.ownDate} profileId={data.ownId} profileName={profileName(app.profileList, data.ownId)} panelWidth={panelWidth} outerHorizontalScroll={nativeRow} events={data.ownEvents} common={data.ownCommon} selectEvent={selectEvent} selectNotebook={selectNotebook} />{data.extras.map(extra => <CalendarPanel key={extra.id} side="right" date={extra.date} profileId={extra.id} profileName={profileName(app.profileList, extra.id)} panelWidth={panelWidth} outerHorizontalScroll={nativeRow} events={extra.events} common={extra.common} selectEvent={selectEvent} selectNotebook={selectNotebook} onClose={closeCalendar.bind(null, extra.id)} />)}</>;
-  return <View className="gap-5"><TimetableToolbar />{sideBySide ? <ScrollView horizontal nestedScrollEnabled directionalLockEnabled contentContainerStyle={{ gap: 24 }}>{panels}</ScrollView> : <View className="gap-6">{panels}</View>}{app.profileList.length > app.view.openProfiles.length + 1 ? <View className="self-start"><Action secondary icon={Plus} onPress={addCalendar}>Órarend hozzáadása</Action></View> : null}</View>;
+  return <View onLayout={Platform.OS === 'web' ? measureWorkspace : undefined} className="gap-5"><TimetableToolbar />{sideBySide ? <ScrollView horizontal nestedScrollEnabled directionalLockEnabled contentContainerStyle={{ gap: 24 }}>{panels}</ScrollView> : <View className="gap-6">{panels}</View>}{app.profileList.length > app.view.openProfiles.length + 1 ? <View className="self-start"><Action secondary icon={Plus} onPress={addCalendar}>Órarend hozzáadása</Action></View> : null}</View>;
 }
 function useMapAvailability(profileId: number) {
   const { version } = useApp(); const [showMap, setShowMap] = useState(false);

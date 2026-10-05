@@ -32,7 +32,7 @@ export function StudentWorkspace(props: Props) {
 }
 
 /** A shared underline follows navigation while each label blends into its selected color. */
-export function StudentNavigation({ screen, navigate, openMenu, menuOpen = false }: { screen: WorkspaceScreen; navigate: (screen: WorkspaceScreen) => void; openMenu: () => void; menuOpen?: boolean }) {
+export function StudentNavigation({ screen, navigate, openMenu, menuOpen = false, bottom = false }: { bottom?: boolean; screen: WorkspaceScreen; navigate: (screen: WorkspaceScreen) => void; openMenu: () => void; menuOpen?: boolean }) {
   const { measureNavigation } = usePanelViewport();
   const [width, setWidth] = useState(0);
   const selectedIndex = menuOpen ? 4 : screens.findIndex(item => item.value === screen);
@@ -40,7 +40,7 @@ export function StudentNavigation({ screen, navigate, openMenu, menuOpen = false
   const theme = Colors[useColorScheme()];
   const underlineStyle = useAnimatedStyle(() => ({ transform: [{ translateX: progress.value * width / 5 }] }));
   function measure(event: LayoutChangeEvent) { setWidth(event.nativeEvent.layout.width); }
-  return <View onLayout={measureNavigation} className="border-t border-border bg-background px-3 pt-2 sm:border-b sm:border-t-0 sm:pt-0"><View accessibilityRole="tablist" onLayout={measure} className="relative w-full max-w-[720px] flex-row self-center">
+  return <View onLayout={measureNavigation} className={bottom ? "border-t border-border bg-background px-3 pt-2" : "border-t border-border bg-background px-3 pt-2 sm:border-b sm:border-t-0 sm:pt-0"}><View accessibilityRole="tablist" onLayout={measure} className="relative w-full max-w-[720px] flex-row self-center">
     <Animated.View pointerEvents="none" style={[{ position: 'absolute', bottom: 0, left: Math.max(0, width / 10 - 12), width: 24, height: 2, borderRadius: 1, backgroundColor: theme.textSecondary }, underlineStyle]} />
     {screens.map((item, index) => <NavigationButton key={item.value} label={item.label} icon={item.icon} selected={selectedIndex === index} onPress={() => navigate(item.value)} />)}
     <NavigationButton label="Menü" icon={Menu} selected={menuOpen} onPress={openMenu} />

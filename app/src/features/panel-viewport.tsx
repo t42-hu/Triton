@@ -13,9 +13,10 @@ export function PanelViewportProvider({ children }: { children: ReactNode }) {
   const keyboardInset = useKeyboardInset();
   const [headerHeight, setHeaderHeight] = useState(69);
   const [navigationHeight, setNavigationHeight] = useState(64);
-  const hasTopNavigation = width >= 600 && !(Platform.OS === 'web' && width >= 960);
+  const hasTopNavigation = Platform.OS !== 'web' && width >= 600;
+  const hasBottomNavigation = Platform.OS === 'web' ? width < 960 : width < 600;
   const top = insets.top + headerHeight + (hasTopNavigation ? navigationHeight : 0) + 8;
-  const bottom = Math.max(keyboardInset, insets.bottom + (width < 600 ? navigationHeight : 0)) + 8;
+  const bottom = Math.max(keyboardInset, insets.bottom + (hasBottomNavigation ? navigationHeight : 0)) + 8;
   function measureHeader(event: LayoutChangeEvent) { setHeaderHeight(event.nativeEvent.layout.height); }
   function measureNavigation(event: LayoutChangeEvent) { setNavigationHeight(event.nativeEvent.layout.height); }
   return <PanelViewportContext.Provider value={{ top, bottom, height: Math.max(0, height - top - bottom), measureHeader, measureNavigation }}>{children}</PanelViewportContext.Provider>;
