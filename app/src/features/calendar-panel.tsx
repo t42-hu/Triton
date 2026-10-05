@@ -46,7 +46,7 @@ export function CalendarPanel(props: Props) {
     setView(props.side === 'left' ? { leftDate: date } : { rightDate: date });
   }
   return <View className="overflow-hidden rounded-2xl border border-border bg-card" style={{ width: panelWidth }}>
-    <CalendarHeader profileId={props.profileId} profileName={props.profileName} own={props.side === 'left'} date={props.date} week={weekAt(props.date, anchor)} panelWidth={panelWidth} move={move} onClose={props.onClose} />
+    <CalendarHeader profileId={props.profileId} profileName={props.profileName} own={props.side === 'left'} date={props.date} week={weekAt(props.date, anchor)} panelWidth={panelWidth} outerHorizontalScroll={props.outerHorizontalScroll} move={move} onClose={props.onClose} />
     <SourceStamp profileId={props.profileId} />
     {!visible.length ? <View className="border-b border-border bg-muted px-5 py-3"><Text className="text-sm text-muted-foreground">{commonOnly && props.events.length ? 'Nincs közös óra ebben az időszakban. Kapcsold ki a szűrőt az összes óra megjelenítéséhez.' : 'Ebben az időszakban nincs megjeleníthető óra.'}</Text></View> : null}
     <GestureDetector gesture={pinch}><View collapsable={false}>{props.outerHorizontalScroll ? grid : <GestureDetector gesture={horizontalScroll}><ScrollView horizontal nestedScrollEnabled directionalLockEnabled contentContainerStyle={{ minWidth: '100%' }}>{grid}</ScrollView></GestureDetector>}</View></GestureDetector>
@@ -78,12 +78,13 @@ function usePanelScroll(side: 'left' | 'right', zoom: number, savedMinute: numbe
   }
   return { scroll, onScroll };
 }
-function CalendarHeader({ profileId, profileName, own, date, week, panelWidth, move, onClose }: { profileId: number; profileName: string; own: boolean; date: string; week: 'A' | 'B'; panelWidth: number; move: (amount: number) => void; onClose?: () => void }) {
+function CalendarHeader({ profileId, profileName, own, date, week, panelWidth, outerHorizontalScroll, move, onClose }: { outerHorizontalScroll?: boolean; profileId: number; profileName: string; own: boolean; date: string; week: 'A' | 'B'; panelWidth: number; move: (amount: number) => void; onClose?: () => void }) {
   const firstImportedDate = useFirstImportedWeek(profileId);
   const weekNumber = firstImportedDate ? importedWeekNumber(date, firstImportedDate) : null;
   const { width } = useWindowDimensions();
   const compact = width < 600 || panelWidth < (Platform.OS === 'web' ? 900 : 680);
-  const visibleWidth = width < 600 ? Math.min(panelWidth - 32, width - 64) : panelWidth - 32;
+  const hasViewportBoundHeader = width < 600 && (Platform.OS !== 'web' || outerHorizontalScroll);
+  const visibleWidth = hasViewportBoundHeader ? Math.min(panelWidth - 32, width - 64) : panelWidth - 32;
   const identity = <View className="min-w-0 flex-row items-center gap-3"><View className="h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10"><Icon as={CalendarDays} size={20} className="text-primary" /></View><View className="min-w-0 flex-row items-center gap-2"><Text className="shrink text-[18px] font-semibold" numberOfLines={1}>{profileName}</Text>{own ? <Badge variant="secondary"><Text>Saját</Text></Badge> : null}</View></View>;
   const period = <PeriodNavigator date={date} week={week} weekNumber={weekNumber} compact={compact} move={move} />;
   const close = onClose ? <Button accessibilityLabel={`${profileName} naptár bezárása`} variant="ghost" className="h-[44px] w-[44px] rounded-xl border-0 bg-transparent p-0" onPress={onClose}><Icon as={X} size={18} /></Button> : null;
@@ -153,8 +154,7 @@ function CalendarNotebookButton({ event, selectNotebook }: { event: DisplayEvent
 }
 function CalendarInsights({ dates, events }: { dates: string[]; events: DisplayEvent[] }) {
   const [expanded, setExpanded] = useState(false);
-  const { width } = useWindowDimensions();
-  const isWeb = Platform.OS === 'web' && width >= 600;
+  const isWeb = Platform.OS === 'web';
   return <View className="gap-2 border-t border-border p-3">
     {isWeb ? <Button variant="ghost" accessibilityLabel="Napi terhelés és szünetek" aria-expanded={expanded} accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} className="justify-start border-0 bg-transparent px-1"><Icon as={CalendarDays} size={17} className="text-primary" /><Text className="flex-1 text-sm font-semibold">Napi terhelés és szünetek</Text><Icon as={expanded ? ChevronUp : ChevronDown} size={16} /></Button> : <Text className="text-sm font-semibold">Napi terhelés és szünetek</Text>}
     {!isWeb || expanded ? dates.map(date => <DayInsight key={date} date={date} events={events} />) : null}
