@@ -1,3 +1,5 @@
+import { CurrentTimeLine } from './current-time-line';
+import { useEventAppearance } from './use-event-appearance';
 import { useEffect, useRef, useState } from 'react';
 import Animated from 'react-native-reanimated';
 import { usePeriodTransition } from '@/hooks/use-motion-value';
@@ -113,8 +115,13 @@ function DayHeading({ date, width, events, common, selectEvent, selectNotebook }
   const weekday = new Intl.DateTimeFormat('hu-HU', { weekday: 'short', timeZone: 'Europe/Budapest' }).format(new Date(fromWall(`${date}T12:00`)));
   const month = new Intl.DateTimeFormat('hu-HU', { month: 'short', timeZone: 'Europe/Budapest' }).format(new Date(fromWall(`${date}T12:00`)));
   return <View className={`gap-1 border-l border-border px-3 py-2 ${isToday ? 'bg-primary/10' : ''}`} style={{ width }}><View className="flex-row items-center gap-2"><Text className={isToday ? 'text-2xl font-bold text-primary' : 'text-2xl font-semibold text-foreground'}>{Number(date.slice(8))}</Text><View><Text className="text-xs font-semibold text-muted-foreground">{weekday}</Text><Text className="text-xs text-muted-foreground">{month}</Text></View></View>
-    {allDay.map(event => <View key={eventIdentity(event)} className="relative rounded bg-accent"><Pressable accessibilityRole="button" accessibilityLabel={`${event.title}, ${lessonLabel(event)}${common.has(eventIdentity(event)) ? ', közös óra' : ''}`} onPress={() => selectEvent(event)} className="rounded p-1 pr-7 hover:bg-primary/10 active:bg-primary/15"><View className="flex-row items-start gap-1"><Icon as={lessonIcon(event)} size={13} className="mt-0.5 shrink-0 text-primary" /><Text className="shrink text-xs" numberOfLines={2}>{event.title}</Text></View></Pressable><CalendarNotebookButton event={event} selectNotebook={selectNotebook} /></View>)}
+    {allDay.map(event => <AllDayBlock key={eventIdentity(event)} event={event} shared={common.has(eventIdentity(event))} selectEvent={selectEvent} selectNotebook={selectNotebook} />)}
   </View>;
+}
+function AllDayBlock({ event, shared, selectEvent, selectNotebook }: { event: DisplayEvent; shared: boolean; selectEvent: Props['selectEvent']; selectNotebook: Props['selectNotebook'] }) {
+  const appearance = useEventAppearance(event);
+  const color = appearance.urgency ?? appearance.color;
+  return <View className="relative rounded border border-border bg-accent" style={{ borderColor: color, backgroundColor: appearance.color ? `${appearance.color}26` : undefined }}><Pressable accessibilityRole="button" accessibilityLabel={`${event.title}, ${lessonLabel(event)}${shared ? ', közös óra' : ''}`} onPress={() => selectEvent(event)} className="rounded p-1 pr-7 hover:bg-primary/10 active:bg-primary/15"><View className="flex-row items-start gap-1"><Icon as={lessonIcon(event)} size={13} color={color} className="mt-0.5 shrink-0 text-primary" /><Text style={{ color }} className="shrink text-xs" numberOfLines={2}>{event.title}</Text></View></Pressable><CalendarNotebookButton event={event} selectNotebook={selectNotebook} /></View>;
 }
 function TimeAxis({ zoom }: { zoom: number }) {
   return <View className="bg-muted/40" style={{ width: 56 }}>{Array.from({ length: GRID_MINUTES / 60 + 1 }, (_, hour) => <Text key={hour} className="absolute right-2 text-[11px] font-medium text-muted-foreground" style={{ top: Math.min(hour * 60 * zoom + 2, GRID_MINUTES * zoom - 14), fontVariant: ['tabular-nums'] }}>{String(hour + GRID_START / 60).padStart(2, '0')}:00</Text>)}</View>;
@@ -123,15 +130,17 @@ function DayColumn({ date, width, zoom, events, common, selectEvent, selectNoteb
   const weekend = [0, 6].includes(new Date(`${date}T12:00:00Z`).getUTCDay());
   return <View className={`overflow-hidden border-l border-border/70 ${weekend ? 'bg-muted/20' : ''}`} style={{ width }}>
     {Array.from({ length: GRID_MINUTES / 60 + 1 }, (_, hour) => <View key={hour} className="absolute w-full border-t border-border/35" style={{ top: hour * 60 * zoom }} />)}
+    <CurrentTimeLine date={date} zoom={zoom} />
     {dayLayout(events, date).map(item => <EventBlock key={eventIdentity(item.event)} item={item} zoom={zoom} shared={common.has(eventIdentity(item.event))} selectEvent={selectEvent} selectNotebook={selectNotebook} />)}
   </View>;
 }
 function EventBlock({ item, zoom, shared, selectEvent, selectNotebook }: { item: PositionedEvent; zoom: number; shared: boolean; selectEvent: Props['selectEvent']; selectNotebook: Props['selectNotebook'] }) {
   const event = item.event;
+  const appearance = useEventAppearance(event);
   const height = Math.max(18, item.height * zoom - 2);
   const dense = height < 60;
-  return <View className={`absolute overflow-hidden rounded-lg border ${item.lanes > 1 && !event.hidden ? 'border-destructive/60' : 'border-primary/30'} bg-secondary dark:bg-[#2C343F] ${shared ? 'border-l-[3px] border-l-primary' : ''} ${event.hidden ? 'opacity-40' : ''}`} style={{ top: item.top * zoom + 1, height, left: `${item.lane * 100 / item.lanes}%`, width: `${100 / item.lanes}%` }}>
-    <Pressable accessibilityRole="button" accessibilityLabel={`${event.title}, ${lessonLabel(event)}, ${clockTime(event.start)}, terem: ${event.location || 'nincs'}, ${shared ? 'közös óra' : ''}`} onPress={() => selectEvent(event)} className="h-full rounded-lg p-2 pr-7 hover:bg-primary/10 active:bg-primary/15">{dense ? <View className="flex-row items-center gap-1"><Icon as={lessonIcon(event)} size={12} className="shrink-0 text-primary" /><Text className="shrink text-[11px] font-bold text-primary" numberOfLines={1}>{clockTime(event.start)} · {event.title}</Text></View> : <><View className="flex-row items-center gap-1"><Icon as={lessonIcon(event)} size={14} className="shrink-0 text-primary" /><Text className="shrink text-[11px] font-bold text-primary" style={{ fontVariant: ['tabular-nums'] }}>{clockTime(event.start)}–{clockTime(event.end)}</Text></View><Text className="mt-1 text-[13px] font-semibold leading-[17px] text-foreground" numberOfLines={height > 105 ? 3 : 2}>{event.title}</Text>{height > 82 && event.location ? <View className="mt-1 flex-row items-center gap-1"><Icon as={MapPin} size={12} className="text-muted-foreground" /><Text className="shrink text-[11px] text-muted-foreground" numberOfLines={1}>{event.location}</Text></View> : null}</>}
+  return <View className={`absolute overflow-hidden rounded-lg border ${item.lanes > 1 && !event.hidden ? 'border-destructive/60' : 'border-primary/30'} bg-secondary dark:bg-[#2C343F] ${shared ? 'border-l-[3px] border-l-primary' : ''} ${event.hidden ? 'opacity-40' : ''}`} style={{ borderColor: appearance.urgency ?? appearance.color, borderLeftColor: appearance.color, borderLeftWidth: appearance.color ? 3 : undefined, backgroundColor: appearance.color ? `${appearance.color}26` : undefined, top: item.top * zoom + 1, height, left: `${item.lane * 100 / item.lanes}%`, width: `${100 / item.lanes}%` }}>
+    <Pressable accessibilityRole="button" accessibilityLabel={`${event.title}, ${lessonLabel(event)}, ${clockTime(event.start)}, terem: ${event.location || 'nincs'}, ${shared ? 'közös óra' : ''}`} onPress={() => selectEvent(event)} className="h-full rounded-lg p-2 pr-7 hover:bg-primary/10 active:bg-primary/15">{dense ? <View className="flex-row items-center gap-1"><Icon as={lessonIcon(event)} size={12} className="shrink-0 text-primary" /><Text className="shrink text-[11px] font-bold text-primary" style={{ color: appearance.urgency ?? appearance.color }} numberOfLines={1}>{clockTime(event.start)} · {event.title}</Text></View> : <><View className="flex-row items-center gap-1"><Icon as={lessonIcon(event)} size={14} className="shrink-0 text-primary" /><Text className="shrink text-[11px] font-bold text-primary" style={{ fontVariant: ['tabular-nums'], color: appearance.urgency ?? appearance.color }}>{clockTime(event.start)}–{clockTime(event.end)}</Text></View><Text className="mt-1 text-[13px] font-semibold leading-[17px] text-foreground" numberOfLines={height > 105 ? 3 : 2}>{event.title}</Text>{height > 82 && event.location ? <View className="mt-1 flex-row items-center gap-1"><Icon as={MapPin} size={12} className="text-muted-foreground" /><Text className="shrink text-[11px] text-muted-foreground" numberOfLines={1}>{event.location}</Text></View> : null}</>}
     </Pressable><CalendarNotebookButton event={event} selectNotebook={selectNotebook} />
   </View>;
 }
@@ -154,10 +163,11 @@ function CalendarNotebookButton({ event, selectNotebook }: { event: DisplayEvent
 }
 function CalendarInsights({ dates, events }: { dates: string[]; events: DisplayEvent[] }) {
   const [expanded, setExpanded] = useState(false);
-  const isWeb = Platform.OS === 'web';
+  const analyses = dates.map(date => dailyAnalysis(events, date));
+  if (!analyses.some(analysis => analysis.lessonCount > 0 || analysis.minutes > 0)) return null;
   return <View className="gap-2 border-t border-border p-3">
-    {isWeb ? <Button variant="ghost" accessibilityLabel="Napi terhelés és szünetek" aria-expanded={expanded} accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} className="justify-start border-0 bg-transparent px-1"><Icon as={CalendarDays} size={17} className="text-primary" /><Text className="flex-1 text-sm font-semibold">Napi terhelés és szünetek</Text><Icon as={expanded ? ChevronUp : ChevronDown} size={16} /></Button> : <Text className="text-sm font-semibold">Napi terhelés és szünetek</Text>}
-    {!isWeb || expanded ? dates.map(date => <DayInsight key={date} date={date} events={events} />) : null}
+    {<Button variant="ghost" accessibilityLabel="Napi terhelés és szünetek" aria-expanded={expanded} accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} className="justify-start border-0 bg-transparent px-1"><Icon as={CalendarDays} size={17} className="text-primary" /><Text className="flex-1 text-sm font-semibold">Napi terhelés és szünetek</Text><Icon as={expanded ? ChevronUp : ChevronDown} size={16} /></Button>}
+    {expanded ? dates.map(date => <DayInsight key={date} date={date} events={events} />) : null}
   </View>;
 }
 function DayInsight({ date, events }: { date: string; events: DisplayEvent[] }) {
