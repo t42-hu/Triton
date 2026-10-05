@@ -56,7 +56,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return <Context.Provider value={{ view, setView, anchor, profileList, remindersEnabled, eventColors, now, saveEventColors, version, refresh, error, setError }}>{children}</Context.Provider>;
 }
 function startupError(error: string): string {
-  if (error.includes('NoModificationAllowedError') || error.includes('Access Handle')) return 'A helyi adatbázis egy másik Triton böngészőfülön van megnyitva. Zárd be azt a fület, majd próbáld újra.';
+  if (error.includes('NoModificationAllowedError') || error.includes('Access Handle')) return 'A helyi adatbázis egy másik Triton42 böngészőfülön van megnyitva. Zárd be azt a fület, majd próbáld újra.';
   return error;
 }
 export function useApp(): AppState {

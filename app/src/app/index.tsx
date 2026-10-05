@@ -142,7 +142,7 @@ function useCalendarData() {
 }
 function EmptyState({ create }: { create: () => void }) {
   return <View className="min-h-96 justify-center gap-5 px-3 py-12 sm:px-12">
-    <Image source={require('@/assets/images/triton-v15.png')} accessibilityLabel="Triton logó" contentFit="contain" style={{ width: 72, height: 72 }} />
+    <Image source={require('@/assets/images/triton-v15.png')} accessibilityLabel="Triton42 logó" contentFit="contain" style={{ width: 72, height: 72 }} />
     <Text className="text-3xl font-semibold tracking-tight">Itt kezdődik a heted.</Text><Text className="max-w-md text-base leading-7 text-muted-foreground">Hozz létre egy profilt, majd töltsd be az órarendedet. Az órák, termek és közös alkalmak egy helyen lesznek.</Text><View className="self-start"><Action icon={Plus} onPress={create}>Első profil létrehozása</Action></View>
   </View>;
 }
@@ -150,7 +150,7 @@ function EmptyState({ create }: { create: () => void }) {
 function WorkspaceHeader({ create }: { create: () => void }) {
   const { measureHeader } = usePanelViewport();
   return <View onLayout={measureHeader} className="border-b border-border px-4 py-3 sm:px-8">
-    <View className="flex-row items-center justify-between gap-3"><View className="flex-row items-center gap-2"><Image source={require('@/assets/images/triton-v15.png')} accessibilityLabel="Triton logó" contentFit="contain" style={{ width: 44, height: 44 }} /><Text className="text-xl font-semibold">Triton</Text></View><Button accessibilityLabel="Új óra / esemény" className="h-10 gap-1.5 rounded-lg px-3" onPress={create}><Icon as={Plus} size={17} className="text-primary-foreground" /><Text className="text-[12px]">Új óra / esemény</Text></Button></View>
+    <View className="flex-row items-center justify-between gap-3"><View className="flex-row items-center gap-2"><Image source={require('@/assets/images/triton-v15.png')} accessibilityLabel="Triton42 logó" contentFit="contain" style={{ width: 44, height: 44 }} /><Text className="text-xl font-semibold">Triton42</Text></View><Button accessibilityLabel="Új óra / esemény" className="h-10 gap-1.5 rounded-lg px-3" onPress={create}><Icon as={Plus} size={17} className="text-primary-foreground" /><Text className="text-[12px]">Új óra / esemény</Text></Button></View>
   </View>;
 }
 function WorkspaceMenu({ showMap, open, close }: { showMap: boolean; open: (dialog: DialogName) => void; close: () => void }) {

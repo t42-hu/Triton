@@ -21,5 +21,5 @@ function Navigation() {
   const { setColorScheme } = useColorScheme();
   const theme = view.theme === 'system' ? (system === 'dark' ? 'dark' : 'light') : view.theme;
   useEffect(() => setColorScheme(view.theme), [view.theme, setColorScheme]);
-  return <ThemeProvider value={NAV_THEME[theme]}><StatusBar style={theme === 'dark' ? 'light' : 'dark'} /><Stack screenOptions={{ headerShown: false, title: 'Triton', gestureEnabled: !isPanelOpen, animation: 'slide_from_right' }} /><PortalHost /></ThemeProvider>;
+  return <ThemeProvider value={NAV_THEME[theme]}><StatusBar style={theme === 'dark' ? 'light' : 'dark'} /><Stack screenOptions={{ headerShown: false, title: 'Triton42', gestureEnabled: !isPanelOpen, animation: 'slide_from_right' }} /><PortalHost /></ThemeProvider>;
 }
