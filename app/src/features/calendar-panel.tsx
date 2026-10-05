@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Animated from 'react-native-reanimated';
 import { usePeriodTransition } from '@/hooks/use-motion-value';
 import { Platform, Pressable, ScrollView, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
-import { BookOpen, CalendarDays, ChevronLeft, ChevronRight, MapPin, Monitor, PencilLine, Presentation, X, NotebookPen, CalendarClock, ClipboardCheck, GraduationCap } from 'lucide-react-native';
+import { BookOpen, CalendarDays, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, MapPin, Monitor, PencilLine, Presentation, X, NotebookPen, CalendarClock, ClipboardCheck, GraduationCap } from 'lucide-react-native';
 import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -82,20 +82,21 @@ function CalendarHeader({ profileId, profileName, own, date, week, panelWidth, m
   const firstImportedDate = useFirstImportedWeek(profileId);
   const weekNumber = firstImportedDate ? importedWeekNumber(date, firstImportedDate) : null;
   const { width } = useWindowDimensions();
-  const compact = width < 600 || panelWidth < 680;
+  const compact = width < 600 || panelWidth < (Platform.OS === 'web' ? 900 : 680);
   const visibleWidth = width < 600 ? Math.min(panelWidth - 32, width - 64) : panelWidth - 32;
   const identity = <View className="min-w-0 flex-row items-center gap-3"><View className="h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10"><Icon as={CalendarDays} size={20} className="text-primary" /></View><View className="min-w-0 flex-row items-center gap-2"><Text className="shrink text-[18px] font-semibold" numberOfLines={1}>{profileName}</Text>{own ? <Badge variant="secondary"><Text>Saját</Text></Badge> : null}</View></View>;
   const period = <PeriodNavigator date={date} week={week} weekNumber={weekNumber} compact={compact} move={move} />;
   const close = onClose ? <Button accessibilityLabel={`${profileName} naptár bezárása`} variant="ghost" className="h-[44px] w-[44px] rounded-xl border-0 bg-transparent p-0" onPress={onClose}><Icon as={X} size={18} /></Button> : null;
+  if (Platform.OS === 'web' && !compact) return <View className="px-4 pb-3 pt-4"><View className="relative h-11 flex-row items-center justify-between" style={{ width: visibleWidth }}>{identity}<View style={{ position: 'absolute', left: '50%', top: 0, width: 340, transform: [{ translateX: -170 }] }}>{period}</View><View className="flex-row items-center gap-2"><ZoomControls />{close}</View></View></View>;
   return <View className="px-4 pb-2 pt-4"><View className="gap-3" style={{ width: visibleWidth }}>
     {compact ? <><View className="min-h-[44px] flex-row items-center justify-between gap-3">{identity}<View className="flex-row items-center gap-1"><ZoomControls />{close}</View></View>{period}</> : <View className="flex-row items-center justify-between gap-4">{identity}<View className="flex-row items-center gap-2">{period}<ZoomControls />{close}</View></View>}
   </View></View>;
 }
 function PeriodNavigator({ date, week, weekNumber, compact, move }: { date: string; week: 'A' | 'B'; weekNumber: number | null; compact: boolean; move: (amount: number) => void }) {
   const periodStyle = usePeriodTransition(date);
-  return <View className="h-[44px] overflow-hidden flex-row items-center rounded-xl border border-border bg-background/70" style={{ width: compact ? '100%' : 304 }}>
+  return <View className="h-[44px] overflow-hidden flex-row items-center rounded-xl border border-border bg-background/70" style={{ width: compact ? '100%' : Platform.OS === 'web' ? 340 : 304 }}>
     <PeriodArrow next={false} onPress={() => move(-1)} />
-    <Animated.View style={periodStyle} className="min-w-0 flex-1 flex-row items-center justify-center gap-2"><Text className="shrink text-center text-[14px] font-medium" numberOfLines={1}>{dateLabel(date)}</Text><Badge variant="secondary"><Text>{weekNumber === null ? `${week} hét` : `${week} · ${weekNumber}. hét`}</Text></Badge></Animated.View>
+    <Animated.View style={[periodStyle, Platform.OS === 'web' ? { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, flex: 1, minWidth: 0 } : undefined]} className="min-w-0 flex-1 flex-row items-center justify-center gap-2"><Text className="shrink text-center text-[14px] font-medium" numberOfLines={1}>{dateLabel(date)}</Text><Badge variant="secondary"><Text>{weekNumber === null ? `${week} hét` : `${week} · ${weekNumber}. hét`}</Text></Badge></Animated.View>
     <PeriodArrow next onPress={() => move(1)} />
   </View>;
 }
@@ -151,7 +152,12 @@ function CalendarNotebookButton({ event, selectNotebook }: { event: DisplayEvent
   return <Button accessibilityLabel={`${event.title} jegyzetfüzete`} variant="ghost" className="absolute right-0 top-0 h-6 w-6 rounded p-0" hitSlop={6} onPress={open}><Icon as={NotebookPen} size={14} className="text-primary" /></Button>;
 }
 function CalendarInsights({ dates, events }: { dates: string[]; events: DisplayEvent[] }) {
-  return <View className="gap-2 border-t border-border p-3"><Text className="text-sm font-semibold">Napi terhelés és szünetek</Text>{dates.map(date => <DayInsight key={date} date={date} events={events} />)}</View>;
+  const [expanded, setExpanded] = useState(false);
+  const isWeb = Platform.OS === 'web';
+  return <View className="gap-2 border-t border-border p-3">
+    {isWeb ? <Button variant="ghost" accessibilityLabel="Napi terhelés és szünetek" aria-expanded={expanded} accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} className="justify-start border-0 bg-transparent px-1"><Icon as={CalendarDays} size={17} className="text-primary" /><Text className="flex-1 text-sm font-semibold">Napi terhelés és szünetek</Text><Icon as={expanded ? ChevronUp : ChevronDown} size={16} /></Button> : <Text className="text-sm font-semibold">Napi terhelés és szünetek</Text>}
+    {!isWeb || expanded ? dates.map(date => <DayInsight key={date} date={date} events={events} />) : null}
+  </View>;
 }
 function DayInsight({ date, events }: { date: string; events: DisplayEvent[] }) {
   const analysis = dailyAnalysis(events, date);
