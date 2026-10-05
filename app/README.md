@@ -1,4 +1,4 @@
-# Triton
+# Triton42
 
 Expo 57 alkalmazás helyi SQLite-adattárolással, React Native Reusables felülettel, ICS/JSON-importtal, saját naptárlink frissítésével, kézi órákkal és profilok összehasonlításával. Nincs alkalmazásszerver vagy fiókrendszer.
 

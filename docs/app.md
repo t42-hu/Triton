@@ -148,3 +148,7 @@ A közös szabad idő keresése minden ellenőrzött budapesti naptári napot k�
 Minden eseményszín közös választót használ: névvel ellátott minták, az időpont és a körvonal élő előnézete, külön lenyitható egyéni színkód. A Kész alkalmazza a választást, az X elveti a választóban tett módosítást. A külső színezési panel mentése továbbra is szükséges.
 
 A lenyíló tartalmak rövid, rugózás nélküli magasság- és áttűnési animációt használnak, és tiszteletben tartják a rendszer csökkentett mozgás beállítását. A Színek és küszöbök nyila nyitva lefelé mutat; ez a gomb és az Egyéni szín nem indít automatikus legörgetést. A többi panelen belüli lenyitás a tartalom végleges mérete után görget. A legördülő választólisták a mező szélességét követik.
+
+## Alkalmazásnév
+
+Az alkalmazás megjelenő neve Triton42: fejléc, webes lapcím, akadálymentes logófelirat, iOS- és Android-indítóikon neve, valamint exportált naptárak termékazonosítója. A telepítési azonosító továbbra is `hu.t42.triton`, így a meglévő helyi profilok a frissítéskor megmaradnak.
