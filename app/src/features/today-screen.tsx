@@ -1,3 +1,4 @@
+import { AnimatedDisclosure } from './animated-disclosure';
 import { useEventAppearance } from './use-event-appearance';
 import { useEffect, useState } from 'react';
 import { AppState, View } from 'react-native';
@@ -73,6 +74,6 @@ export function DailySummary({ analysis }: { analysis: ReturnType<typeof dailyAn
   const [expanded, setExpanded] = useState(false);
   const minutes = Math.round(analysis.minutes);
   return <View className="gap-3"><View className="flex-row flex-wrap items-center gap-4"><View className="flex-row items-center gap-1.5"><Icon as={Clock3} size={15} className="text-muted-foreground" /><Text className="text-sm font-medium">{Math.floor(minutes / 60)} ó {minutes % 60} p</Text></View><View className="flex-row items-center gap-1.5"><Icon as={CalendarDays} size={15} className="text-muted-foreground" /><Text className="text-sm text-muted-foreground">{analysis.lessonCount} óra</Text></View>{analysis.gaps.length ? <Button variant="ghost" className="h-9 gap-1 rounded-lg border-0 bg-transparent px-1 py-0" hitSlop={4} accessibilityLabel="Lyukasórák részletei" accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)}><Icon as={Coffee} size={15} /><Text className="text-sm">{analysis.gaps.length} szünet</Text><Icon as={expanded ? ChevronUp : ChevronDown} size={13} /></Button> : null}</View>
-    {expanded ? <View className="gap-2 rounded-lg bg-muted/40 p-3">{analysis.gaps.map(slot => <Text key={slot.start} className="text-sm text-muted-foreground">{clockTime(slot.start)}–{clockTime(slot.end)} · {Math.round((slot.end - slot.start) / 60000)} perc</Text>)}</View> : null}
+    <AnimatedDisclosure expanded={expanded} gap={12}><View className="gap-2 rounded-lg bg-muted/40 p-3">{analysis.gaps.map(slot => <Text key={slot.start} className="text-sm text-muted-foreground">{clockTime(slot.start)}–{clockTime(slot.end)} · {Math.round((slot.end - slot.start) / 60000)} perc</Text>)}</View></AnimatedDisclosure>
   </View>;
 }

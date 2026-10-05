@@ -1,3 +1,4 @@
+import { AnimatedDisclosure } from './animated-disclosure';
 import { EventColorDialog } from './event-color-editor';
 import { ReminderDialog } from './reminder-dialog';
 import { NotebookPen, Palette, Bell, Repeat2, Save, RotateCcw, Trash2, BookOpen, FileText, ListTodo, ChevronDown, ChevronUp } from 'lucide-react-native';
@@ -43,13 +44,13 @@ export function EventDialog({ event, close, openMap }: { event: DisplayEvent; cl
     <Action secondary icon={Palette} onPress={() => setColorsOpen(true)}>Színezés</Action>
     <EventEditorSections event={event} editor={editor} openMap={() => { setMapOpen(true); openMap(editor.fields.location, () => setMapOpen(false)); }} />
     <Action quiet expanded={advancedOpen} icon={advancedOpen ? ChevronUp : ChevronDown} onPress={() => setAdvancedOpen(!advancedOpen)}>További műveletek</Action>
-    {advancedOpen ? <View className="gap-4 border-t border-border pt-4">
+    <AnimatedDisclosure expanded={advancedOpen} gap={20}><View className="gap-4 border-t border-border pt-4">
       <Toggle label="Alkalom elrejtése / kihagyása" checked={editor.fields.hidden} onChange={hidden => editor.change({ hidden })} />
       <Action secondary expanded={editor.candidates.length > 0} icon={Repeat2} onPress={() => void suggest()}>Több alkalom módosítása</Action>
-      {editor.candidates.length ? <CandidateList items={editor.candidates} selected={editor.selected} setSelected={editor.setSelected} /> : null}
+      <AnimatedDisclosure expanded={editor.candidates.length > 0} gap={16}><CandidateList items={editor.candidates} selected={editor.selected} setSelected={editor.setSelected} /></AnimatedDisclosure>
       {event.patch && !editor.candidates.length ? <Action secondary icon={RotateCcw} onPress={() => void save(true)}>Eredeti adatok visszaállítása</Action> : null}
       {event.sourceId.includes(':manual:') ? <Action secondary icon={Trash2} onPress={() => setDeleting(true)}>Kézi sorozat törlése</Action> : null}
-    </View> : null}
+    </View></AnimatedDisclosure>
     {editor.error ? <Text accessibilityRole="alert" className="text-destructive">{editor.error}</Text> : null}
     {deleting ? <Confirm title="Kézi sorozat törlése" description="A kézzel létrehozott esemény összes alkalma és feladata törlődik." accept={() => void remove()} cancel={() => setDeleting(false)} /> : null}
   </Modal>;

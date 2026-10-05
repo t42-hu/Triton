@@ -1,3 +1,4 @@
+import { AnimatedDisclosure } from './animated-disclosure';
 import { useState } from 'react';
 import { View, useWindowDimensions } from 'react-native';
 import { ChevronDown, ChevronUp, Minus, Plus, SlidersHorizontal, CalendarDays, CalendarRange, CalendarCheck, Rows3, Columns2, RotateCcw } from 'lucide-react-native';
@@ -52,7 +53,7 @@ function ComparisonControls({ compact }: { compact: boolean }) {
       <Icon as={SlidersHorizontal} size={17} className="text-muted-foreground" /><Text className="flex-1 text-[14px] font-medium">Összehasonlítás</Text>
       <Text className="text-[12px] text-muted-foreground">{view.arrangement === 'row' ? 'Egymás mellett' : 'Egymás alatt'}</Text><Icon as={expanded ? ChevronUp : ChevronDown} size={16} className="text-muted-foreground" />
     </Button> : null}
-    {!compact || expanded ? <View className={compact ? 'gap-2 pb-1 pt-2' : 'flex-row items-center gap-6'}>
+    <AnimatedDisclosure expanded={!compact || expanded}><View className={compact ? 'gap-2 pb-1 pt-2' : 'flex-row items-center gap-6'}>
       <Tabs value={view.arrangement} onValueChange={arrangement => setView({ arrangement: arrangement === 'row' ? 'row' : 'column' })}>
         <SlidingTabsList values={['column', 'row']} className={segmentList} style={{ width: compact ? '100%' : 280 }}>
           <TabsTrigger className={`${segment} px-1`} value="column"><Icon as={Rows3} size={14} /><Text className="text-center text-[11px] font-medium" numberOfLines={1}>Egymás alatt</Text></TabsTrigger>
@@ -61,7 +62,7 @@ function ComparisonControls({ compact }: { compact: boolean }) {
       </Tabs>
       <ComparisonSwitch label="Szinkronlapozás" checked={view.sync} onChange={sync => setView({ sync, ...(sync ? { rightDate: view.leftDate } : {}) })} />
       <ComparisonSwitch label="Csak közös órák" checked={view.common} onChange={common => setView({ common, ...(common ? { rightDate: view.leftDate } : {}) })} />
-    </View> : null}
+    </View></AnimatedDisclosure>
   </View>;
 }
 
