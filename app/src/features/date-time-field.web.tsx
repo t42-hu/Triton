@@ -45,11 +45,11 @@ function CalendarPicker({ value, onChange, close }: PickerProps) {
   function finish() { onChange(selected); close(); }
   function selectToday() { select(currentDate); }
   return <Modal title="Dátum kiválasztása" maxWidth={440} close={close}>
-    <View style={centeredPickerStyle} className="w-full max-w-[360px] self-center gap-5">
+    <View style={centeredPickerStyle} className="w-full max-w-[360px] self-center gap-3">
       <View className="flex-row items-center justify-between gap-3"><Text accessibilityRole="header" accessibilityLiveRegion="polite" className="flex-1 text-lg font-semibold">{monthLabel}</Text><Button variant="ghost" size="icon" accessibilityLabel="Előző hónap" onPress={() => setMonth(shiftCalendarMonth(month, -1))} className="border-0 bg-transparent"><Icon as={ChevronLeft} size={18} /></Button><Button variant="ghost" size="icon" accessibilityLabel="Következő hónap" onPress={() => setMonth(shiftCalendarMonth(month, 1))} className="border-0 bg-transparent"><Icon as={ChevronRight} size={18} /></Button></View>
       <View className="flex-row">{weekdays.map(day => <View key={day} style={{ width: '14.285714%' }} className="items-center"><Text className="text-xs font-medium text-muted-foreground">{day}</Text></View>)}</View>
       <View testID="web-calendar-grid" className="flex-row flex-wrap">{calendarDays(month).map(date => <CalendarDay key={date} date={date} month={month} selected={selected} today={currentDate} select={select} />)}</View>
-      <Button variant="link" onPress={selectToday} accessibilityLabel="Mai dátum kiválasztása"><Text>Ma</Text></Button>
+      <Button variant="link" className="h-9" onPress={selectToday} accessibilityLabel="Mai dátum kiválasztása"><Text>Ma</Text></Button>
     </View><Button onPress={finish} accessibilityLabel="Választás kész"><Icon as={Check} size={16} className="text-primary-foreground" /><Text>Kész</Text></Button>
   </Modal>;
 }
@@ -59,7 +59,7 @@ function CalendarDay({ date, month, selected, today: currentDate, select }: { da
   const isCurrentMonth = date.startsWith(month);
   const label = new Intl.DateTimeFormat('hu-HU', { dateStyle: 'full', timeZone: 'UTC' }).format(new Date(`${date}T12:00:00Z`));
   function press() { select(date); }
-  return <View style={{ width: '14.285714%' }} className="items-center py-1"><Button accessibilityLabel={label} accessibilityState={{ selected: isSelected }} aria-pressed={isSelected} variant={isSelected ? 'default' : 'ghost'} onPress={press} className={`h-10 w-10 rounded-full p-0 ${isSelected ? '' : 'border-0 bg-transparent'} ${date === currentDate && !isSelected ? 'border border-primary/50' : ''}`}><Text className={isSelected ? 'text-primary-foreground' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground/50'}>{Number(date.slice(8))}</Text></Button></View>;
+  return <View style={{ width: '14.285714%' }} className="items-center py-0.5"><Button accessibilityLabel={label} accessibilityState={{ selected: isSelected }} aria-pressed={isSelected} variant={isSelected ? 'default' : 'ghost'} onPress={press} className={`h-10 w-10 rounded-full p-0 ${isSelected ? '' : 'border-0 bg-transparent'} ${date === currentDate && !isSelected ? 'border border-primary/50' : ''}`}><Text className={isSelected ? 'text-primary-foreground' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground/50'}>{Number(date.slice(8))}</Text></Button></View>;
 }
 
 function TimePicker({ value, onChange, close }: PickerProps) {
@@ -67,7 +67,7 @@ function TimePicker({ value, onChange, close }: PickerProps) {
   const [minute, setMinute] = useState(value.slice(3, 5) || '00');
   const isValid = /^\d{1,2}$/.test(hour) && Number(hour) < 24 && /^\d{1,2}$/.test(minute) && Number(minute) < 60;
   function finish() { if (!isValid) return; onChange(`${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`); close(); }
-  return <Modal title="Idő beállítása" maxWidth={440} close={close}><View style={centeredPickerStyle} className="max-w-[320px] flex-row items-center justify-center gap-4 self-center py-6">
+  return <Modal title="Idő beállítása" maxWidth={440} close={close}><View style={centeredPickerStyle} className="max-w-[320px] flex-row items-center justify-center gap-4 self-center py-3">
     <TimeInput label="Óra" value={hour} onChange={setHour} max={23} /><Text className="pt-5 text-3xl text-muted-foreground">:</Text><TimeInput label="Perc" value={minute} onChange={setMinute} max={59} />
   </View><Button disabled={!isValid} onPress={finish} accessibilityLabel="Választás kész"><Icon as={Check} size={16} className="text-primary-foreground" /><Text>Kész</Text></Button></Modal>;
 }
@@ -78,7 +78,7 @@ function TimeInput({ label, value, onChange, max }: { label: string; value: stri
     if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
     event.preventDefault(); step(event.key === 'ArrowUp' ? 1 : -1);
   }
-  return <View className="gap-3"><Text className="text-center text-sm text-muted-foreground">{label}</Text><View className="relative">
+  return <View className="gap-2"><Text className="text-center text-sm text-muted-foreground">{label}</Text><View className="relative">
     <input aria-label={label} role="spinbutton" aria-valuemin={0} aria-valuemax={max} aria-valuenow={Number(value)} type="text" inputMode="numeric" maxLength={2} value={value} onKeyDown={handleKey} onChange={event => onChange(event.currentTarget.value)} className="h-20 w-28 rounded-xl border border-input bg-muted/40 pl-3 pr-9 text-center text-3xl tabular-nums text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
     <View className="absolute bottom-1 right-1 top-1 justify-center gap-1"><Button variant="ghost" accessibilityLabel={`${label} növelése`} onPress={() => step(1)} className="h-8 w-7 rounded-lg border-0 bg-transparent p-0"><Icon as={ChevronUp} size={16} className="text-primary" /></Button><Button variant="ghost" accessibilityLabel={`${label} csökkentése`} onPress={() => step(-1)} className="h-8 w-7 rounded-lg border-0 bg-transparent p-0"><Icon as={ChevronDown} size={16} className="text-primary" /></Button></View>
   </View></View>;
