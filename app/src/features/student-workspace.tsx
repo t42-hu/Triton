@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { View, type LayoutChangeEvent } from 'react-native';
+import { Platform, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { interpolateColor, useAnimatedStyle } from 'react-native-reanimated';
 import { usePanelViewport } from './panel-viewport';
 import { useMotionValue } from '@/hooks/use-motion-value';
@@ -22,7 +22,7 @@ const screens: { value: WorkspaceScreen; label: string; icon: LucideIcon }[] = [
 /** Starts with today's useful information; timetable editing remains one tap away. */
 export function StudentWorkspace(props: Props) {
   const { screen } = props; const [freeTimeOpen, setFreeTimeOpen] = useState(false);
-  return <View className="gap-5">
+  return <View className="gap-5" style={Platform.OS === 'web' && screen === 'search' ? { maxWidth: 800, width: '100%' } : undefined}>
     {screen === 'today' ? <TodayScreen {...props} openFreeTime={() => setFreeTimeOpen(true)} openTasks={props.openTasks} /> : null}
     {screen === 'calendar' ? props.calendar : null}
     {screen === 'tasks' ? <StudentTasksScreen {...props} /> : null}

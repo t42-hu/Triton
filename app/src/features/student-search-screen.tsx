@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
-import { UsersRound, Search, CalendarDays, NotebookPen, ListTodo } from 'lucide-react-native';
+import { Search, CalendarDays, NotebookPen, ListTodo } from 'lucide-react-native';
 import { WorkspaceHeading, WorkspaceSection } from './workspace-section';
 import { Text } from '@/components/ui/text';
 import { searchStudentData, type SearchResults } from '../data/student-repository';
 import { useApp } from './app-state';
-import { Choice, Field } from './controls';
+import { SearchControls } from './search-controls';
 import { NotebookLinkRow } from './notebook-dialog';
 import { StudentEventRow, type EventActions } from './student-event-row';
 import { StudentTaskRow } from './student-tasks-screen';
@@ -26,8 +26,8 @@ export function StudentSearchScreen(props: EventActions & { profileId: number })
   }, [query, scope, app.version]);
   const count = results.events.length + results.links.length + results.tasks.length;
   return <View className="gap-4">
-    <WorkspaceHeading icon={Search} title="Keresés" /><Field label="Mit keresel?" value={query} onChange={setQuery} placeholder="Tantárgy, terem, feladat, jegyzet vagy link" />
-    <Choice fullWidth icon={UsersRound} label="Keresés profilja" value={scope} onChange={setScope} options={[{ value: 'all', label: 'Minden profil' }, ...app.profileList.map(profile => ({ value: String(profile.id), label: profile.name }))]} />
+    <WorkspaceHeading icon={Search} title="Keresés" />
+    <SearchControls query={query} setQuery={setQuery} scope={scope} setScope={setScope} options={[{ value: 'all', label: 'Minden profil' }, ...app.profileList.map(profile => ({ value: String(profile.id), label: profile.name }))]} />
     {query.trim() ? <Text accessibilityLiveRegion="polite" className="text-sm text-muted-foreground">{loading ? 'Keresés…' : `${count} találat`}</Text> : null}
     {results.events.length ? <WorkspaceSection icon={CalendarDays} title="Események" count={results.events.length}>
     {results.events.map(event => <StudentEventRow key={`${event.sourceId}:${event.key}`} event={event} showDate openEvent={props.openEvent} openNotebook={props.openNotebook} />)}</WorkspaceSection> : null}
