@@ -66,7 +66,7 @@ function ProfileRow({ profile, importCalendar, exportCalendar, rename, makeOwn, 
   </View>;
 }
 function ProfileAction({ icon, label, text, destructive = false, onPress }: { icon: typeof Pencil; label: string; text: string; destructive?: boolean; onPress: () => void }) {
-  return <Button accessibilityLabel={label} variant="ghost" className="h-12 min-w-0 flex-1 flex-col gap-1 rounded-lg border-0 bg-muted/40 px-0" onPress={onPress}><Icon as={icon} size={17} className={destructive ? 'text-destructive' : 'text-muted-foreground'} /><Text numberOfLines={1} style={{ fontSize: 11, lineHeight: 15 }} className={`text-center ${destructive ? 'text-destructive' : ''}`}>{text}</Text></Button>;
+  return <Button accessibilityLabel={label} variant="ghost" style={{ paddingHorizontal: 0 }} className="h-12 min-w-0 flex-1 flex-col gap-1 rounded-lg border-0 bg-muted/40 px-0" onPress={onPress}><Icon as={icon} size={17} className={destructive ? 'text-destructive' : 'text-muted-foreground'} /><Text numberOfLines={1} style={{ fontSize: 11, lineHeight: 15 }} className={`text-center ${destructive ? 'text-destructive' : ''}`}>{text}</Text></Button>;
 }
 
 async function exportIcs(profile: Profile, setError: (message: string) => void) {
