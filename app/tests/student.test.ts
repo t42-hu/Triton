@@ -103,17 +103,38 @@ test('category and note patches keep search current when an imported source is r
   await deleteProfile(profileId);
 });
 
-test('common free time spans midnight and breaks at missing imported coverage', () => {
+test('common free time keeps days separate and breaks at missing imported coverage', () => {
   const source = (fromDate: string, toDate: string, isManual = 0) => ({ fromDate, toDate, isManual });
   const full = { id: 1, sources: [source('2026-10-01', '2026-10-04')] };
   const split = { id: 2, sources: [source('2026-10-01', '2026-10-02'), source('2026-10-04', '2026-10-04'), source('2026-10-03', '2026-10-03', 1)] };
   const start = fromWall('2026-10-01T08:00'); const end = fromWall('2026-10-04T20:00');
   const result = coveredWindows([full, split], start, end);
   assert.deepEqual(result.missing, [{ date: '2026-10-03', profileIds: [2] }]);
-  assert.deepEqual(result.windows, [{ start, end: fromWall('2026-10-03') }, { start: fromWall('2026-10-04'), end }]);
+  assert.deepEqual(result.windows, [{ start, end: fromWall('2026-10-02') }, { start: fromWall('2026-10-02'), end: fromWall('2026-10-03') }, { start: fromWall('2026-10-04'), end }]);
   const continuous = coveredWindows([full, { ...full, id: 2 }], start, end);
-  assert.deepEqual(continuous.windows, [{ start, end }]);
+  assert.equal(continuous.windows.length, 4);
+  assert.equal(continuous.windows[0].start, start);
+  assert.equal(continuous.windows.at(-1)?.end, end);
   assert.deepEqual(freeSlots([], start, end), [{ start, end }]);
   const eventAtMidnight = event('Program', '2026-10-02T23:00', '2026-10-03T01:00');
   assert.deepEqual(freeSlots([eventAtMidnight], start, end), [{ start, end: eventAtMidnight.start }, { start: eventAtMidnight.end, end }]);
+});
+
+
+test('evening and morning availability cannot combine to meet the minimum duration', () => {
+  const profiles = [1, 2].map(id => ({ id, sources: [{ fromDate: '2026-10-05', toDate: '2026-10-06', isManual: 0 }] }));
+  const start = fromWall('2026-10-05T23:30'); const end = fromWall('2026-10-06T00:30');
+  const { windows } = coveredWindows(profiles, start, end);
+  const slots = windows.flatMap(window => freeSlots([], window.start, window.end, 60));
+  assert.deepEqual(slots, []);
+  const shorter = windows.flatMap(window => freeSlots([], window.start, window.end, 30));
+  assert.equal(shorter.length, 2);
+  assert.equal(shorter[0].end, fromWall('2026-10-06'));
+  assert.equal(shorter[1].start, fromWall('2026-10-06'));
+});
+
+test('daily free-time boundaries follow Budapest daylight saving time', () => {
+  const profiles = [1, 2].map(id => ({ id, sources: [{ fromDate: '2026-10-24', toDate: '2026-10-25', isManual: 0 }] }));
+  const { windows } = coveredWindows(profiles, fromWall('2026-10-24'), fromWall('2026-10-26'));
+  assert.deepEqual(windows.map(slot => (slot.end - slot.start) / 3600000), [24, 25]);
 });

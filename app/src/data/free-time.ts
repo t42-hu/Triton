@@ -6,7 +6,7 @@ import { sources, visibleEvents } from './repository';
 type Coverage = { fromDate: string; toDate: string; isManual: number | boolean };
 export type FreeTimeResult = { slots: TimeSlot[]; missing: { date: string; profileIds: number[] }[] };
 
-/** Never bridges an unimported day; adjacent verified days form one continuous search window. */
+/** Keeps each verified Budapest calendar day separate, including daylight-saving boundaries. */
 export function coveredWindows(profiles: { id: number; sources: Coverage[] }[], start: number, end: number) {
   const windows: TimeSlot[] = []; const missing: FreeTimeResult['missing'] = [];
   for (let date = wallTime(start).slice(0, 10); fromWall(date) < end; date = addDays(date, 1)) {
@@ -15,14 +15,12 @@ export function coveredWindows(profiles: { id: number; sources: Coverage[] }[], 
     const profileIds = profiles.filter(lacksCoverage).map(profile => profile.id);
     if (profileIds.length) { missing.push({ date, profileIds }); continue; }
     const slot = { start: Math.max(start, fromWall(date)), end: Math.min(end, fromWall(addDays(date, 1))) };
-    const previous = windows.at(-1);
-    if (previous?.end === slot.start) { previous.end = slot.end; continue; }
     windows.push(slot);
   }
   return { windows, missing };
 }
 
-/** Finds every maximal free interval, including intervals spanning midnight. */
+/** Finds maximal free intervals within each verified day without joining evenings to the next morning. */
 export async function findCommonFreeTime(ids: number[], start: number, end: number, minimumMinutes: number): Promise<FreeTimeResult> {
   if (!Number.isFinite(minimumMinutes) || minimumMinutes < 1) throw new Error('Pozitív minimum időtartam szükséges.');
   if (ids.length < 2 || !Number.isFinite(start) || !Number.isFinite(end) || end <= start || end - start > 366 * 86400000) throw new Error('Legalább két profil és legfeljebb egyéves, érvényes időtartomány szükséges.');
