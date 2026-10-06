@@ -1,0 +1,58 @@
+name: Electron desktop
+
+on:
+    push:
+    pull_request:
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+jobs:
+    package:
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - os: macos-latest
+                      name: macos
+                    - os: windows-latest
+                      name: windows
+                    - os: ubuntu-latest
+                      name: linux
+        runs-on: ${{ matrix.os }}
+        timeout-minutes: 45
+        env:
+            APP_ID: fullstack-desktop-ci
+            APP_NAME: Fullstack Desktop CI
+            APP_VERSION: 0.1.0
+            APP_URL: https://example.test
+            NATIVE_API_URL: https://example.test/api
+            NATIVE_APP_SCHEME: fullstack-desktop-ci
+            ELECTRON_BUNDLE_ID: com.example.fullstackdesktopci
+            ELECTRON_MAINTAINER: Fullstack CI <ci@example.test>
+            CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
+              with:
+                  version: 11.8.0
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: '.node-version'
+                  cache: pnpm
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+            - name: Build desktop installer
+              run: pnpm electron:make
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: electron-${{ matrix.name }}
+                  path: |
+                      desktop/out/*.dmg
+                      desktop/out/*.zip
+                      desktop/out/*.exe
+                      desktop/out/*.AppImage
+                      desktop/out/*.deb
+                  if-no-files-found: error
+                  retention-days: 7

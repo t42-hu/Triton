@@ -1,0 +1,38 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { fileURLToPath } from 'node:url'
+import { testEnvironment, testCompose } from './test-environment.mjs'
+const root = fileURLToPath(new URL('..', import.meta.url))
+test('integration settings never inherit real provider credentials or clone identity', () => {
+    const env = testEnvironment('fullstack-test-isolation', 18090)
+    assert.equal(env.APP_ID, 'fullstack-test-isolation')
+    assert.equal(env.APP_URL, 'http://localhost:18090')
+    assert.equal(env.R2_ENDPOINT, 'http://storage:8333')
+    assert.equal(env.SMTP_HOST, 'mailpit')
+    assert.equal(env.STRIPE_SECRET_KEY, 'sk_test_isolated_not_a_real_key')
+    assert.equal(env.CLOUDFLARE_API_TOKEN, undefined)
+    assert.notEqual(env.POSTGRES_PASSWORD, testEnvironment('fullstack-test-isolation', 18090).POSTGRES_PASSWORD)
+    assert.throws(() => testEnvironment('existing-product', 8080), /isolated/)
+})
+test('test stack uses release images and isolated local services without external publishing', () => {
+    const { services, volumes } = testCompose(root, 'fullstack-test-isolation', 18090)
+    assert.equal(services.backend.build.dockerfile, 'backend/Dockerfile.prod')
+    assert.equal(services.migrate.image, services.backend.image)
+    assert.equal(services.migrate.build, undefined)
+    assert.equal(services.migrate.pull_policy, 'never')
+    assert.equal(services.frontend.build.dockerfile, 'frontend/Dockerfile.prod')
+    assert.equal(services.backend.read_only, true)
+    assert.equal(services.backend.environment.NODE_ENV, 'development')
+    assert.equal(services.cloudflared, undefined)
+    assert.equal(services.virus_scanner, undefined)
+    assert.ok(volumes['storage-data'] === null)
+    assert.ok(Object.values(volumes).every((value) => value === null))
+    for (const service of Object.values(services))
+        for (const port of service.ports || []) assert.ok(port.startsWith('127.0.0.1:'))
+    const scanned = testCompose(root, 'fullstack-test-isolation', 18090, true)
+    assert.equal(scanned.services.backend.depends_on.virus_scanner.condition, 'service_healthy')
+    const remote = testCompose(root, 'fullstack-test-isolation', 18090, false, true)
+    assert.match(remote.services.browser.image, /^mcr.microsoft.com\/playwright:v\d+\.\d+\.\d+-noble$/)
+    assert.equal(remote.services.browser.user, 'pwuser')
+    assert.deepEqual(remote.services.browser.ports, ['127.0.0.1::3000'])
+})

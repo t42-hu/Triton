@@ -1,50 +1,115 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
 node_modules/
+.pnpm-store/
 
-# Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
-
-# Native
-.kotlin/
-*.orig.*
-*.jks
-*.p8
-*.p12
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.local
+*.secret
 *.key
-*.mobileprovision
-
-# Metro
-.metro-health-check*
-
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# macOS
-.DS_Store
 *.pem
 
-# local env files
-.env*.local
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.out
 
-# typescript
 *.tsbuildinfo
 
-example
+dist/
+dist-bundle/
+dist-test/
+build/
+out/
+release/
+debug/
+.tmp/
+.temp/
+.next/
+.turbo/
+coverage/
 
-# generated native folders
-/ios
-/android
-.cursor/hooks/
+.cache/
+.eslintcache
+.stylelintcache
+*.cache
 
-ics/
-output/
-.cursor/
-neptunSubscribeLink.md
-NeptunCalendarExport.ics
+
+*.pid
+*.seed
+*.pid.lock
+
+package-lock.json
+yarn.lock
+
+drizzle/meta/_journal.local.json
+
+docker-compose.override.yml
+
+# Local agent tooling is not part of the application template.
+.agents/
+.codex/
+skills-lock.json
+
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.sublime-project
+*.sublime-workspace
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+*.swp
+*.swo
+*~
+*.tmp
+
+*.zip
+*.tar
+*.gz
+*.rar
+*.7z
+
+*.sqlite
+*.sqlite3
+*.db
+
+*.bak
+*.old
+*.orig
+*.rej
+
+# Database backups contain private data.
+backups/
+*.dump
+
+# System Stats agent identity and account credentials.
+statsd/
+
+# Generated integration/browser artifacts
+test-results/
+playwright-report/
+
+**/out-native/
+
+# Generated Electron configuration, bundled renderer, and installers
+desktop/.generated/
+desktop/renderer/
+desktop/out/
+desktop/dist/
+
+frontend/universal/.generated/
+
+frontend/public/triton/
+**/.expo/
+**/android/
+**/ios/
+
+frontend/output/

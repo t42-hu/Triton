@@ -1,0 +1,42 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": ["config:recommended"],
+    "timezone": "Europe/Budapest",
+    "schedule": ["before 6am on Monday"],
+    "dependencyDashboard": true,
+    "prConcurrentLimit": 5,
+    "prHourlyLimit": 2,
+    "automerge": false,
+    "packageRules": [
+        {
+            "groupName": "NestJS packages",
+            "matchManagers": ["npm"],
+            "matchPackageNames": ["@nestjs/**"],
+            "matchUpdateTypes": ["minor", "patch"]
+        },
+        {
+            "groupName": "Next.js packages",
+            "matchManagers": ["npm"],
+            "matchPackageNames": ["next", "@next/**"],
+            "matchUpdateTypes": ["minor", "patch"]
+        },
+        {
+            "groupName": "Electron packages",
+            "matchManagers": ["npm"],
+            "matchPackageNames": ["electron", "electron-builder", "@electron/**"],
+            "matchUpdateTypes": ["minor", "patch"]
+        },
+        {
+            "groupName": "Expo packages",
+            "matchManagers": ["npm"],
+            "matchPackageNames": ["expo", "expo-*", "@expo/**"],
+            "matchUpdateTypes": ["minor", "patch"]
+        },
+        {
+            "groupName": "Node.js container images",
+            "matchDatasources": ["docker"],
+            "matchPackageNames": ["node"],
+            "matchUpdateTypes": ["minor", "patch", "digest"]
+        }
+    ]
+}

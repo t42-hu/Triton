@@ -1,0 +1,15 @@
+{
+    "name": "fullstack-starter-desktop",
+    "version": "0.1.0",
+    "private": true,
+    "main": "src/main.cjs",
+    "scripts": {
+        "start": "electron .",
+        "package": "electron-builder --config electron-builder.config.cjs --dir --publish never",
+        "make": "electron-builder --config electron-builder.config.cjs --publish never"
+    },
+    "devDependencies": {
+        "electron": "44.4.5",
+        "electron-builder": "26.15.3"
+    }
+}

@@ -1,0 +1,839 @@
+{
+    "openapi": "3.0.0",
+    "paths": {
+        "/api/health": {
+            "get": {
+                "operationId": "getHealth",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": { "status": { "type": "string", "enum": ["ok"] } },
+                                    "required": ["status"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": ["health"],
+                "summary": "Check required services"
+            }
+        },
+        "/api/health/live": {
+            "get": {
+                "operationId": "getLiveness",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": { "status": { "type": "string", "enum": ["ok"] } },
+                                    "required": ["status"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": ["health"],
+                "summary": "Check process liveness"
+            }
+        },
+        "/api/config": {
+            "get": {
+                "operationId": "getPublicConfig",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "native": {
+                                            "type": "object",
+                                            "properties": {
+                                                "enabled": { "type": "boolean" },
+                                                "scheme": { "nullable": true, "type": "string" }
+                                            },
+                                            "required": ["enabled", "scheme"],
+                                            "additionalProperties": false
+                                        },
+                                        "captcha": {
+                                            "type": "object",
+                                            "properties": {
+                                                "enabled": { "type": "boolean" },
+                                                "expoReturnUrls": { "type": "array", "items": { "type": "string" } }
+                                            },
+                                            "required": ["enabled", "expoReturnUrls"],
+                                            "additionalProperties": false
+                                        },
+                                        "socialProviders": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string",
+                                                "enum": ["google", "microsoft", "github", "facebook"]
+                                            }
+                                        },
+                                        "features": {
+                                            "type": "object",
+                                            "properties": {
+                                                "search": { "type": "boolean" },
+                                                "uploads": { "type": "boolean" },
+                                                "passwordReset": { "type": "boolean" },
+                                                "payments": { "type": "boolean" }
+                                            },
+                                            "required": ["search", "uploads", "passwordReset", "payments"],
+                                            "additionalProperties": false
+                                        }
+                                    },
+                                    "required": ["socialProviders", "features"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": ["config"],
+                "summary": "Read public feature configuration"
+            }
+        },
+        "/api/native-auth/start": {
+            "post": {
+                "operationId": "startNativeAuth",
+                "parameters": [{ "name": "origin", "required": true, "in": "header", "schema": { "type": "string" } }],
+                "responses": {
+                    "201": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "flow": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+                                        "browserUrl": { "type": "string", "format": "uri" },
+                                        "expiresIn": {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "exclusiveMinimum": true,
+                                            "maximum": 9007199254740991
+                                        }
+                                    },
+                                    "required": ["flow", "browserUrl", "expiresIn"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": ["native-auth"],
+                "summary": "Begin native sign-in or password reset",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "intent": {
+                                        "default": "sign-in",
+                                        "type": "string",
+                                        "enum": ["sign-in", "password-reset"]
+                                    },
+                                    "challenge": { "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" },
+                                    "state": { "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" }
+                                },
+                                "required": ["challenge", "state"],
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/native-auth/authorize": {
+            "post": {
+                "operationId": "authorizeNativeAuth",
+                "parameters": [{ "name": "origin", "required": true, "in": "header", "schema": { "type": "string" } }],
+                "responses": {
+                    "201": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": { "callbackUrl": { "type": "string", "format": "uri" } },
+                                    "required": ["callbackUrl"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": ["native-auth"],
+                "summary": "Approve native sign-in from a browser session",
+                "security": [{ "session": [] }, { "nativeToken": [] }],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": { "flow": { "type": "string" } },
+                                "required": ["flow"]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/native-auth/exchange": {
+            "post": {
+                "operationId": "exchangeNativeAuth",
+                "parameters": [{ "name": "origin", "required": true, "in": "header", "schema": { "type": "string" } }],
+                "responses": {
+                    "201": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "token": { "type": "string" },
+                                        "resetToken": { "type": "string" },
+                                        "expiresAt": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": ["native-auth"],
+                "summary": "Exchange a native authorization code",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "flow": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+                                    "code": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+                                    "verifier": { "type": "string", "pattern": "^[A-Za-z0-9_-]{43,128}$" },
+                                    "state": { "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" }
+                                },
+                                "required": ["flow", "code", "verifier", "state"],
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/native-auth/reset-handoff": {
+            "post": {
+                "operationId": "resetNativeAuth",
+                "parameters": [{ "name": "origin", "required": true, "in": "header", "schema": { "type": "string" } }],
+                "responses": {
+                    "201": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": { "callbackUrl": { "type": "string", "format": "uri" } },
+                                    "required": ["callbackUrl"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": ["native-auth"],
+                "summary": "Hand off a password reset to a native app",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": { "flow": { "type": "string" }, "token": { "type": "string" } },
+                                "required": ["flow", "token"]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/me": {
+            "get": {
+                "operationId": "getCurrentUserProfile",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": { "type": "string" },
+                                        "name": { "type": "string" },
+                                        "profileImage": { "nullable": true, "type": "string" }
+                                    },
+                                    "required": ["id", "name", "profileImage"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": ["users"],
+                "summary": "Get current user profile",
+                "security": [{ "session": [] }, { "nativeToken": [] }]
+            },
+            "patch": {
+                "operationId": "updateCurrentUserProfile",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": { "type": "string" },
+                                        "name": { "type": "string" },
+                                        "profileImage": { "nullable": true, "type": "string" }
+                                    },
+                                    "required": ["id", "name", "profileImage"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": ["users"],
+                "summary": "Update current user profile",
+                "security": [{ "session": [] }, { "nativeToken": [] }],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": { "type": "string", "minLength": 2, "maxLength": 50 },
+                                    "imageKey": { "nullable": true, "type": "string", "maxLength": 512 }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/profile-images/optimize": {
+            "post": {
+                "operationId": "uploadProfileImage",
+                "parameters": [],
+                "responses": {
+                    "201": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": { "publicUrl": { "type": "string" }, "key": { "type": "string" } },
+                                    "required": ["publicUrl", "key"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": ["profile-images"],
+                "summary": "Optimize and upload a profile image",
+                "security": [{ "session": [] }, { "nativeToken": [] }],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["file"],
+                                "properties": { "file": { "type": "string", "format": "binary" } }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/payments/checkout/sessions": {
+            "post": {
+                "operationId": "createCheckoutSession",
+                "parameters": [],
+                "responses": {
+                    "201": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": { "type": "string" },
+                                        "url": { "nullable": true, "type": "string", "format": "uri" }
+                                    },
+                                    "required": ["id", "url"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": ["payments"],
+                "summary": "Create a Stripe checkout session",
+                "security": [{ "session": [] }, { "nativeToken": [] }],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "requestId": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "priceId": { "type": "string", "minLength": 1, "maxLength": 255 }
+                                },
+                                "required": ["requestId", "priceId"]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/payments/webhooks/stripe": {
+            "post": {
+                "operationId": "handleStripeWebhook",
+                "parameters": [
+                    { "name": "stripe-signature", "required": true, "in": "header", "schema": { "type": "string" } }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": { "received": { "type": "boolean", "enum": [true] } },
+                                    "required": ["received"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": ["payments"],
+                "summary": "Receive a signed Stripe webhook",
+                "requestBody": {
+                    "required": true,
+                    "content": { "application/json": { "schema": { "type": "object", "additionalProperties": true } } }
+                }
+            }
+        },
+        "/api/files/images/profile-images/{userId}/{filename}": {
+            "get": {
+                "operationId": "getLocalProfileImage",
+                "parameters": [
+                    { "name": "userId", "required": true, "in": "path", "schema": { "type": "string" } },
+                    { "name": "filename", "required": true, "in": "path", "schema": { "type": "string" } }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "WebP image",
+                        "content": { "image/webp": { "schema": { "type": "string", "format": "binary" } } }
+                    },
+                    "404": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": ["files"],
+                "summary": "Read a local development profile image"
+            }
+        }
+    },
+    "info": { "title": "Fullstack application API", "description": "", "version": "1.0.0", "contact": {} },
+    "tags": [],
+    "servers": [],
+    "components": {
+        "securitySchemes": {
+            "session": {
+                "type": "apiKey",
+                "in": "cookie",
+                "name": "better-auth.session_token",
+                "description": "Browser session; native clients use bearer tokens."
+            },
+            "nativeToken": { "type": "http", "scheme": "bearer", "description": "Native secure-storage session token." }
+        },
+        "schemas": {}
+    }
+}
