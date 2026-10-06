@@ -105,11 +105,15 @@ desktop/renderer/
 desktop/out/
 desktop/dist/
 
-frontend/universal/.generated/
 
-frontend/public/triton/
+
 **/.expo/
 **/android/
 **/ios/
 
-frontend/output/
+*.p8
+*.p12
+*.jks
+*.mobileprovision
+!frontend/universal/.generated/
+!frontend/universal/.generated/public-env.json

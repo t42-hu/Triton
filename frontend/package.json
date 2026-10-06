@@ -1,0 +1,43 @@
+{
+    "name": "@fullstack-starter/frontend",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "pnpm build:triton && next dev --hostname 0.0.0.0 --port ${DEV_FRONTEND_PORT:-3042}",
+        "build": "pnpm build:triton && pnpm typecheck && next build",
+        "start": "next start --hostname 0.0.0.0 --port ${DEV_FRONTEND_PORT:-3042}",
+        "lint": "eslint src test next.config.mjs",
+        "typecheck": "next typegen && tsc --noEmit",
+        "build:triton": "pnpm --filter @triton42/universal build:web && node ../infrastructure/triton-web.mjs"
+    },
+    "dependencies": {
+        "@fullstack-starter/shared": "workspace:*",
+        "better-auth": "^1.6.25",
+        "class-variance-authority": "^0.7.1",
+        "clsx": "^2.1.1",
+        "dotenv": "^17.4.2",
+        "next": "16.3.5",
+        "radix-ui": "^1.4.3",
+        "react": "19.2.3",
+        "react-dom": "19.2.3",
+        "react-icons": "^5.6.0",
+        "sonner": "^2.0.7",
+        "tailwind-merge": "^3.6.0",
+        "zod": "^4.4.3"
+    },
+    "devDependencies": {
+        "@eslint/js": "10.0.1",
+        "@tailwindcss/postcss": "^4.3.0",
+        "@types/node": "^25.8.0",
+        "@types/react": "^19.2.14",
+        "@types/react-dom": "^19.2.3",
+        "eslint": "10.7.0",
+        "globals": "^17.6.0",
+        "postcss": "8.5.25",
+        "tailwindcss": "^4.3.0",
+        "tw-animate-css": "^1.4.0",
+        "typescript": "^6.0.3",
+        "typescript-eslint": "8.59.3"
+    }
+}

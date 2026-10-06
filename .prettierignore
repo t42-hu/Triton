@@ -1,0 +1,33 @@
+.agents/
+.codex/
+.env
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+dist/
+**/dist/
+**/next-env.d.ts
+**/*.tsbuildinfo
+pnpm-lock.yaml
+skills-lock.json
+
+# Generated integration/browser artifacts
+test-results/
+playwright-report/
+.cache/
+
+**/out-native/
+
+desktop/.generated/
+desktop/renderer/
+desktop/out/
+desktop/dist/
+
+# Copier templates are rendered and parsed by the template acceptance test.
+*.jinja
+
+frontend/universal/.generated/
+
+frontend/universal/
+frontend/public/triton/

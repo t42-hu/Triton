@@ -1,0 +1,112 @@
+name: CI
+
+on:
+    push:
+    pull_request:
+    workflow_call:
+
+permissions:
+    contents: read
+
+jobs:
+    verify:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: pnpm/action-setup@v4
+              with:
+                  version: 11.8.0
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: '.node-version'
+                  cache: pnpm
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Check formatting
+              run: pnpm format:check
+
+            - name: Check types
+              run: pnpm typecheck
+
+            - name: Lint
+              run: pnpm lint
+
+            - name: Check API contract and generated client
+              run: pnpm api:check
+
+            - name: Test
+              run: pnpm test
+
+            - name: Build
+              run: pnpm build
+
+            - name: Validate Compose files
+              run: |
+                  cp .env.example .env
+                  node infrastructure/compose.mjs development config --quiet
+                  node infrastructure/compose.mjs production config --quiet
+
+            - name: Audit all dependencies
+              run: pnpm audit --audit-level high
+
+    integration:
+        needs: verify
+        runs-on: ubuntu-latest
+        timeout-minutes: 35
+        steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
+              with:
+                  version: 11.8.0
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: '.node-version'
+                  cache: pnpm
+            - name: Install locked dependencies
+              run: pnpm install --frozen-lockfile
+            - name: Install browser binaries and system dependencies
+              run: pnpm test:install --with-deps
+            - name: Test isolated release images and browser flows
+              run: pnpm test:native
+            - name: Clean up interrupted test deployments
+              if: always()
+              run: pnpm test:cleanup
+            - name: Upload browser traces, screenshots, reports, and service logs
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: integration-${{ github.run_id }}-${{ github.run_attempt }}
+                  path: test-results/integration/
+                  if-no-files-found: ignore
+                  retention-days: 7
+
+    template:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
+              with:
+                  version: 11.8.0
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: '.node-version'
+                  cache: pnpm
+            - uses: actions/setup-python@v5
+              with:
+                  python-version: '3.13'
+            - name: Install template test tools
+              run: |
+                  python -m pip install copier==9.18.2
+                  sudo apt-get update
+                  sudo apt-get install -y tmux
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+            - name: Verify generated product and rehearse upgrades
+              run: pnpm test:template --verify
