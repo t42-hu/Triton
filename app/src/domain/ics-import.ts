@@ -2,6 +2,7 @@ import ICAL from 'ical.js';
 import type { DateRange, ImportControl, Occurrence } from './model';
 import { addDays, fromWall, validateRange } from './time';
 import { checkpoint, intersects } from './json-import';
+import { EVENT_CATEGORIES, importedCategory } from './student';
 
 function instant(time: ICAL.Time): number {
   if (time.isDate || time.zone.tzid === 'floating') return fromWall(time.toString());
@@ -32,7 +33,7 @@ function toOccurrence(event: ICAL.Event, original?: ICAL.Time): Occurrence | und
   const title = item.summary || event.summary;
   if (!title?.trim()) throw new Error('Hiányzó eseménynév.');
   return { key: JSON.stringify([event.uid, original ? `${original.toString()}@${original.zone.tzid}` : 'once']), title, originalTitle: title,
-    start: instant(startDate), end: instant(endDate), location: item.location || event.location || '', kind: startDate.isDate ? 'allDay' : 'timed' };
+    start: instant(startDate), end: instant(endDate), location: item.location || event.location || '', notes: String(item.component.getFirstPropertyValue('description') ?? event.component.getFirstPropertyValue('description') ?? ''), kind: startDate.isDate ? 'allDay' : 'timed', category: calendarCategory(item.component, title) };
 }
 function latestOriginal(event: ICAL.Event, end: number): number {
   const exceptions = Object.values(event.exceptions);
@@ -88,4 +89,10 @@ function normalizePeriods(component: ICAL.Component): Map<string, number> {
     property.resetType('date-time'); property.setValues(periods);
   }
   return ends;
+}
+
+/** Preserves Triton categories through export without guessing from renamed titles. */
+function calendarCategory(component: ICAL.Component, title: string) {
+  const value = component.getFirstPropertyValue('x-triton-category');
+  return EVENT_CATEGORIES.find(category => category.value === value)?.value ?? importedCategory(title);
 }

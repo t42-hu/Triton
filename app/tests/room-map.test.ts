@@ -3,8 +3,19 @@ import { test } from 'node:test';
 import { Script } from 'node:vm';
 import { createHash } from 'node:crypto';
 import { roomMapHtml } from '../src/features/room-map-html';
-import { findRoomLocation } from '../src/features/room-location';
+import { findRoomLocation, locationLink } from '../src/features/room-location';
 import { FLOOR_SHAPES, PLACES } from '../src/features/nik-map-data';
+
+test('location links open only web addresses and mapped NIK rooms keep their map action', () => {
+  assert.equal(locationLink('https://example.com/room'), 'https://example.com/room');
+  assert.equal(locationLink('Másik campus https://example.com/room'), 'https://example.com/room');
+  assert.equal(locationLink('BA.1.32.Audmax https://example.com/room'), null);
+  assert.equal(locationLink('BA.1.32.Audmax https://example.com/room', false), 'https://example.com/room');
+  assert.equal(locationLink('javascript:alert(1)'), null);
+  assert.equal(locationLink('https://user:password@example.com'), null);
+  assert.equal(locationLink('https://'), null);
+  assert.equal(locationLink('BC.3.302'), null);
+});
 
 test('both map templates receive the complete canonical geometry and parse', () => {
   for (const mode of ['2d', '3d'] as const) {
@@ -46,8 +57,10 @@ test('both app maps use the updated F.08, entrance stairs, and F.09 layout', () 
     assert.ok(html.includes('M267 703H684V735H267Z'));
     assert.ok(html.includes('H684V860H536V735H466V860H274'));
     assert.ok(!html.includes('H743V860H274'));
+    assert.ok(html.includes(`window.tritonMap = ${mode === '2d' ? 'mountNikMap' : 'mountNik3DMap'}`));
     assert.ok(html.includes('map.selectPlace("f-09")'));
-    assert.ok(html.includes("window.parent.postMessage({ type: 'triton-floor-change', floor }, '*')"));
+    assert.ok(html.includes('window.ReactNativeWebView.postMessage(JSON.stringify(message))'));
+    assert.ok(html.includes("window.parent.postMessage(message, '*')"));
     assert.ok(!roomMapHtml(mode, '2', 'f-09').includes('map.selectPlace('));
   }
   assert.equal(findRoomLocation('F.09')?.place?.x, 610);

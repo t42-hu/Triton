@@ -1,6 +1,18 @@
 import { FLOORS, PLACES, type FloorId, type Place } from './nik-map-data';
+import { notebookUrl } from '../domain/student';
 
 export type RoomLocation = { floor: FloorId; floorName: string; roomCode: string; place?: Place };
+
+/** Shows map actions only for a named room or room range present on the actual map. */
+export function hasMappedRoom(location: string): boolean { return Boolean(findRoomLocation(location)?.place); }
+
+/** Known NIK rooms take priority over pasted web locations; executable schemes are never opened. */
+export function locationLink(location: string, useMap = true): string | null {
+  if (useMap && hasMappedRoom(location)) return null;
+  const candidate = location.match(/https?:\/\/[^\s<>]+/i)?.[0];
+  if (!candidate) return null;
+  try { return notebookUrl(candidate); } catch { return null; }
+}
 
 export function findRoomLocation(location: string): RoomLocation | null {
   const normalized = location.trim().toUpperCase().replace(/\s+/g, '');

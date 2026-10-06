@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { stageSource, publishStages, discardStages } from '../src/data/importer';
-import { profiles, saveProfile, updateEvents, visibleEvents, deleteProfile } from '../src/data/repository';
+import { firstImportedWeek, knownRooms, profiles, saveProfile, updateEvents, visibleEvents, deleteProfile } from '../src/data/repository';
 import { getDatabase, readSetting } from '../src/data/database';
 const anchor = { date: '2026-09-07', week: 'A' as const };
 const event = { id: 'course', title: 'Analízis', kind: 'timed', start: '2026-09-07T08:00:00+02:00', end: '2026-09-07T09:30:00+02:00', location: 'A1' };
@@ -27,16 +27,19 @@ test('profile names reject duplicates on create and rename, including concurrent
 
 test('staged imports publish atomically, preserve field patches and delete orphan overrides', async () => {
   await saveProfile('Teszt'); const [profile] = await profiles();
-  const input = { id: `${profile.id}:import`, profileId: profile.id, format: 'json' as const, content: content([event]), name: 'test', fromDate: '2026-09-01', toDate: '2026-12-31', isManual: 0 };
+  const input = { id: `${profile.id}:import`, profileId: profile.id, format: 'json' as const, content: content([{ ...event, notes: 'Eredeti téma' }]), name: 'test', fromDate: '2026-09-01', toDate: '2026-12-31', isManual: 0 };
   const first = await stageSource(input, anchor, control());
   assert.equal((await visibleEvents(profile.id, '2026-09-07', 7, false)).length, 0);
   await publishStages([first]);
   const [original] = await visibleEvents(profile.id, '2026-09-07', 7, false);
-  await updateEvents([{ event: original, patch: { location: 'B2' } }]);
+  assert.equal(original.notes, 'Eredeti téma');
+  assert.equal(await firstImportedWeek(profile.id), '2026-09-01');
+  assert.ok((await knownRooms()).includes('A1'));
+  await updateEvents([{ event: original, patch: { location: 'B2', notes: 'Új téma https://example.com' } }]);
   const next = await stageSource({ ...input, content: content([{ ...event, title: 'Új név' }]) }, anchor, control());
   await publishStages([next]);
   const [changed] = await visibleEvents(profile.id, '2026-09-07', 7, false);
-  assert.equal(changed.location, 'B2'); assert.equal(changed.title, 'Új név');
+  assert.equal(changed.location, 'B2'); assert.equal(changed.title, 'Új név'); assert.equal(changed.notes, 'Új téma https://example.com');
   await assert.rejects(stageSource({ ...input, content: '{invalid' }, anchor, control()));
   assert.equal((await visibleEvents(profile.id, '2026-09-07', 7, false))[0].location, 'B2');
   const replaced = await stageSource({ ...input, content: content([{ ...event, id: 'replacement' }]) }, anchor, control());

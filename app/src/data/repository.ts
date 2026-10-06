@@ -1,15 +1,17 @@
 import type { DisplayEvent, EventPatch, Occurrence, Profile, Source } from '../domain/model';
 import { addDays, fromWall } from '../domain/time';
-import { getDatabase, write, transaction } from './database';
+import { getDatabase, transaction } from './database';
+import { EVENT_CATEGORIES, searchableText } from '../domain/student';
 
 const selection = `SELECT e.*,s.profileId,o.patch FROM events e JOIN sources s ON s.id=e.sourceId AND s.revision=e.revision
   LEFT JOIN overrides o ON o.sourceId=e.sourceId AND o.key=e.key`;
 export async function profiles(): Promise<Profile[]> {
   return (await getDatabase()).getAllAsync<Profile>('SELECT * FROM profiles ORDER BY isOwn DESC,name,id');
 }
-export async function saveProfile(name: string, id?: number): Promise<number> {
+/** Stores the required first import in the same transaction as profile creation. */
+export async function saveProfile(name: string, id?: number, requiresImport = false): Promise<number> {
   if (!name.trim()) throw new Error('Adj nevet a profilnak.');
-  return write(async db => {
+  return transaction(async db => {
     const existing = await db.getAllAsync<Profile>('SELECT * FROM profiles');
     const normalizedName = name.trim().normalize('NFC').toLocaleLowerCase('hu');
     for (const profile of existing) {
@@ -17,6 +19,7 @@ export async function saveProfile(name: string, id?: number): Promise<number> {
     }
     if (id) { await db.runAsync('UPDATE profiles SET name=? WHERE id=?', name.trim(), id); return id; }
     const result = await db.runAsync('INSERT INTO profiles(name,isOwn) SELECT ?,CASE WHEN EXISTS(SELECT 1 FROM profiles) THEN 0 ELSE 1 END', name.trim());
+    if (requiresImport) await db.runAsync('INSERT OR REPLACE INTO settings VALUES (?,?)', 'setupProfileId', JSON.stringify(result.lastInsertRowId));
     return result.lastInsertRowId;
   });
 }
@@ -45,6 +48,16 @@ export async function visibleEvents(profileId: number, date: string, days: numbe
 export async function futureEvents(event: DisplayEvent): Promise<DisplayEvent[]> {
   return (await getDatabase()).getAllAsync<DisplayEvent>(`${selection} WHERE s.profileId=? AND e.originalTitle=? AND e.start>=? ORDER BY e.start`, event.profileId, event.originalTitle, event.start);
 }
+/** Lists rooms already used in imported or manually entered lessons. */
+export async function knownRooms(): Promise<string[]> {
+  const rows = await (await getDatabase()).getAllAsync<{ location: string }>(`SELECT DISTINCT e.location FROM events e JOIN sources s ON s.id=e.sourceId AND s.revision=e.revision WHERE trim(e.location)<>'' ORDER BY e.location`);
+  return rows.map(row => row.location);
+}
+/** Returns the first imported week for a profile, excluding manual lessons. */
+export async function firstImportedWeek(profileId: number): Promise<string | null> {
+  const row = await (await getDatabase()).getFirstAsync<{ firstDate: string | null }>('SELECT min(fromDate) firstDate FROM sources WHERE profileId=? AND isManual=0', profileId);
+  return row?.firstDate ?? null;
+}
 /** Applies only supplied fields and persists the patch separately from the source. */
 export async function updateEvents(changes: { event: DisplayEvent; patch: EventPatch | null }[]): Promise<void> {
   await transaction(async db => {
@@ -58,10 +71,11 @@ async function updateOne(db: Awaited<ReturnType<typeof getDatabase>>, event: Dis
   const effective = { ...base, ...merged };
   if (effective.end < effective.start) throw new Error('A befejezés nem előzheti meg a kezdést.');
   if (!effective.title.trim()) throw new Error('Hiányzó eseménynév.');
+  if (effective.category && !EVENT_CATEGORIES.some(item => item.value === effective.category)) throw new Error('Ismeretlen eseménykategória.');
   if (patch === null) await db.runAsync('DELETE FROM overrides WHERE sourceId=? AND key=?', event.sourceId, event.key);
   else await db.runAsync('INSERT OR REPLACE INTO overrides VALUES (?,?,?)', event.sourceId, event.key, JSON.stringify(merged));
-  await db.runAsync('UPDATE events SET title=?,start=?,end=?,location=?,hidden=? WHERE sourceId=? AND key=? AND revision=(SELECT revision FROM sources WHERE id=?)',
-    effective.title, effective.start, effective.end, effective.location, Number(effective.hidden ?? false), event.sourceId, event.key, event.sourceId);
+  await db.runAsync('UPDATE events SET title=?,start=?,end=?,location=?,notes=?,hidden=?,category=?,searchText=? WHERE sourceId=? AND key=? AND revision=(SELECT revision FROM sources WHERE id=?)',
+    effective.title, effective.start, effective.end, effective.location, effective.notes ?? '', Number(effective.hidden ?? false), effective.category ?? 'lesson', searchableText(`${effective.title} ${effective.location} ${effective.notes ?? ''}`), event.sourceId, event.key, event.sourceId);
 }
 
 /** Removes a manually created series only; imported events remain owned by their source. */

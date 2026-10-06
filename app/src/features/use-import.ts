@@ -14,7 +14,7 @@ export type ImportDraft = { mode: 'file' | 'url'; url: string; content: string; 
 /** Keeps cancellation and staged publication together for file and subscription imports. */
 export function useImport(profileId: number, close: () => void) {
   const app = useApp();
-  const [draft, setDraft] = useState<ImportDraft>({ mode: 'file', url: '', content: '', name: 'órarend.ics', from: monday(today()), to: addDays(today(), 180) });
+  const [draft, setDraft] = useState<ImportDraft>({ mode: 'url', url: '', content: '', name: 'órarend.ics', from: monday(today()), to: addDays(today(), 180) });
   const [stage, setStage] = useState<StagedSource>();
   const [busy, setBusy] = useState(false); const [count, setCount] = useState(0); const [error, setError] = useState('');
   const controller = useRef(new AbortController()); const staged = useRef<StagedSource[]>([]);

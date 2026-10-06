@@ -20,7 +20,7 @@ Az előnézet alapértelmezett címe `http://localhost:8082`. A tesztekhez és a
 
 ## Használat
 
-1. Első indításkor automatikusan létrejön a Me, Beni, Matyi és Parker profil a mellékelt ICS-naptárakkal; a Me lesz a saját profil. Meglévő telepítésen a korábbi saját profil megmarad. A profilok átnevezhetők és megerősítés után törölhetők.
+1. Első indításkor hozz létre egy profilt, majd importáld a saját órarendedet. Az első profil lesz a saját profil. Meglévő telepítésen a korábbi profilok és helyi adatok megmaradnak. A profilok átnevezhetők és megerősítés után törölhetők.
 2. Az Import műveletben válaszd ki a célprofilt és az ICS- vagy JSON-fájlt, illetve illeszd be a tartalmát. Add meg a feldolgozandó dátumtartományt, ellenőrizd az alkalomszámokat, majd hagyd jóvá a cserét. A sikeresen importált másik profil naptára automatikusan megnyílik.
 3. Üres forrásszöveggel a korábban tárolt forrás újra feldolgozható, így a tartomány internet nélkül is bővíthető. A korábbi és az új tartomány unióját őrizzük meg.
 4. A Kézi óra művelet a választott profilhoz egyszeri, heti, A vagy B heti, véges sorozatot hoz létre. A megadott helyi idő Budapest szerinti; egész napos eseménynél a végdátum kizáró.
@@ -122,3 +122,33 @@ Az időrács 07:00–20:00 közötti budapesti időt mutat napi és heti módban
 ## Fejlesztői web preview a Tailscale hálózaton
 
 A hoston a `triton-preview.service` systemd user service futtatja a `scripts/serve-web.mjs` kiszolgálót a 8092-es porton. A service engedélyezett, a user lingering aktív, ezért nem függ a terminál/SSH-session élettartamától. A Tailscale Serve háttérben a HTTPS 8444-es portot erre irányítja; a meglévő 443-as szolgáltatás változatlan. Ez tailneten belüli preview, nem nyilvános Funnel vagy production deployment. Előfeltétele a futó host és Tailscale. Új kódhoz `pnpm build:web` szükséges; a kiszolgáló az exportált `dist` tartalmát olvassa.
+
+## Profilok exportálása, színezés és navigáció
+
+Minden profil Exportálás művelete ICS-fájlt készít az aktív forrásverziók már előállított, látható alkalmaiból, a helyi módosításokkal együtt. Weben letöltés, iOS-en és Androidon rendszermegosztás indul. Az export egyszeri alkalmakat tartalmaz; nem hoz létre élő előfizetést. Egész napos eseménynél a záró dátum kizáró, időzített eseménynél UTC időpont szerepel.
+
+A profil neve felül, a Saját címke és a sajátként jelölő csillag a jobb szélen található. Az átnevezés, importálás, exportálás és törlés minden platformon az alsó sorban van.
+
+A Színezés panelen a tárgy sorozatának alapszíne állítható. Az importált tárgykód és csoport megkülönbözteti az előadást, gyakorlatot és labort. A közelgő események ideje, visszaszámlálása és körvonala külön sürgősségi színt kap. A Távolabbi, Közelgő és Sürgős szintek neve független a választott színtől.
+
+Alapértelmezésben a tanóra 60 percen túl zöld, legfeljebb 60 percen belül sárga, legfeljebb 10 percen belül piros. Beadandó, ZH, vizsga és feladat egy héten belül zöld, három napon belül sárga, 24 órán belül piros. Beállításokban közös küszöbök és színek adhatók meg; eseménynél sorozatra vagy egyetlen alkalomra is felülírhatók. A feladat saját színezési panelt kap. A helyi beállítások eszközönként tárolódnak.
+
+A naptár piros idővonala az aktuális budapesti időt jelöli a mai oszlopban. A Napi terhelés és szünetek minden platformon kezdetben összecsukott; adatok nélküli időszakban nem jelenik meg. Automatikus lefelé görgetés csak panelen belüli lenyíló tartalomhoz tartozik.
+
+Sidebar nélküli nézetben a lapok sorrendje Mai nap, Órarend, Teendők, Keresés. Egy vízszintes sorban mozognak, a közös fejléc és navigáció megmarad. A naptárrács megtartja a saját vízszintes görgetését; a navbaron lehet lapot húzni, iOS-en a bal képernyőszélről visszalépni. Androidon a rendszer vissza gombja az előző munkalapra lép. A webes sidebar lapváltáskor megtartja a hover állapotát.
+
+Nyitott panel blokkolja a háttér műveleteit és a lapváltási gesztusokat. Külső érintés, Escape és rendszer-visszalépés nem csukja be. Az X és a panel saját befejező műveletei használhatók. Első induláskor a profil létrehozása, majd az import kötelező; újraindítással sem kerülhető meg.
+
+## Hétvégék, napi szabad sávok és színválasztó
+
+A Megjelenés beállítások Hétvégék mutatása kapcsolója a heti rácsban szabályozza a szombat és vasárnap oszlopát. Alapértelmezésben bekapcsolt, eszközönként megmarad. Kikapcsolva öt oszlop látszik; a heti lapozás továbbra is hét napot lép. A napi nézet bármely napot meg tudja mutatni.
+
+A közös szabad idő keresése minden ellenőrzött budapesti naptári napot külön vizsgál. Az esti és a következő reggeli szabad sáv nem adódik össze a minimum időtartam eléréséhez; a napváltás a nyári időszámítást is követi.
+
+Minden eseményszín közös választót használ: névvel ellátott minták, az időpont és a körvonal élő előnézete, külön lenyitható egyéni színkód. A Kész alkalmazza a választást, az X elveti a választóban tett módosítást. A külső színezési panel mentése továbbra is szükséges.
+
+A lenyíló tartalmak rövid, rugózás nélküli magasság- és áttűnési animációt használnak, és tiszteletben tartják a rendszer csökkentett mozgás beállítását. A Színek és küszöbök nyila nyitva lefelé mutat; ez a gomb és az Egyéni szín nem indít automatikus legörgetést. A többi panelen belüli lenyitás a tartalom végleges mérete után görget. A legördülő választólisták a mező szélességét követik.
+
+## Alkalmazásnév
+
+Az alkalmazás megjelenő neve Triton42: fejléc, webes lapcím, akadálymentes logófelirat, iOS- és Android-indítóikon neve, valamint exportált naptárak termékazonosítója. A telepítési azonosító továbbra is `hu.t42.triton`, így a meglévő helyi profilok a frissítéskor megmaradnak.

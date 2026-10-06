@@ -88,7 +88,11 @@ const floorBridge = `<script>
 function reportFloor(event) {
   const element = event.target instanceof Element ? event.target.closest('[data-floor]') : null;
   const floor = element?.getAttribute('data-floor');
-  if (floor) window.parent.postMessage({ type: 'triton-floor-change', floor }, '*');
+  if (floor) {
+    const message = { type: 'triton-floor-change', floor };
+    if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify(message));
+    else window.parent.postMessage(message, '*');
+  }
 }
 document.addEventListener('click', reportFloor);
 document.addEventListener('keydown', event => {
@@ -104,7 +108,7 @@ export function roomMapHtml(mode: MapMode, floor: FloorId, placeId?: string, the
   const themeStyle = theme === 'dark' ? darkMapThemeStyle : lightMapThemeStyle;
   const place = PLACES.find(item => item.id === placeId && item.floor === floor);
   const selection = place ? `map.selectPlace(${JSON.stringify(place.id)});` : '';
-  const mount = `if (root) { const map = ${mountName}(root, { initialFloor: ${JSON.stringify(floor)} }); ${selection} }`;
+  const mount = `if (root) { const map = window.tritonMap = ${mountName}(root, { initialFloor: ${JSON.stringify(floor)} }); ${selection} }`;
   return map.html
     .replace('__TRITON_PLACES__', () => JSON.stringify(PLACES))
     .replace('__TRITON_FLOOR_SHAPES__', () => JSON.stringify(FLOOR_SHAPES))

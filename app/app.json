@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "Triton",
+    "name": "Triton42",
     "slug": "triton",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "default",
     "icon": "./assets/images/triton-v15.png",
     "scheme": "triton",
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "hu.t42.triton",
-      "buildNumber": "5",
+      "buildNumber": "8",
       "icon": "./assets/images/triton-v15.png",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -17,7 +17,7 @@
     },
     "android": {
       "package": "hu.t42.triton",
-      "versionCode": 5,
+      "versionCode": 6,
       "icon": "./assets/images/triton-v15.png",
       "adaptiveIcon": {
         "backgroundColor": "#F6F7F9",
@@ -57,7 +57,8 @@
             "enableSceneSupport": true
           }
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -66,9 +67,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "ae26e223-c2ce-4374-82d1-47fd2c0294f7"
+        "projectId": "c794d514-8d74-4102-bf0a-639f82b14075"
       }
     },
-    "owner": "kbenim"
+    "owner": "baranyaigabor"
   }
 }

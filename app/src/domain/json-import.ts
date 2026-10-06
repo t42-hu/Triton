@@ -1,5 +1,6 @@
 import type { Anchor, CalendarEvent, DateRange, ImportControl, Occurrence, Recurrence } from './model';
 import { addDays, fromWall, validDate, validateRange, wallTime, weekAt } from './time';
+import { EVENT_CATEGORIES } from './student';
 
 function record(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Objektum szükséges.');
@@ -30,12 +31,14 @@ function parseEvent(value: unknown): CalendarEvent {
   if (typeof item.id !== 'string' || !item.id.trim() || typeof item.title !== 'string' || !item.title.trim()) throw new Error('Minden eseményhez id és cím szükséges.');
   if (item.kind !== 'timed' && item.kind !== 'allDay') throw new Error('Ismeretlen eseménytípus.');
   if (item.location !== undefined && typeof item.location !== 'string') throw new Error('A terem szöveg legyen.');
+  if (item.notes !== undefined && typeof item.notes !== 'string') throw new Error('A jegyzet szöveg legyen.');
+  if (item.category !== undefined && !EVENT_CATEGORIES.some(category => category.value === item.category)) throw new Error('Ismeretlen eseménykategória.');
   const start = eventTime(item.start, item.kind === 'allDay');
   const end = eventTime(item.end, item.kind === 'allDay');
   const repeat = recurrence(item.recurrence);
   if (Date.parse(end) <= Date.parse(start)) throw new Error('A befejezésnek a kezdés után kell lennie.');
   if (repeat && repeat.until < start.slice(0, 10)) throw new Error('Az ismétlődés vége korábbi a kezdésnél.');
-  return { id: item.id, title: item.title.trim(), kind: item.kind, start, end, location: item.location, recurrence: repeat };
+  return { id: item.id, title: item.title.trim(), kind: item.kind, start, end, location: item.location, notes: item.notes, recurrence: repeat, category: item.category as CalendarEvent['category'] };
 }
 function occurrence(event: CalendarEvent, date?: string): Occurrence {
   const allDay = event.kind === 'allDay';
@@ -44,7 +47,7 @@ function occurrence(event: CalendarEvent, date?: string): Occurrence {
   const days = Math.round((Date.parse(baseEnd.slice(0, 10)) - Date.parse(baseStart.slice(0, 10))) / 86400000);
   const start = date ? fromWall(date + baseStart.slice(10)) : allDay ? fromWall(event.start) : Date.parse(event.start);
   const end = date ? fromWall(addDays(date, days) + baseEnd.slice(10)) : allDay ? fromWall(event.end) : Date.parse(event.end);
-  return { key: JSON.stringify([event.id, date ?? 'once']), title: event.title, originalTitle: event.title, start, end, location: event.location ?? '', kind: event.kind };
+  return { key: JSON.stringify([event.id, date ?? 'once']), title: event.title, originalTitle: event.title, start, end, location: event.location ?? '', notes: event.notes ?? '', kind: event.kind, category: event.category ?? 'lesson' };
 }
 export async function checkpoint(control: ImportControl, count: number): Promise<void> {
   if (control.signal.aborted) throw new Error('Import megszakítva.');

@@ -1,0 +1,49 @@
+import { useEffect, useState } from 'react';
+import { Linking, View } from 'react-native';
+import { ExternalLink, NotebookPen, Trash2, Link2 } from 'lucide-react-native';
+import { Button } from '@/components/ui/button';
+import { Icon } from '@/components/ui/icon';
+import { Text } from '@/components/ui/text';
+import type { DisplayEvent } from '../domain/model';
+import { subjectName, type NotebookLink } from '../domain/student';
+import { addNotebookLink, notebookLinks, removeNotebookLink } from '../data/student-repository';
+import { useApp } from './app-state';
+import { Action, Field, Modal } from './controls';
+
+/** Opens the same notebook from every teaching format of a subject. */
+export function NotebookDialog({ event, close }: { event: DisplayEvent; close: () => void }) {
+  const app = useApp(); const [links, setLinks] = useState<NotebookLink[]>([]);
+  const [title, setTitle] = useState(''); const [url, setUrl] = useState('');
+  const [error, setError] = useState(''); const [busy, setBusy] = useState(false);
+  const isSubject = (event.category ?? 'lesson') === 'lesson';
+  const name = isSubject ? subjectName(event.originalTitle) || event.title : event.title;
+  useEffect(() => {
+    let cancelled = false;
+    async function load() { try { const rows = await notebookLinks(event); if (!cancelled) setLinks(rows); } catch { if (!cancelled) setError('Nem sikerült betölteni a jegyzeteket.'); } }
+    void load(); return () => { cancelled = true; };
+  }, [event, app.version]);
+  async function save() {
+    if (busy) return;
+    setBusy(true); setError('');
+    try { await addNotebookLink(event, title, url); setTitle(''); setUrl(''); await app.refresh(); }
+    catch (reason) { setError(String(reason)); } finally { setBusy(false); }
+  }
+  async function remove(id: string) { try { await removeNotebookLink(id); await app.refresh(); } catch (reason) { setError(String(reason)); } }
+  return <Modal title="Jegyzetfüzet" description={name} close={close}>
+    <View className="flex-row items-center gap-3"><Icon as={NotebookPen} size={24} className="text-primary" /><Text className="shrink text-sm text-muted-foreground">{isSubject ? 'Közös az összes órához.' : 'Az esemény linkjei.'}</Text></View>
+    {links.map(link => <NotebookLinkRow key={link.id} link={link} remove={() => void remove(link.id)} report={setError} />)}
+    {!links.length ? <Text className="text-muted-foreground">Még nincs mentett link.</Text> : null}
+    <Field label="Jegyzet linkje" value={url} onChange={setUrl} placeholder="https://…" /><Field label="Link neve (opcionális)" value={title} onChange={setTitle} placeholder="Például: Fizika jegyzetek" />
+    <Action icon={Link2} disabled={busy || !url.trim()} onPress={() => void save()}>{busy ? 'Mentés…' : 'Link hozzáadása'}</Action>
+    {error ? <Text accessibilityRole="alert" className="text-destructive">{error}</Text> : null}
+  </Modal>;
+}
+
+export function NotebookLinkRow({ link, remove, report }: { link: NotebookLink; remove?: () => void; report: (message: string) => void }) {
+  function failed(reason: unknown) { report(`Nem sikerült megnyitni a linket: ${String(reason)}`); }
+  function open() { void Linking.openURL(link.url).catch(failed); }
+  return <View className="flex-row items-center gap-2 border-b border-border py-2">
+    <Button accessibilityLabel={`${link.title} megnyitása`} variant="ghost" className="h-auto min-h-12 flex-1 justify-start px-1 py-2" onPress={open}><Icon as={ExternalLink} size={17} className="shrink-0 text-primary" /><View className="min-w-0 flex-1"><Text className="font-medium" numberOfLines={2}>{link.title}</Text><Text className="text-xs text-muted-foreground" numberOfLines={1}>{link.url}</Text></View></Button>
+    {remove ? <Button accessibilityLabel={`${link.title} link törlése`} variant="ghost" size="icon" onPress={remove}><Icon as={Trash2} size={17} className="text-destructive" /></Button> : null}
+  </View>;
+}

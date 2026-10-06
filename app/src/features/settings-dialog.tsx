@@ -1,3 +1,4 @@
+import { GlobalColorEditor } from './event-color-editor';
 import { useEffect, useRef, useState } from 'react';
 import { View, useWindowDimensions } from 'react-native';
 import { CalendarRange, Eye, Palette, RefreshCw } from 'lucide-react-native';
@@ -10,7 +11,8 @@ import { monday, validDate } from '../domain/time';
 import { sources } from '../data/repository';
 import { discardStages, publishStages, stageSource, type StagedSource } from '../data/importer';
 import { useApp } from './app-state';
-import { Action, Choice, Confirm, Field, Modal } from './controls';
+import { DateField } from './date-time-field';
+import { Action, Choice, Confirm, Modal, Toggle } from './controls';
 
 export function SettingsDialog({ close }: { close: () => void }) {
   const app = useApp();
@@ -39,7 +41,7 @@ export function SettingsDialog({ close }: { close: () => void }) {
   }
   function cancel() { controller.current.abort(); void discardStages(stages); close(); }
   const summary = stages.reduce((sum, stage) => ({ added: sum.added + stage.added, removed: sum.removed + stage.removed, lost: sum.lost + stage.lostOverrides }), { added: 0, removed: 0, lost: 0 });
-  return <Modal title="Beállítások" description="Szabd az órarendet a saját hetedhez." close={cancel}>
+  return <Modal title="Beállítások" close={cancel}>
     <SettingsOptions date={date} setDate={setDate} week={week} setWeek={setWeek} busy={busy} error={error} prepare={() => void prepare()} abort={() => controller.current.abort()} />
     {prepared ? <Confirm title="A/B rend módosítása" description={`Létrejön: ${summary.added}, eltűnik: ${summary.removed} alkalom. Törlődő felülírás: ${summary.lost}.`} accept={() => void accept()} cancel={() => { setPrepared(false); void discardStages(stages); }} /> : null}
   </Modal>;
@@ -49,15 +51,17 @@ function SettingsOptions({ date, setDate, week, setWeek, busy, error, prepare, a
   const app = useApp();
   const compact = useWindowDimensions().width < 600;
   return <>
+    <GlobalColorEditor />
     <View className="gap-4 rounded-xl border border-border bg-background/40 p-4">
       <View className="flex-row items-center gap-2"><Icon as={Palette} size={19} className="text-primary" /><Text className="font-semibold">Megjelenés</Text></View>
       <View className={compact ? 'gap-2' : 'flex-row items-center justify-between gap-3'}><Text className="text-sm">Téma</Text><Choice fullWidth={compact} label="Megjelenés" value={app.view.theme} onChange={theme => app.setView({ theme: theme as 'system' | 'light' | 'dark' })} options={[{ value: 'system', label: 'Rendszer témája' }, { value: 'light', label: 'Világos' }, { value: 'dark', label: 'Sötét' }]} /></View>
+      <View className="border-t border-border pt-3"><Toggle label="Hétvégék mutatása" checked={app.view.showWeekends} onChange={showWeekends => app.setView({ showWeekends })} /></View>
       <View className="flex-row items-center justify-between gap-3 border-t border-border pt-3"><View className="min-w-0 flex-1 flex-row items-center gap-2"><Icon as={Eye} size={17} className="text-muted-foreground" /><Text className="shrink text-sm">Elrejtett alkalmak mutatása</Text></View><Switch accessibilityLabel="Elrejtett alkalmak mutatása" checked={app.view.hidden} onCheckedChange={hidden => app.setView({ hidden })} /></View>
     </View>
     <View className="gap-4 rounded-xl border border-border bg-background/40 p-4">
       <View className="flex-row items-center gap-2"><Icon as={CalendarRange} size={19} className="text-primary" /><Text className="font-semibold">A/B hetek</Text></View>
       <Text className="text-xs leading-5 text-muted-foreground">A referenciahét minden profilra érvényes. A dátumhoz kötött ICS-események nem változnak.</Text>
-      <Field label="Referenciahét hétfője" value={date} onChange={setDate} />
+      <DateField label="Referenciahét hétfője" value={date} onChange={setDate} />
       <View className={compact ? 'gap-2' : 'flex-row items-center justify-between gap-3'}><Text className="text-sm">Hét</Text><Choice fullWidth={compact} label="Referenciahét jele" value={week} onChange={value => setWeek(value as Anchor['week'])} options={[{ value: 'A', label: 'A hét' }, { value: 'B', label: 'B hét' }]} /></View>
       {error ? <Text accessibilityRole="alert" className="text-destructive">{error}</Text> : null}
       <Button accessibilityLabel="A/B változás előnézete" disabled={busy} onPress={prepare}><Icon as={RefreshCw} size={17} className="text-primary-foreground" /><Text>{busy ? 'Újraszámítás…' : 'A/B előnézet'}</Text></Button>

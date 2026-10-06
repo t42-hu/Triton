@@ -132,3 +132,24 @@ A felhasználó újabb, az előzőktől eltérő linkje sikeresen letölthető a
 Az OS által ütemezett többnapos háttérfuttatás, a tényleges készülékhang/rezgéserősség és a fizikai telefonos akkukímélési mátrix nincs ezekkel a szimulátoros próbákkal igazolva.
 
 Az Android pontos ébresztési engedély megadása után a `ReminderSmoke` alkalom kezdését 11:13-ról 11:19-re módosítottuk, saját 1 perces előjelzéssel és globális kizárással. Az app a háttérben volt. 11:18-kor a rendszer értesítési sávjában megjelent a „ReminderSmoke — 1 perc múlva kezdődik” Triton-értesítés. Ez az egyszeri helyi reminder tényleges kézbesítését és az óramódosítás utáni újraütemezést igazolja; iOS-en ebben a körben a permission/pending/cancel folyamatot vizsgáltuk, tényleges kézbesítést nem.
+
+## ICS-export, eseményszínezés és munkalap-navigáció — 2026-10-05
+
+- Lint, TypeScript, web export és mind a 61 automatizált teszt sikeres. Az új domain tesztek Unicode/emoji ICS-sorhajtást, kizáró egész napos záródátumot, UTC időpontokat, újraimportált kategóriát, küszöbhatárokat, sorozat/csoport/profil elkülönítést és az alkalom felülírásának elsőbbségét ellenőrzik.
+- A közös forrásból 1.0.5-ös önálló iOS és Android Release build készült a MacBookon. iPhone 17 / iOS 27 és Android API 35 emulátoron elindult. ICS-export mindkét natív platformon megnyitotta a rendszer megosztási felületét; weben az exportált Blob 110 VEVENT-et tartalmazott. Külső naptáralkalmazásba történő mentés nem része ennek a próbának.
+- Weben 343 és 390 px-es nézetben a navigáció alul maradt, az oldal szélessége nem lépte túl a viewportot. A profilok négy művelete ugyanazon alsó sorban helyezkedik el, a sajátként jelölés és a Saját címke a felső sor jobb szélén. A mobil címkék levágását okozó webes ikon-padding külön javítva.
+- A desktop sidebar DOM-eleme lapváltáskor azonos maradt, és nyitott hover állapotban 216 px széles maradt. A munkalapok egyetlen vízszintes sorban helyezkednek el, a váltás mindkét irányban működik.
+- Androidon és iOS-en a tartalom területén végzett balra húzás a Mai nap lapról az Órarendre váltott. iOS-en a képernyő bal széléről húzva visszatért a Mai nap. Androidon a rendszer vissza gombja visszatért az előző munkalapra.
+- Weben külső kattintás és Escape mellett a panel nyitva maradt; a háttér fejlécét és alsó navigációját is takarja az interakciós réteg. Natív panelnél a rendszer-visszalépés és a szélső swipe nem zárta be a panelt. Oldali lenyíló nem görgette a gyökér oldalt; a Beállítások panelen belüli lenyíló a panel aljára görgetett.
+- A webes idővonal a mai oszlopban piros vonallal és két háromszöggel jelent meg. Üres natív iOS-naptárban nincs Napi terhelés és szünetek lenyíló.
+
+A szimulátoros ellenőrzések nem igazolnak fizikai készülékes teljesítményt, új értesítéskézbesítést vagy teljes képernyőolvasó/böngészőmátrixot. A helyi profiladatok platformonként eltérhetnek; azonos forrásverzió nem jelent adatszinkront.
+
+## Hétvégék, napi szabad idő és színválasztás — 2026-10-05
+
+- Lint, TypeScript és web export sikeres; 63 automatizált teszt sikeres. Új regressziótesztek: külön napok nem összeadható minimum időtartama és a budapesti 25 órás nap határa.
+- Web mobilnézet: kikapcsolt hétvégék mellett hétfő–péntek oszlopok; a következő hét október 5-ről október 12-re lép. A kapcsoló újratöltés után kikapcsolt marad.
+- Web színválasztó: Lila kiválasztása az időpont előnézetét rgb(192, 132, 252)-re váltja. X után Zöld marad, Kész után Lila jelenik meg a mezőben. Hibás #nope kód mellett a Kész letiltott és hibaüzenet látszik.
+- A Színek és küszöbök megnyitása alatt a panel görgetési pozíciója 0 marad; a tartalom magassága fokozatosan nő. Nyitva a nyíl 90 fokkal elfordul.
+- A Megjelenés választó webes mezője és lenyíló listája egyaránt 227 px széles. iOS képernyőképen a lista szélei a mező széleivel egyeznek.
+- MacBook: iPhone 17 Release build és Android assembleRelease sikeres; mindkét frissített alkalmazás telepítve és elindítva. iOS-en a színválasztó vizuális ellenőrzése, valamint a Színek és küszöbök nyitása/zárása sikeres; Androidon a kapcsoló és a színbeállítások lenyitása ellenőrizve.

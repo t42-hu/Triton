@@ -1,12 +1,12 @@
 import { Icon } from '@/components/ui/icon';
 import { NativeOnlyAnimatedView } from '@/components/ui/native-only-animated-view';
 import { cn } from '@/lib/utils';
-import { useKeyboardInset } from '@/hooks/use-keyboard-inset';
+import { usePanelViewport } from '@/features/panel-viewport';
 import * as DialogPrimitive from '@rn-primitives/dialog';
 import { X } from 'lucide-react-native';
 import * as React from 'react';
 import { Platform, Text, View, type ViewProps } from 'react-native';
-import { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
+import { FadeIn, FadeOut, FadeInRight, FadeOutLeft, ReduceMotion } from 'react-native-reanimated';
 
 const Dialog = DialogPrimitive.Root;
 
@@ -20,12 +20,11 @@ const DialogClose = DialogPrimitive.Close;
 function DialogOverlay({
   className,
   children,
-  onPress,
+  onPress, transitionKey,
   ...props
 }: Omit<React.ComponentProps<typeof DialogPrimitive.Overlay>, 'asChild'> & {
-  children?: React.ReactNode;
+  children?: React.ReactNode; transitionKey?: string;
 }) {
-  const keyboardInset = useKeyboardInset();
   return (
       <DialogPrimitive.Overlay
         className={cn(
@@ -36,7 +35,6 @@ function DialogOverlay({
           className
         )}
         {...props}
-        style={state => [typeof props.style === 'function' ? props.style(state) : props.style, { bottom: keyboardInset }]}
         onPress={onPress}
         asChild={Platform.OS !== 'web'}>
         <NativeOnlyAnimatedView
@@ -44,51 +42,53 @@ function DialogOverlay({
           exiting={FadeOut.duration(150).reduceMotion(ReduceMotion.System)}
           as="Pressable">
           <NativeOnlyAnimatedView
-            entering={FadeIn.duration(180).reduceMotion(ReduceMotion.System)}
-            exiting={FadeOut.duration(150).reduceMotion(ReduceMotion.System)}>
+            key={transitionKey}
+            collapsable={false}
+            entering={FadeInRight.duration(180).withInitialValues({ translateX: 16 }).reduceMotion(ReduceMotion.System)}
+            exiting={FadeOutLeft.duration(100).reduceMotion(ReduceMotion.System)}>
             <>{children}</>
           </NativeOnlyAnimatedView>
         </NativeOnlyAnimatedView>
       </DialogPrimitive.Overlay>
   );
 }
+type DialogContentProps = React.ComponentProps<typeof DialogPrimitive.Content> & { portalHost?: string; hidden?: boolean; transitionKey?: string; dismissible?: boolean; onClose?: () => void };
 function DialogContent({
-  className,
-  portalHost,
-  children,
+  className, portalHost, transitionKey,
+  children, forceMount, hidden = false, dismissible = true, onClose,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content> & {
-  portalHost?: string;
-}) {
+}: DialogContentProps) {
+  const viewport = usePanelViewport();
   return (
-    <DialogPortal hostName={portalHost}>
-      <DialogOverlay>
-        <DialogPrimitive.Content
-          className={cn(
-            'bg-card border-border z-50 mx-auto flex w-full max-w-[calc(100%-2rem)] flex-col gap-4 rounded-2xl border p-6 shadow-lg shadow-black/5 sm:max-w-lg',
-            Platform.select({
-              web: 'motion-safe:animate-in fade-in-0 zoom-in-95 duration-200',
-            }),
-            className
-          )}
-          {...props}>
-          <>{children}</>
-          <DialogPrimitive.Close
+    <DialogPortal hostName={portalHost} forceMount={forceMount}>
+      <View pointerEvents={hidden ? 'none' : 'auto'} accessibilityElementsHidden={hidden} importantForAccessibility={hidden ? 'no-hide-descendants' : 'auto'} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, opacity: hidden ? 0 : 1 }}>
+        <DialogOverlay forceMount={forceMount} transitionKey={transitionKey} closeOnPress={false} style={{ paddingTop: viewport.top + 8, paddingBottom: viewport.bottom + 8 }}>
+          <DialogPrimitive.Content
+            forceMount={forceMount}
             className={cn(
-              'absolute right-4 top-4 rounded opacity-70 active:opacity-100',
-              Platform.select({
-                web: 'ring-offset-background focus:ring-ring data-[state=open]:bg-accent transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2',
-              })
+              'web:animate-in web:fade-in-0 web:slide-in-from-right-4 web:duration-150 bg-card border-border z-50 mx-auto flex w-full max-w-[calc(100%-2rem)] flex-col gap-4 rounded-2xl border p-6 shadow-lg shadow-black/5 sm:max-w-lg',
+              className
             )}
-            hitSlop={12}>
-            <Icon
-              as={X}
-              className={cn('text-accent-foreground web:pointer-events-none size-4 shrink-0')}
-            />
-            <Text className="sr-only">Bezárás</Text>
-          </DialogPrimitive.Close>
-        </DialogPrimitive.Content>
-      </DialogOverlay>
+            {...props}
+            style={[{ maxHeight: viewport.height }, props.style]}>
+            <>{children}</>
+            {dismissible ? <DialogPrimitive.Close onPress={onClose}
+              className={cn(
+                'absolute right-4 top-4 rounded-lg p-1 opacity-70 hover:bg-accent/60 active:bg-accent active:opacity-100',
+                Platform.select({
+                  web: 'ring-offset-background focus:ring-ring data-[state=open]:bg-accent transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2',
+                })
+              )}
+              hitSlop={12}>
+              <Icon
+                as={X}
+                className={cn('text-accent-foreground web:pointer-events-none size-4 shrink-0')}
+              />
+              <Text className="sr-only">Bezárás</Text>
+            </DialogPrimitive.Close> : null}
+          </DialogPrimitive.Content>
+        </DialogOverlay>
+      </View>
     </DialogPortal>
   );
 }
@@ -111,7 +111,7 @@ function DialogFooter({ className, ...props }: ViewProps) {
 function DialogTitle({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Title>) {
   return (
     <DialogPrimitive.Title
-      className={cn('text-foreground text-lg font-semibold leading-none', className)}
+      className={cn('text-foreground text-lg font-semibold leading-snug pr-6', className)}
       {...props}
     />
   );
