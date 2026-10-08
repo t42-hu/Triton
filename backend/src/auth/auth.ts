@@ -1,20 +1,35 @@
 import { applicationOrigin, trustedOrigins } from '@fullstack-starter/shared'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { twoFactor } from 'better-auth/plugins/two-factor'
 import { bearer, captcha } from 'better-auth/plugins'
 import { expo } from '@better-auth/expo'
 import type { DatabaseService } from '../database/database.service.js'
+import { accountDeletionHooks } from './account-deletion.js'
+import type { StorageService } from '../storage/storage.service.js'
+import type { ProfileImageService } from '../profile-image/profile-image.service.js'
 import type { MailService } from '../mail/mail.service.js'
 import { renderResetPasswordEmail } from '../mail/templates/reset-password-email.js'
 
-export const createAuth = (databaseService: DatabaseService, mailService: MailService) => {
+export const createAuth = (
+    databaseService: DatabaseService,
+    mailService: MailService,
+    profileImages?: ProfileImageService,
+    storage?: StorageService,
+) => {
     const appName = process.env.APP_NAME?.trim() || 'Fullstack Starter'
     const appDomain = process.env.APP_DOMAIN?.trim()
+    const mobileDomain = process.env.MOBILE_APP_DOMAIN?.trim()
     const authBaseUrl = `${applicationOrigin(process.env)}/api/auth`
-    const allowedOrigins = trustedOrigins(process.env)
+    const allowedOrigins = [
+        ...trustedOrigins(process.env),
+        ...(mobileDomain ? [`https://${mobileDomain}`] : []),
+        ...(process.env.NODE_ENV === 'production' ? [] : [process.env.TRITON_WEB_ORIGIN || 'http://localhost:3042']),
+    ]
     const turnstileSecret = process.env.TURNSTILE_SECRET_KEY?.trim()
     const turnstileAllowedHostnames = [
         ...(appDomain ? [appDomain] : []),
+        ...(mobileDomain ? [mobileDomain] : []),
         ...(process.env.NODE_ENV === 'production' ? [] : ['localhost']),
     ]
     const socialProviders = {
@@ -55,7 +70,18 @@ export const createAuth = (databaseService: DatabaseService, mailService: MailSe
 
     return betterAuth({
         basePath: '/api/auth',
-        baseURL: authBaseUrl,
+        baseURL:
+            process.env.NODE_ENV === 'production'
+                ? authBaseUrl
+                : {
+                      allowedHosts: [
+                          new URL(authBaseUrl).host,
+                          ...(mobileDomain ? [mobileDomain] : []),
+                          new URL(process.env.TRITON_WEB_ORIGIN || 'http://localhost:3042').host,
+                      ],
+                      fallback: authBaseUrl,
+                      protocol: 'auto',
+                  },
         trustedOrigins: allowedOrigins,
         secret: process.env.BETTER_AUTH_SECRET,
         advanced: { cookiePrefix: process.env.APP_ID || 'fullstack-starter' },
@@ -63,6 +89,7 @@ export const createAuth = (databaseService: DatabaseService, mailService: MailSe
             provider: 'pg',
         }),
         user: {
+            deleteUser: accountDeletionHooks(databaseService, profileImages, storage),
             fields: {
                 image: 'profileImage',
             },
@@ -85,8 +112,9 @@ export const createAuth = (databaseService: DatabaseService, mailService: MailSe
             },
         },
         plugins: [
+            twoFactor({ issuer: 'Triton42' }),
             ...(process.env.EXPO_AUTH_ENABLED === 'true' ? [expo()] : []),
-            ...(process.env.NATIVE_AUTH_ENABLED === 'true' ? [bearer({ requireSignature: true })] : []),
+            bearer({ requireSignature: true }),
             ...(turnstileSecret
                 ? [
                       captcha({

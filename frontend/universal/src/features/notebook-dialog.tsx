@@ -11,7 +11,7 @@ import { useApp } from './app-state';
 import { Action, Field, Modal } from './controls';
 
 /** Opens the same notebook from every teaching format of a subject. */
-export function NotebookDialog({ event, close }: { event: DisplayEvent; close: () => void }) {
+export function NotebookDialog({ event, close, learning = false }: { event: DisplayEvent; close: () => void; learning?: boolean }) {
   const app = useApp(); const [links, setLinks] = useState<NotebookLink[]>([]);
   const [title, setTitle] = useState(''); const [url, setUrl] = useState('');
   const [error, setError] = useState(''); const [busy, setBusy] = useState(false);
@@ -19,21 +19,21 @@ export function NotebookDialog({ event, close }: { event: DisplayEvent; close: (
   const name = isSubject ? subjectName(event.originalTitle) || event.title : event.title;
   useEffect(() => {
     let cancelled = false;
-    async function load() { try { const rows = await notebookLinks(event); if (!cancelled) setLinks(rows); } catch { if (!cancelled) setError('Nem sikerült betölteni a jegyzeteket.'); } }
+    async function load() { try { const rows = await notebookLinks(event, learning); if (!cancelled) setLinks(rows); } catch { if (!cancelled) setError('Nem sikerült betölteni a jegyzeteket.'); } }
     void load(); return () => { cancelled = true; };
-  }, [event, app.version]);
+  }, [event, app.version, learning]);
   async function save() {
     if (busy) return;
     setBusy(true); setError('');
-    try { await addNotebookLink(event, title, url); setTitle(''); setUrl(''); await app.refresh(); }
+    try { await addNotebookLink(event, title, url, learning); setTitle(''); setUrl(''); await app.refresh(); }
     catch (reason) { setError(String(reason)); } finally { setBusy(false); }
   }
   async function remove(id: string) { try { await removeNotebookLink(id); await app.refresh(); } catch (reason) { setError(String(reason)); } }
-  return <Modal title="Jegyzetfüzet" description={name} close={close}>
+  return <Modal title={learning ? "Tanulásmenedzsment-rendszer gyorslink" : "Jegyzetfüzet"} description={name} close={close}>
     <View className="flex-row items-center gap-3"><Icon as={NotebookPen} size={24} className="text-primary" /><Text className="shrink text-sm text-muted-foreground">{isSubject ? 'Közös az összes órához.' : 'Az esemény linkjei.'}</Text></View>
     {links.map(link => <NotebookLinkRow key={link.id} link={link} remove={() => void remove(link.id)} report={setError} />)}
     {!links.length ? <Text className="text-muted-foreground">Még nincs mentett link.</Text> : null}
-    <Field label="Jegyzet linkje" value={url} onChange={setUrl} placeholder="https://…" /><Field label="Link neve (opcionális)" value={title} onChange={setTitle} placeholder="Például: Fizika jegyzetek" />
+    <Field label={learning ? "Kurzus linkje" : "Jegyzet linkje"} value={url} onChange={setUrl} placeholder={learning ? "https://moodle… vagy https://classroom.google.com/…" : "https://…"} /><Field label="Link neve (opcionális)" value={title} onChange={setTitle} placeholder={learning ? "Például: Moodle vagy Google Classroom" : "Például: Fizika jegyzetek"} />
     <Action icon={Link2} disabled={busy || !url.trim()} onPress={() => void save()}>{busy ? 'Mentés…' : 'Link hozzáadása'}</Action>
     {error ? <Text accessibilityRole="alert" className="text-destructive">{error}</Text> : null}
   </Modal>;

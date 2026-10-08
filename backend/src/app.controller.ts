@@ -62,6 +62,10 @@ export class AppController {
             socialProviders,
             captcha: {
                 enabled: Boolean(process.env.TURNSTILE_SECRET_KEY?.trim()),
+                siteKey:
+                    process.env.TURNSTILE_SITE_KEY?.trim() ||
+                    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() ||
+                    null,
                 expoReturnUrls:
                     process.env.EXPO_AUTH_ENABLED === 'true'
                         ? [

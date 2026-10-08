@@ -10,10 +10,10 @@ export function TodayLayout(props: TodayLayoutProps) {
     {props.heading}
     <View className="flex-row items-start gap-8">
       <View testID="daily-agenda" className="min-w-0 flex-1 gap-8">{props.next}{props.conflicts}{props.agenda}{props.error}</View>
-      <View testID="daily-overview" className="w-[296px] gap-6">
-        {props.summary ? <View className="gap-5 rounded-2xl border border-border/60 bg-card/60 p-5"><Text className="text-sm font-semibold">A napod számokban</Text>{props.summary}</View> : null}
+      <View testID="daily-overview" className="w-[296px] gap-6 border-l border-border pl-6">
+        {props.summary ? <View className="gap-3"><Text className="text-sm font-semibold">A napod számokban</Text>{props.summary}</View> : null}
         {props.deadlines}{props.tasks}
-        <View className="gap-3 rounded-2xl border border-border/60 bg-card/40 p-5"><Text className="text-sm font-semibold">Tervezés</Text>{props.actions}</View>
+        <View className="gap-3"><Text className="text-sm font-semibold">Tervezés</Text>{props.actions}</View>
       </View>
     </View>
   </View>;

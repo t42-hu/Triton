@@ -24,16 +24,23 @@ declare global {
 }
 
 type TurnstileProps = {
+    siteKey?: string | null
     onTokenChange: (token: string | null) => void
     resetSignal?: number
+    theme?: 'auto' | 'light' | 'dark'
 }
 
 export const turnstileEnabled = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim())
 
-export default function Turnstile({ onTokenChange, resetSignal = 0 }: TurnstileProps) {
+export default function Turnstile({
+    onTokenChange,
+    resetSignal = 0,
+    theme = 'auto',
+    siteKey: providedSiteKey,
+}: TurnstileProps) {
     const containerRef = useRef<HTMLDivElement>(null)
     const widgetIdRef = useRef<string | null>(null)
-    const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim()
+    const siteKey = (providedSiteKey ?? process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY)?.trim()
 
     const renderWidget = useCallback(() => {
         if (!siteKey || !window.turnstile || !containerRef.current || widgetIdRef.current) {
@@ -42,12 +49,12 @@ export default function Turnstile({ onTokenChange, resetSignal = 0 }: TurnstileP
 
         widgetIdRef.current = window.turnstile.render(containerRef.current, {
             sitekey: siteKey,
-            theme: 'auto',
+            theme,
             callback: (token) => onTokenChange(token),
             'error-callback': () => onTokenChange(null),
             'expired-callback': () => onTokenChange(null),
         })
-    }, [onTokenChange, siteKey])
+    }, [onTokenChange, siteKey, theme])
 
     useEffect(() => {
         renderWidget()
@@ -77,7 +84,7 @@ export default function Turnstile({ onTokenChange, resetSignal = 0 }: TurnstileP
                 strategy='afterInteractive'
                 onReady={renderWidget}
             />
-            <div ref={containerRef} className='min-h-[65px]' />
+            <div ref={containerRef} className='flex min-h-[65px] justify-center' />
         </>
     )
 }

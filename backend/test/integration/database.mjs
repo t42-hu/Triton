@@ -7,6 +7,8 @@ import Stripe from 'stripe'
 import { runMigrations } from '../../dist/database/migrations.js'
 import { PaymentService } from '../../dist/payment/payment.service.js'
 import * as schema from '../../dist/database/database.schema.js'
+import { verifyCalendarBackend } from './calendar-backend.mjs'
+import { verifyCalendarSchema } from './calendar-schema.mjs'
 
 const url = new URL(process.env.TEST_DATABASE_URL || 'invalid:')
 assert.ok(url.pathname.endsWith('_test'), 'TEST_DATABASE_URL must select a disposable database ending in _test')
@@ -28,12 +30,46 @@ try {
     assert.deepEqual(tables, [
         'account',
         'billing_customer',
+        'calendar',
+        'calendar_event',
+        'calendar_invitation',
+        'calendar_member',
+        'calendar_source',
+        'calendar_source_connection',
+        'calendar_source_revision',
+        'event_attachment',
+        'event_exception',
+        'event_recurrence',
+        'legacy_import_mapping',
+        'meeting',
+        'meeting_participant',
         'payment',
         'payment_event',
+        'schedule_profile',
+        'schedule_profile_calendar',
         'session',
+        'sync_change',
+        'sync_cursor',
+        'sync_mutation',
+        'sync_snapshot',
         'user',
+        'user_calendar_preference',
+        'user_color_preset',
+        'user_color_preset_color',
+        'user_color_rule',
+        'user_device',
+        'user_device_preference',
+        'user_event_override',
+        'user_event_reminder_setting',
+        'user_notebook_link',
+        'user_preference',
+        'user_reminder_rule',
+        'user_reminder_setting',
+        'user_task',
         'verification',
     ])
+    await verifyCalendarSchema(pool)
+    await verifyCalendarBackend(pool)
     console.log('PASS concurrent migrations and clean schema')
     await pool.query(
         'INSERT INTO "user" (id,name,email,created_at,updated_at) VALUES ($1,$2,$3,now(),now()),($4,$2,$5,now(),now())',

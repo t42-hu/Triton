@@ -77,6 +77,7 @@ test('provisions a tunnel, ingress, DNS record, and private token file', async (
             env: {
                 ...process.env,
                 APP_DOMAIN: 'app.example.com',
+                MOBILE_APP_DOMAIN: 'mobile.app.example.com',
                 APP_ENVIRONMENT: 'test',
                 CLOUDFLARE_ACCOUNT_ID: accountId,
                 CLOUDFLARE_API_TOKEN: 'test-api-token',
@@ -99,7 +100,9 @@ test('provisions a tunnel, ingress, DNS record, and private token file', async (
                 (call) =>
                     call.method === 'PUT' &&
                     call.body.config.ingress[0].hostname === 'app.example.com' &&
-                    call.body.config.ingress[0].service === 'http://proxy:80',
+                    call.body.config.ingress[0].service === 'http://proxy:80' &&
+                    call.body.config.ingress[1].hostname === 'mobile.app.example.com' &&
+                    call.body.config.ingress[1].service === 'http://proxy:8082',
             ),
         )
         assert.ok(
@@ -108,6 +111,14 @@ test('provisions a tunnel, ingress, DNS record, and private token file', async (
                     call.method === 'POST' &&
                     call.url === '/zones/zone-id/dns_records' &&
                     call.body.content === `${tunnelId}.cfargotunnel.com` &&
+                    call.body.proxied === true,
+            ),
+        )
+        assert.ok(
+            calls.some(
+                (call) =>
+                    call.method === 'POST' &&
+                    call.body?.name === 'mobile.app.example.com' &&
                     call.body.proxied === true,
             ),
         )

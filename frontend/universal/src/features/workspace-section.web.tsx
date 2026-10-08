@@ -9,12 +9,12 @@ import { WorkspaceHeading as MobileHeading, WorkspaceSection as MobileSection } 
 export function WorkspaceHeading({ icon, title, detail }: { icon: LucideIcon; title: string; detail?: string }) {
   const { width } = useWindowDimensions();
   if (width < 960) return <MobileHeading icon={icon} title={title} detail={detail} />;
-  return <View className="gap-2"><Text accessibilityRole="header" className="text-[32px] font-semibold tracking-tight">{title}</Text>{detail ? <View className="flex-row items-center gap-2"><Icon as={icon} size={15} className="text-primary" /><Text className="text-sm text-muted-foreground">{detail}</Text></View> : null}</View>;
+  return <View className="gap-1"><Text accessibilityRole="header" className="text-2xl font-semibold tracking-tight">{title}</Text>{detail ? <View className="flex-row items-center gap-2"><Icon as={icon} size={15} className="text-muted-foreground" /><Text className="text-sm text-muted-foreground">{detail}</Text></View> : null}</View>;
 }
 
 /** Quiet section rules keep agenda rows and supporting lists easy to scan. */
 export function WorkspaceSection({ icon, title, count, children, action }: { icon: LucideIcon; title: string; count?: number; children: ReactNode; action?: ReactNode }) {
   const { width } = useWindowDimensions();
   if (width < 600) return <MobileSection icon={icon} title={title} count={count} action={action}>{children}</MobileSection>;
-  return <View className="gap-3"><View className="flex-row items-center gap-2 border-b border-border/60 pb-3"><Icon as={icon} size={17} className="text-primary" /><Text accessibilityRole="header" className="flex-1 text-[15px] font-semibold">{title}</Text>{count !== undefined ? <Text className="text-xs tabular-nums text-muted-foreground">{count}</Text> : null}{action}</View>{children}</View>;
+  return <View className="gap-2"><View className="min-h-11 flex-row items-center gap-2 border-b border-border pb-2"><Icon as={icon} size={17} className="text-muted-foreground" /><Text accessibilityRole="header" className="flex-1 text-base font-semibold">{title}</Text>{count !== undefined ? <Text className="text-xs tabular-nums text-muted-foreground">{count}</Text> : null}{action}</View>{children}</View>;
 }

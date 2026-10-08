@@ -111,5 +111,7 @@ frontend/public/triton/
 **/.expo/
 **/android/
 **/ios/
+!frontend/universal/modules/*/android/
+!frontend/universal/modules/*/ios/
 
 frontend/output/

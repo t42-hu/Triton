@@ -1,6 +1,7 @@
+import { SetupStep } from './setup-shell';
 import { useRegisterPanel } from './panel-lock';
 import { PanelScrollContext, usePanelScrollController } from './panel-scroll';
-import { useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Check, ChevronRight, X, type LucideIcon } from 'lucide-react-native';
 import { Icon } from '@/components/ui/icon';
 import { Keyboard, Platform, ScrollView, TextInput, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
@@ -30,7 +31,7 @@ function DisclosureChevron({ expanded, className }: { expanded: boolean; classNa
   return <Animated.View style={style}><Icon as={ChevronRight} size={17} className={className} /></Animated.View>;
 }
 export function Field({ label, value, onChange, placeholder, insetLabel = false }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; insetLabel?: boolean }) {
-  return <View className="relative gap-1.5">{insetLabel ? <View pointerEvents="none" className="absolute left-3 top-2 z-10"><Label nativeID={label} className="text-xs text-muted-foreground">{label}</Label></View> : <Label nativeID={label}>{label}</Label>}<Input className={insetLabel ? 'h-14 pb-2 pt-6 sm:h-14' : undefined} accessibilityLabel={label} aria-labelledby={label} value={value} onChangeText={onChange} placeholder={placeholder} autoCapitalize="none" /></View>;
+  return <View className="relative gap-2">{insetLabel ? <View pointerEvents="none" className="absolute left-3 top-2 z-10"><Label nativeID={label} className="text-xs text-muted-foreground">{label}</Label></View> : <Label nativeID={label}>{label}</Label>}<Input className={insetLabel ? 'h-14 pb-2 pt-6 sm:h-14' : undefined} accessibilityLabel={label} aria-labelledby={label} value={value} onChangeText={onChange} placeholder={placeholder} autoCapitalize="none" /></View>;
 }
 export function Choice({ label, value, options, onChange, fullWidth = false, icon }: { icon?: LucideIcon; label: string; value: string; options: { value: string; label: string }[]; onChange: (value: string) => void; fullWidth?: boolean }) {
   return <Select value={options.find(option => option.value === value)} onValueChange={option => { if (option) onChange(option.value); }}>
@@ -39,22 +40,25 @@ export function Choice({ label, value, options, onChange, fullWidth = false, ico
   </Select>;
 }
 export function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
-  return <View className="flex-row items-center gap-2"><Switch accessibilityLabel={label} checked={checked} onCheckedChange={onChange} /><Text className="min-w-0 flex-1 text-sm">{label}</Text></View>;
+  return <View className="min-h-12 flex-row items-center gap-3"><Switch accessibilityLabel={label} checked={checked} onCheckedChange={onChange} /><Text className="min-w-0 flex-1 text-sm">{label}</Text></View>;
 }
-export function Modal({ title, description, close, children, footer, wide = false, maxWidth, scrollGesture, open = true, keepMounted = false, dismissible = true }: { dismissible?: boolean; title: string; description?: string; close: () => void; children: ReactNode; footer?: ReactNode; wide?: boolean; maxWidth?: number; scrollGesture?: ReturnType<typeof Gesture.Native>; open?: boolean; keepMounted?: boolean }) {
+export function Modal({ title, description, close, children, footer, header, backwards = false, hideHeading = false, setup = false, pickerMotion = false, wide = false, maxWidth, scrollGesture, open = true, keepMounted = false, dismissible = true }: { backwards?: boolean; hideHeading?: boolean; dismissible?: boolean; title: string; description?: string; close: () => void; children: ReactNode; footer?: ReactNode; header?: ReactNode; setup?: boolean; pickerMotion?: boolean; wide?: boolean; maxWidth?: number; scrollGesture?: ReturnType<typeof Gesture.Native>; open?: boolean; keepMounted?: boolean }) {
   useRegisterPanel(open);
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const viewport = usePanelViewport();
   const keyboardInset = useKeyboardInset();
   const { scroll, requestRevealEnd, revealExpandedContent } = usePanelScrollController();
+  useEffect(() => { scroll.current?.scrollTo({ y: 0, animated: false }); }, [title, scroll]);
   const { revealFocusedInput, rememberOffset } = useFocusedInputVisibility(open, keyboardInset, scroll);
-  const availableHeight = viewport.height;
+  const availableHeight = setup ? height - keyboardInset - 16 : viewport.height;
   const panelWidth = maxWidth ?? (wide ? 960 : 576);
-  const content = <ScrollView ref={scroll} onContentSizeChange={revealExpandedContent} onFocus={revealFocusedInput} onLayout={revealFocusedInput} onScroll={rememberOffset} scrollEventThrottle={16} nestedScrollEnabled directionalLockEnabled keyboardDismissMode="none" style={{ marginRight: -16, maxHeight: Math.max(0, availableHeight - (description ? 144 : 104) - (footer ? 72 : 0)), ...(Platform.OS === 'web' ? { overscrollBehavior: 'contain' as const } : {}) }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 20, paddingRight: 16, paddingBottom: 12 }}><PanelScrollContext.Provider value={requestRevealEnd}>{children}</PanelScrollContext.Provider></ScrollView>;
-  return <Dialog open={open} onOpenChange={() => undefined}><DialogContent onClose={close} dismissible={dismissible} forceMount={keepMounted ? true : undefined} hidden={!open} transitionKey={title} className={wide ? 'sm:max-w-[960px]' : undefined} style={{ width: Math.min(width - 32, panelWidth), maxWidth: panelWidth, maxHeight: availableHeight }}>
-    <DialogTitle>{title}</DialogTitle>{description ? <DialogDescription>{description}</DialogDescription> : null}
+  const content = <ScrollView className="panel-scroll" showsVerticalScrollIndicator persistentScrollbar={Platform.OS === 'android'} ref={scroll} onContentSizeChange={revealExpandedContent} onFocus={revealFocusedInput} onLayout={revealFocusedInput} onScroll={rememberOffset} scrollEventThrottle={16} nestedScrollEnabled directionalLockEnabled keyboardDismissMode="none" style={{ marginRight: 0, ...(setup ? { flex: 1, minHeight: 0 } : { maxHeight: Math.max(0, availableHeight - (description ? 144 : 104) - (footer ? 72 : 0)) }), ...(Platform.OS === 'web' ? { overscrollBehavior: 'contain' as const } : {}) }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 24, paddingHorizontal: Platform.OS === 'web' ? 0 : 8, paddingBottom: 12 }}><PanelScrollContext.Provider value={requestRevealEnd}>{setup && !hideHeading ? <View className="gap-2"><Text accessibilityRole="header" className="text-2xl font-semibold tracking-tight">{title}</Text>{description ? <Text className="text-sm leading-6 text-muted-foreground">{description}</Text> : null}</View> : null}{children}</PanelScrollContext.Provider></ScrollView>;
+  if (setup) return <SetupStep title={title} header={header} footer={footer} open={open} backwards={backwards}>{content}</SetupStep>;
+  return <Dialog open={open} onOpenChange={() => undefined}><DialogContent backwards={backwards} fullViewport={setup} pickerMotion={pickerMotion} onClose={close} dismissible={dismissible} forceMount={keepMounted ? true : undefined} hidden={!open} transitionKey={title} overlayClassName={setup ? 'bg-background' : undefined} className={setup ? 'gap-5 rounded-3xl border-border/60 p-6 shadow-xl shadow-primary/5 sm:p-8' : wide ? 'sm:max-w-[960px]' : undefined} style={{ width: Math.min(width - 32, panelWidth), maxWidth: panelWidth, maxHeight: availableHeight }}>
+    {header}
+    <>{hideHeading ? <DialogTitle style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', opacity: 0 }}>{title}</DialogTitle> : setup ? <View className="gap-2"><DialogTitle className="pr-0 text-2xl tracking-tight">{title}</DialogTitle>{description ? <DialogDescription className="leading-6">{description}</DialogDescription> : null}</View> : <><DialogTitle className="pr-10 text-xl font-semibold tracking-tight">{title}</DialogTitle>{description ? <DialogDescription>{description}</DialogDescription> : null}</>}</>
     {scrollGesture ? <GestureDetector gesture={scrollGesture}>{content}</GestureDetector> : content}
-    {footer ? <View className="border-t border-border pt-3">{footer}</View> : null}
+    {footer ? <View className="border-t border-border pt-4">{footer}</View> : null}
   </DialogContent></Dialog>;
 }
 export function Confirm({ title, description, accept, cancel }: { title: string; description: string; accept: () => void; cancel: () => void }) {

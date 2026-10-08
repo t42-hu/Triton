@@ -46,7 +46,7 @@ function NativePicker({ mode, value, onChange, close }: { mode: PickerMode; valu
   const isAndroid = Platform.OS === 'android';
   const picker = <DateTimePicker value={pickerValue(value)} mode={mode} display={isAndroid ? 'default' : mode === 'date' ? 'inline' : 'spinner'} is24Hour locale="hu_HU" themeVariant={colorScheme === 'dark' ? 'dark' : 'light'} positiveButton={{ label: 'Kész' }} negativeButton={{ label: 'Mégse' }} onValueChange={(_, selected) => { onChange(selectedValue(value, mode, selected)); if (isAndroid) close(); }} onDismiss={close} />;
   if (isAndroid) return picker;
-  return <PanelModal title={mode === 'date' ? 'Dátum kiválasztása' : 'Idő beállítása'} close={close}>
+  return <PanelModal pickerMotion title={mode === 'date' ? 'Dátum kiválasztása' : 'Idő beállítása'} close={close}>
     {picker}
     <Button accessibilityLabel="Választás kész" onPress={close}><Icon as={Check} size={16} className="text-primary-foreground" /><Text>Kész</Text></Button>
   </PanelModal>;

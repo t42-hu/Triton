@@ -1,20 +1,35 @@
-import { openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite';
+import { deleteDatabaseAsync, openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite';
 import { initializeStudentStorage } from './student-migration';
 let database: Promise<SQLiteDatabase> | undefined;
+let databaseName = 'orarend.db';
+const observers = new Set<() => void>();
+export function onDatabaseWrite(callback: () => void) { observers.add(callback); return () => { observers.delete(callback); }; }
+/** Each authenticated account has its own cache; anonymous data remains intact. */
+export async function selectAccountDatabase(userId: string) {
+  await pending;
+  const next = `account-${userId.replace(/[^a-zA-Z0-9_-]/g, '_')}.db`;
+  if (next !== databaseName) {
+    if (database) await (await database).closeAsync();
+    database = undefined; databaseName = next;
+  }
+  await (await getDatabase()).runAsync('INSERT OR REPLACE INTO settings VALUES (?,?)', 'accountOwner', JSON.stringify(userId));
+}
 let pending: Promise<unknown> = Promise.resolve();
 
 /** Serializes writers so asynchronous native/web transactions cannot interleave. */
 export function write<T>(operation: (db: SQLiteDatabase) => Promise<T>): Promise<T> {
   const result = pending.then(async () => operation(await getDatabase()));
   pending = result.catch(() => undefined);
+  void result.then(notifyObservers, () => undefined);
   return result;
 }
+function notifyObservers() { observers.forEach(callback => callback()); }
 export function getDatabase(): Promise<SQLiteDatabase> {
   database ??= initialize();
   return database;
 }
 async function initialize(): Promise<SQLiteDatabase> {
-  const db = await openDatabaseAsync('orarend.db');
+  const db = await openDatabaseAsync(databaseName);
   await db.execAsync(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
     CREATE TABLE IF NOT EXISTS profiles(id INTEGER PRIMARY KEY, name TEXT NOT NULL, isOwn INTEGER NOT NULL DEFAULT 0);
     CREATE UNIQUE INDEX IF NOT EXISTS own_profile ON profiles(isOwn) WHERE isOwn=1;
@@ -60,4 +75,15 @@ export async function transaction<T>(operation: (db: SQLiteDatabase) => Promise<
     await db.withTransactionAsync(commit);
     return result!;
   });
+}
+
+/** Removes only the deleted account's local cache; unrelated accounts and anonymous data survive. */
+export async function eraseAccountDatabase(userId: string) {
+  await pending;
+  const name = `account-${userId.replace(/[^a-zA-Z0-9_-]/g, '_')}.db`;
+  if (databaseName === name) {
+    if (database) await (await database).closeAsync();
+    database = undefined; databaseName = 'orarend.db';
+  }
+  await deleteDatabaseAsync(name);
 }

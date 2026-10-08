@@ -1,3 +1,5 @@
+import { EventQuickLinks } from './event-quick-links';
+import { useNotebookQuickLink } from './use-notebook-quick-link';
 import { AnimatedDisclosure } from './animated-disclosure';
 import { useEventAppearance } from './use-event-appearance';
 import { useEffect, useState } from 'react';
@@ -19,22 +21,24 @@ import { hasMappedRoom } from './room-location';
 import { StudentEventRow, type EventActions } from './student-event-row';
 import { StudentTaskRow } from './student-tasks-screen';
 import { TodayLayout } from './today-layout';
+import { ListSkeleton } from './content-state';
 
 type Props = EventActions & { profileId: number; openFreeTime: () => void; openTasks: () => void; openMap: (location: string, onClose: () => void) => void };
 export function TodayScreen(props: Props) {
+  const app = useApp();
   const data = useTodayData(props.profileId); const analysis = dailyAnalysis(data.events, data.date);
   const next = data.events.find(event => event.kind === 'timed' && event.end > data.now && event.category !== 'assignment');
   const pendingTasks = data.tasks.filter(task => !task.completed);
   return <TodayLayout
     heading={<WorkspaceHeading icon={House} title="Mai nap" detail={dateLabel(data.date)} />}
-    next={data.loading ? <Text>Nap betöltése…</Text> : <NextEvent event={next} now={data.now} {...props} />}
+    next={data.loading ? <ListSkeleton label="Nap betöltése…" rows={2} /> : <NextEvent event={next} now={data.now} {...props} />}
     summary={data.events.length ? <DailySummary analysis={analysis} /> : null}
     conflicts={analysis.conflicts.length ? <WorkspaceSection icon={TriangleAlert} title="Ütközések" count={analysis.conflicts.length}>{analysis.conflicts.map(item => <View className="rounded-lg border-l-2 border-destructive bg-destructive/5 px-3" key={`${item.first.sourceId}:${item.first.key}:${item.second.sourceId}:${item.second.key}`}><Text className="pt-3 text-xs font-medium text-destructive">{clockTime(item.start)}–{clockTime(item.end)}</Text><StudentEventRow event={item.first} openEvent={props.openEvent} openNotebook={props.openNotebook} /><StudentEventRow event={item.second} openEvent={props.openEvent} openNotebook={props.openNotebook} /></View>)}</WorkspaceSection> : null}
     agenda={data.events.length ? <WorkspaceSection icon={CalendarDays} title="Mai program" count={data.events.length}>{data.events.map(event => <StudentEventRow key={`${event.sourceId}:${event.key}`} event={event} openEvent={props.openEvent} openNotebook={props.openNotebook} />)}</WorkspaceSection> : null}
     deadlines={data.assessments.length ? <WorkspaceSection icon={ClipboardCheck} title="Közelgő határidők" count={data.assessments.length}>{data.assessments.slice(0, 5).map(event => <StudentEventRow key={`${event.sourceId}:${event.key}`} event={event} showDate openEvent={props.openEvent} openNotebook={props.openNotebook} />)}</WorkspaceSection> : null}
     tasks={pendingTasks.length ? <WorkspaceSection icon={ListTodo} title="Teendők" count={pendingTasks.length}>{pendingTasks.slice(0, 5).map(task => <StudentTaskRow key={task.id} task={task} openEvent={props.openEvent} report={data.setError} />)}</WorkspaceSection> : null}
     error={data.error ? <Text accessibilityRole="alert" className="text-destructive">{data.error}</Text> : null}
-    actions={<View className="gap-2 border-t border-border pt-4"><Action quiet icon={ListTodo} onPress={props.openTasks}>Feladatok és határidők</Action><Action quiet icon={UsersRound} onPress={props.openFreeTime}>Közös szabad idő</Action></View>}
+    actions={<View className="gap-2 border-t border-border pt-4"><Action quiet icon={ListTodo} onPress={props.openTasks}>Feladatok és határidők</Action>{app.profileList.length > 1 ? <Action quiet icon={UsersRound} onPress={props.openFreeTime}>Közös szabad idő</Action> : null}</View>}
   />;
 
 }
@@ -63,9 +67,10 @@ function useTodayData(profileId: number) {
 
 function NextEvent({ event, now, openEvent, openNotebook, openMap }: Props & { event?: DisplayEvent; now: number }) {
   const appearance = useEventAppearance(event);
-  if (!event) return <View className="items-center gap-3 rounded-2xl bg-muted/40 px-6 py-8"><Icon as={CheckCircle2} size={30} className="text-primary" /><Text className="text-lg font-semibold">Mára nincs több esemény</Text></View>;
+  const notebook = useNotebookQuickLink(event, false, () => { if (event) openNotebook(event); });
+  if (!event) return <View className="items-start gap-3 border-l-2 border-border py-6 pl-4"><Icon as={CheckCircle2} size={30} className="text-primary" /><Text className="text-lg font-semibold">Mára nincs több esemény</Text></View>;
   const remaining = Math.max(1, Math.ceil((event.start - now) / 60000));
-  return <View style={{ borderColor: appearance.urgency ?? appearance.color, borderLeftColor: appearance.color, borderLeftWidth: appearance.color ? 3 : undefined }} className="gap-4 rounded-2xl border border-primary/25 bg-primary/5 p-5"><View className="flex-row items-center gap-2"><Icon as={Clock3} size={17} color={appearance.urgency ?? appearance.color} className="text-primary" /><Text style={{ color: appearance.urgency ?? appearance.color }} className="text-sm font-semibold text-primary">{event.start <= now ? 'Most tart' : `${remaining} perc múlva`}</Text><Text style={{ color: appearance.urgency ?? appearance.color }} className="ml-auto text-sm text-muted-foreground">{clockTime(event.start)}–{clockTime(event.end)}</Text></View><Text className="text-xl font-semibold" numberOfLines={3}>{event.title}</Text>{event.location ? <Text className="text-sm text-muted-foreground" numberOfLines={1}>{event.location}</Text> : null}<View className="flex-row flex-wrap gap-2"><Action icon={Clock3} onPress={() => openEvent(event)}>Megnyitás</Action><Action quiet icon={NotebookPen} onPress={() => openNotebook(event)}>Jegyzetfüzet</Action>{(event.category ?? 'lesson') === 'lesson' && hasMappedRoom(event.location) ? <Action quiet icon={MapPinned} onPress={() => openMap(event.location, () => undefined)}>Térkép</Action> : null}</View></View>;
+  return <View style={{ ...(appearance.urgency ? { borderColor: appearance.urgency } : {}), ...(appearance.color ? { borderColor: appearance.urgency ?? appearance.color, borderLeftColor: appearance.color, borderLeftWidth: 3 } : {}) }} className="gap-4 rounded-xl border border-border bg-card p-5"><View className="flex-row items-center gap-2"><Icon as={Clock3} size={17} {...(appearance.urgency || appearance.color ? { color: appearance.urgency ?? appearance.color } : {})} className="text-primary" /><Text style={appearance.urgency || appearance.color ? { color: appearance.urgency ?? appearance.color } : undefined} className="text-sm font-semibold text-primary">{event.start <= now ? 'Most tart' : `${remaining} perc múlva`}</Text><Text style={appearance.urgency || appearance.color ? { color: appearance.urgency ?? appearance.color } : undefined} className="ml-auto text-sm text-muted-foreground">{clockTime(event.start)}–{clockTime(event.end)}</Text></View><Text className="text-xl font-semibold" numberOfLines={3}>{event.title}</Text>{event.location ? <Text className="text-sm text-muted-foreground" numberOfLines={1}>{event.location}</Text> : null}<EventQuickLinks event={event} actions={[{ label: 'Megnyitás', icon: Clock3, onPress: () => openEvent(event) }, { label: 'Jegyzetfüzet', icon: NotebookPen, quiet: true, disabled: notebook.loading, onPress: notebook.open }, ...((event.category ?? 'lesson') === 'lesson' && hasMappedRoom(event.location) ? [{ label: 'Térkép', icon: MapPinned, quiet: true, onPress: () => openMap(event.location, () => undefined) }] : [])]} /></View>;
 }
 
 
@@ -74,6 +79,6 @@ export function DailySummary({ analysis }: { analysis: ReturnType<typeof dailyAn
   const [expanded, setExpanded] = useState(false);
   const minutes = Math.round(analysis.minutes);
   return <View className="gap-3"><View className="flex-row flex-wrap items-center gap-4"><View className="flex-row items-center gap-1.5"><Icon as={Clock3} size={15} className="text-muted-foreground" /><Text className="text-sm font-medium">{Math.floor(minutes / 60)} ó {minutes % 60} p</Text></View><View className="flex-row items-center gap-1.5"><Icon as={CalendarDays} size={15} className="text-muted-foreground" /><Text className="text-sm text-muted-foreground">{analysis.lessonCount} óra</Text></View>{analysis.gaps.length ? <Button variant="ghost" className="h-9 gap-1 rounded-lg border-0 bg-transparent px-1 py-0" hitSlop={4} accessibilityLabel="Lyukasórák részletei" accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)}><Icon as={Coffee} size={15} /><Text className="text-sm">{analysis.gaps.length} szünet</Text><Icon as={expanded ? ChevronUp : ChevronDown} size={13} /></Button> : null}</View>
-    <AnimatedDisclosure expanded={expanded} gap={12}><View className="gap-2 rounded-lg bg-muted/40 p-3">{analysis.gaps.map(slot => <Text key={slot.start} className="text-sm text-muted-foreground">{clockTime(slot.start)}–{clockTime(slot.end)} · {Math.round((slot.end - slot.start) / 60000)} perc</Text>)}</View></AnimatedDisclosure>
+    <AnimatedDisclosure expanded={expanded} gap={12}><View className="gap-2 border-l-2 border-border py-2 pl-3">{analysis.gaps.map(slot => <Text key={slot.start} className="text-sm text-muted-foreground">{clockTime(slot.start)}–{clockTime(slot.end)} · {Math.round((slot.end - slot.start) / 60000)} perc</Text>)}</View></AnimatedDisclosure>
   </View>;
 }

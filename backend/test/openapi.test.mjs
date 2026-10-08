@@ -11,7 +11,9 @@ test('Nest routes and checked-in OpenAPI document agree', async () => {
     const routes = Object.entries(fresh.paths).flatMap(([path, methods]) =>
         Object.keys(methods).map((method) => `${method} ${path}`),
     )
-    assert.equal(routes.length, 13)
+    assert.equal(routes.length, 32)
+    assert.ok(routes.includes('get /api/sync/snapshot'))
+    assert.deepEqual(fresh.paths['/api/calendar/{resource}'].get.security, [{ session: [] }, { nativeToken: [] }])
     assert.ok(routes.includes('patch /api/users/me'))
     assert.ok(routes.includes('post /api/native-auth/exchange'))
     assert.ok(routes.every((route) => !route.includes('/api/auth/')))

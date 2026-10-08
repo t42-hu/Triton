@@ -41,24 +41,32 @@ function SelectTrigger({
   className,
   children,
   size = 'default',
+  onPress,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
     children?: React.ReactNode;
     size?: 'default' | 'sm';
   }) {
+  const { onOpenChange } = SelectPrimitive.useRootContext();
   return (
     <SelectPrimitive.Trigger
       ref={ref}
       className={cn(
-        'border-input dark:bg-input/30 hover:bg-accent/60 active:bg-accent bg-background flex h-10 flex-row items-center justify-between gap-2 rounded-md border px-3 py-2 shadow-sm shadow-black/5 sm:h-9',
+        'border-input hover:bg-accent/60 active:bg-accent bg-card flex h-11 flex-row items-center justify-between gap-2 rounded-lg border px-3 py-2',
         Platform.select({
           web: 'focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:hover:bg-input/50 w-fit whitespace-nowrap text-sm outline-none transition-[color,box-shadow] focus-visible:ring-[3px] disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:shrink-0',
         }),
         props.disabled && 'opacity-50',
-        size === 'sm' && 'h-8 py-2 sm:py-1.5',
+        Platform.OS === 'android' ? 'min-h-12' : Platform.OS === 'ios' ? 'min-h-11' : '',
+        size === 'sm' && 'h-9 py-2',
         className
       )}
-      {...props}>
+      {...props}
+      onPress={Platform.OS === 'web' ? event => {
+        onPress?.(event);
+        // Radix handles pointer-down; also support synthesized clicks and accessibility activation.
+        if (!props.disabled && !event.defaultPrevented) onOpenChange(true);
+      } : onPress}>
       <>{children}</>
       <Icon as={ChevronDown} aria-hidden={true} className="text-muted-foreground size-4" />
     </SelectPrimitive.Trigger>
@@ -75,7 +83,7 @@ function SelectViewport({ position, children }: { position: 'item-aligned' | 'po
 function SelectContent({ className, children, position = 'popper', portalHost, ...props }: React.ComponentProps<typeof SelectPrimitive.Content> & { className?: string; portalHost?: string }) {
   const { triggerPosition } = SelectPrimitive.useRootContext();
   const contentClassName = cn(
-    'bg-popover border-border relative z-50 rounded-md border shadow-md shadow-black/5',
+    'triton-select-content bg-popover border-border relative z-50 rounded-md border shadow-md shadow-black/5',
     Platform.select({ web: cn('w-[var(--radix-select-trigger-width)] min-w-0 max-w-[var(--radix-select-trigger-width)] animate-in fade-in-0 zoom-in-95 origin-(--radix-select-content-transform-origin) max-h-52 overflow-y-auto overflow-x-hidden', props.side === 'bottom' && 'slide-in-from-top-2', props.side === 'top' && 'slide-in-from-bottom-2'), native: 'p-1' }),
     position === 'popper' && Platform.select({ web: cn(props.side === 'bottom' && 'translate-y-1', props.side === 'top' && '-translate-y-1') }),
     className
@@ -134,6 +142,7 @@ function SelectItem({
           web: 'focus:bg-accent focus:text-accent-foreground *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2 cursor-default outline-none data-[disabled]:pointer-events-none [&_svg]:pointer-events-none',
         }),
         props.disabled && 'opacity-50',
+        Platform.OS === 'android' ? 'min-h-12' : Platform.OS === 'ios' ? 'min-h-11' : '',
         className
       )}
       {...props}>

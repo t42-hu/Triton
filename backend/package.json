@@ -14,9 +14,9 @@
         "db:migrate": "node --env-file-if-exists=../.env dist/database/migrate.js"
     },
     "dependencies": {
-        "@better-auth/expo": "1.6.26",
         "@aws-sdk/client-s3": "^3.760.0",
         "@aws-sdk/client-sesv2": "^3.1048.0",
+        "@better-auth/expo": "1.6.26",
         "@fullstack-starter/shared": "workspace:*",
         "@nestjs/common": "^11.1.19",
         "@nestjs/config": "^4.0.4",
@@ -39,6 +39,7 @@
         "dotenv": "^17.4.2",
         "drizzle-orm": "^0.45.2",
         "express": "^5.2.1",
+        "ical.js": "2.2.1",
         "ioredis": "^5.11.1",
         "meilisearch": "0.58.0",
         "nestjs-pino": "^5.2.0",

@@ -144,3 +144,19 @@ test('calendar lanes are stable for unsorted overlapping events from different s
   assert.notEqual(early.lane, overlap.lane);
   assert.deepEqual(events.map(item => item.key), ['later', 'early', 'overlap']);
 });
+
+
+test('calendar uses the selected hours and clips events at both boundaries', () => {
+  const date = '2026-09-07';
+  const make = (key: string, start: string, end: string) => display({ key, title: key, originalTitle: key, start: fromWall(`${date}T${start}`), end: fromWall(`${date}T${end}`), kind: 'timed', location: '' });
+  const result = dayLayout([make('outside', '07:00', '09:00'), make('early', '08:30', '09:30'), make('late', '16:30', '18:00'), make('after', '17:00', '18:00')], date, 9 * 60, 17 * 60);
+  assert.deepEqual(result.map(({ event, top, height }) => [event.key, top, height]), [['early', 0, 30], ['late', 450, 30]]);
+});
+
+test('calendar supports the full day and clips overnight events at midnight', () => {
+  const date = '2026-09-07';
+  const event = display({ key: 'overnight', title: 'Overnight', originalTitle: 'Overnight', start: fromWall(`${date}T23:30`), end: fromWall('2026-09-08T01:00'), kind: 'timed', location: '' });
+  const [item] = dayLayout([event], date, 0, 24 * 60);
+  assert.equal(item.top, 1410); assert.equal(item.height, 30);
+  assert.equal(item.event.end, event.end);
+});

@@ -1,9 +1,7 @@
-import { AnimatedDisclosure } from './animated-disclosure';
 import { useState } from 'react';
 import { View } from 'react-native';
-import { Check, Palette, RotateCcw } from 'lucide-react-native';
+import { Check, RotateCcw } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
-import { Icon } from '@/components/ui/icon';
 import { Action, Choice, Field, Modal, Toggle } from './controls';
 import { ColorField } from './color-picker';
 import { useApp } from './app-state';
@@ -12,17 +10,16 @@ import { colorOccurrenceKey, colorSeriesKey, DEFAULT_EVENT_COLORS, isDeadline, i
 
 /** Keeps global countdown rules editable independently for lessons and deadlines. */
 export function GlobalColorEditor() {
-  const app = useApp(); const [category, setCategory] = useState('lesson'); const [open, setOpen] = useState(false);
+  const app = useApp(); const [category, setCategory] = useState('lesson');
   const [error, setError] = useState('');
   const key = category === 'deadline' ? 'deadline' : 'lesson';
   async function save(rules: UrgencyRules) {
-    try { validateUrgencyRules(rules); await app.saveEventColors({ ...app.eventColors, [key]: rules }); setError(''); setOpen(false); }
+    try { validateUrgencyRules(rules); await app.saveEventColors({ ...app.eventColors, [key]: rules }); setError(''); }
     catch (error) { setError(String(error)); }
   }
-  return <View className="gap-3 rounded-xl border border-border p-4"><View className="flex-row items-center gap-2"><Icon as={Palette} size={19} className="text-primary" /><Text className="font-semibold">Közelgő események színei</Text></View>
-    <Choice fullWidth label="Színezés típusa" value={category} onChange={setCategory} options={[{ value: 'lesson', label: 'Tanórák' }, { value: 'deadline', label: 'Beadandók, ZH-k, vizsgák és feladatok' }]} />
-    <Action secondary revealOnExpand={false} expanded={open} onPress={() => setOpen(!open)}>Színek és küszöbök</Action>
-    <AnimatedDisclosure expanded={open} gap={12}><UrgencyEditor key={key} initial={app.eventColors[key]} deadline={key === 'deadline'} save={rules => void save(rules)} /></AnimatedDisclosure>
+  return <View className="gap-4">
+    <Choice fullWidth label="Eseménytípus" value={category} onChange={setCategory} options={[{ value: 'lesson', label: 'Tanórák' }, { value: 'deadline', label: 'Határidők és feladatok' }]} />
+    <UrgencyEditor key={key} initial={app.eventColors[key]} deadline={key === 'deadline'} save={rules => void save(rules)} />
     {error ? <Text accessibilityRole="alert" className="text-destructive">{error}</Text> : null}
   </View>;
 }
@@ -47,7 +44,7 @@ export function EventColorDialog({ event, close }: { event: DisplayEvent; close:
     } catch (error) { setError(String(error)); }
   }
   return <Modal title="Esemény színezése" close={close}>
-    <Text className="text-sm text-muted-foreground">Az alapszín e profil azonos típusú óráira érvényes. Az előadás és a gyakorlat külön színezhető.</Text>
+    <Text className="text-sm text-muted-foreground">Az alapszín a profil azonos típusú óráira érvényes.</Text>
     <ColorField label="Órasorozat színe" value={color} onChange={setColor} />
     <Action quiet icon={RotateCcw} onPress={() => setColor('')}>Alapszín törlése</Action>
     <Toggle label="Egyéni közelgő színezés" checked={custom} onChange={setCustom} />
@@ -61,14 +58,20 @@ function UrgencyEditor({ initial, deadline, save }: { initial: UrgencyRules; dea
   const [rules, setRules] = useState(initial);
   function change(patch: Partial<UrgencyRules>) { setRules(current => ({ ...current, ...patch })); }
   return <View className="gap-4">
-    <Text className="text-xs text-muted-foreground">A küszöbök percekben értendők. A legközelebbi küszöb színe jelenik meg az időpontnál és a körvonalon.</Text>
-    {deadline ? <Field label="Távolabbi jelzés: ennyi percen belül" value={String(rules.greenMinutes ?? '')} onChange={value => change({ greenMinutes: Number(value) })} /> : <Text className="text-sm">A közelgő küszöbnél távolabbi órák a távolabbi jelzést kapják.</Text>}
-    <ColorField label="Távolabbi esemény színe" value={rules.green} onChange={green => change({ green })} />
-    <Field label="Közelgő: ennyi percen belül" value={String(rules.yellowMinutes)} onChange={value => change({ yellowMinutes: Number(value) })} />
-    <ColorField label="Közelgő esemény színe" value={rules.yellow} onChange={yellow => change({ yellow })} />
-    <Field label="Sürgős: ennyi percen belül" value={String(rules.redMinutes)} onChange={value => change({ redMinutes: Number(value) })} />
-    <ColorField label="Sürgős esemény színe" value={rules.red} onChange={red => change({ red })} />
-    <Action secondary icon={RotateCcw} onPress={() => setRules(deadline ? DEFAULT_EVENT_COLORS.deadline : DEFAULT_EVENT_COLORS.lesson)}>Alapértelmezett értékek</Action>
-    <Action icon={Check} onPress={() => save(rules)}>Színezés mentése</Action>
+    <UrgencyGroup title="Távolabbi" color={rules.green} setColor={green => change({ green })} minutes={deadline ? rules.greenMinutes ?? 0 : undefined} setMinutes={greenMinutes => change({ greenMinutes })} />
+    <UrgencyGroup title="Közelgő" color={rules.yellow} setColor={yellow => change({ yellow })} minutes={rules.yellowMinutes} setMinutes={yellowMinutes => change({ yellowMinutes })} />
+    <UrgencyGroup title="Sürgős" color={rules.red} setColor={red => change({ red })} minutes={rules.redMinutes} setMinutes={redMinutes => change({ redMinutes })} />
+    <Action icon={Check} onPress={() => save(rules)}>Mentés</Action>
+    <Action quiet icon={RotateCcw} onPress={() => setRules(deadline ? DEFAULT_EVENT_COLORS.deadline : DEFAULT_EVENT_COLORS.lesson)}>Alapértékek visszaállítása</Action>
+  </View>;
+}
+function UrgencyGroup({ title, color, setColor, minutes, setMinutes }: { title: string; color: string; setColor: (value: string) => void; minutes?: number; setMinutes: (value: number) => void }) {
+  return <View className="gap-3 border-t border-border pt-4">
+    <Text className="text-sm font-semibold">{title}</Text>
+    <View className="flex-row items-end gap-3">
+      <View className="min-w-0 flex-1"><ColorField hideLabel label={`${title} színe`} value={color} onChange={setColor} /></View>
+      {minutes !== undefined ? <View className="w-28"><Field label="Határ (perc)" value={String(minutes)} onChange={value => setMinutes(Number(value))} /></View> : null}
+    </View>
+    {minutes === undefined ? <Text className="text-xs text-muted-foreground">A közelgő határon túl.</Text> : null}
   </View>;
 }

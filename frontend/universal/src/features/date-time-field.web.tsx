@@ -11,8 +11,6 @@ import { calendarDays, shiftCalendarMonth } from '@/domain/calendar-picker';
 type PickerMode = 'date' | 'time';
 type PickerProps = { value: string; onChange: (value: string) => void; close: () => void };
 const weekdays = ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'];
-/** Centers the picker inside the shared panel's reserved scrollbar gutter. */
-const centeredPickerStyle = { marginRight: 32 };
 
 /** Uses themed web panels for the same date and time actions offered on native platforms. */
 export function DateTimeField({ label, value, onChange, allDay = false }: { label: string; value: string; onChange: (value: string) => void; allDay?: boolean }) {
@@ -44,8 +42,8 @@ function CalendarPicker({ value, onChange, close }: PickerProps) {
   function select(date: string) { setSelected(date); setMonth(date.slice(0, 7)); }
   function finish() { onChange(selected); close(); }
   function selectToday() { select(currentDate); }
-  return <Modal title="Dátum kiválasztása" maxWidth={440} close={close}>
-    <View style={centeredPickerStyle} className="w-full max-w-[360px] self-center gap-3">
+  return <Modal pickerMotion title="Dátum kiválasztása" maxWidth={440} close={close}>
+    <View className="w-full max-w-[360px] self-center gap-3">
       <View className="flex-row items-center justify-between gap-3"><Text accessibilityRole="header" accessibilityLiveRegion="polite" className="flex-1 text-lg font-semibold">{monthLabel}</Text><Button variant="ghost" size="icon" accessibilityLabel="Előző hónap" onPress={() => setMonth(shiftCalendarMonth(month, -1))} className="border-0 bg-transparent"><Icon as={ChevronLeft} size={18} /></Button><Button variant="ghost" size="icon" accessibilityLabel="Következő hónap" onPress={() => setMonth(shiftCalendarMonth(month, 1))} className="border-0 bg-transparent"><Icon as={ChevronRight} size={18} /></Button></View>
       <View className="flex-row">{weekdays.map(day => <View key={day} style={{ width: '14.285714%' }} className="items-center"><Text className="text-xs font-medium text-muted-foreground">{day}</Text></View>)}</View>
       <View testID="web-calendar-grid" className="flex-row flex-wrap">{calendarDays(month).map(date => <CalendarDay key={date} date={date} month={month} selected={selected} today={currentDate} select={select} />)}</View>
@@ -67,7 +65,7 @@ function TimePicker({ value, onChange, close }: PickerProps) {
   const [minute, setMinute] = useState(value.slice(3, 5) || '00');
   const isValid = /^\d{1,2}$/.test(hour) && Number(hour) < 24 && /^\d{1,2}$/.test(minute) && Number(minute) < 60;
   function finish() { if (!isValid) return; onChange(`${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`); close(); }
-  return <Modal title="Idő beállítása" maxWidth={440} close={close}><View style={centeredPickerStyle} className="max-w-[320px] flex-row items-center justify-center gap-4 self-center py-3">
+  return <Modal pickerMotion title="Idő beállítása" maxWidth={440} close={close}><View className="max-w-[320px] flex-row items-center justify-center gap-4 self-center py-3">
     <TimeInput label="Óra" value={hour} onChange={setHour} max={23} /><Text className="pt-5 text-3xl text-muted-foreground">:</Text><TimeInput label="Perc" value={minute} onChange={setMinute} max={59} />
   </View><Button disabled={!isValid} onPress={finish} accessibilityLabel="Választás kész"><Icon as={Check} size={16} className="text-primary-foreground" /><Text>Kész</Text></Button></Modal>;
 }

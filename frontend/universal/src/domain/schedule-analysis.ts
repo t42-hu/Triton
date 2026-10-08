@@ -48,6 +48,16 @@ export function freeSlots(events: DisplayEvent[], start: number, end: number, mi
   return result;
 }
 
+/** Empty participants follow the event-day boundaries of participants with programs. */
+export function commonBreaks(participants: DisplayEvent[][], dayStart: number, dayEnd: number, start: number, end: number, minimumMinutes = 30): TimeSlot[] {
+  if (participants.length < 2) return [];
+  const occupied = participants.map(events => occupiedSlots(events, dayStart, dayEnd)).filter(slots => slots.length);
+  if (!occupied.length) return [];
+  const first = Math.max(start, ...occupied.map(slots => slots[0].start));
+  const last = Math.min(end, ...occupied.map(slots => slots.at(-1)!.end));
+  return freeSlots(participants.flat(), first, last, minimumMinutes);
+}
+
 /** Reports actual timed occupancy; all-day events are listed separately in the UI. */
 export function dailyAnalysis(events: DisplayEvent[], date: string) {
   const start = fromWall(date); const end = fromWall(addDays(date, 1));

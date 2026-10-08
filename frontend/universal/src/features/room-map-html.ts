@@ -33,9 +33,20 @@ const sharedMapThemeStyle = `.nik-map-app, .nik-3d-app { font-family: system-ui,
 .nik-zoom button:focus-visible, .d3-stage-controls button:focus-visible, .d3-explode:focus-visible { outline: 2px solid var(--map-focus); outline-offset: -3px; }
 .d3-explode { color: var(--map-control-text); background: var(--map-control); border-color: var(--map-border); box-shadow: 0 3px 12px #0002; }
 .d3-explode:hover, .d3-explode.is-active { color: var(--map-control-active-text); background: var(--map-focus); border-color: var(--map-focus); }
-.d3-orbit-readout, .d3-orbit-readout b { color: var(--map-muted); }`;
+.d3-orbit-readout, .d3-orbit-readout b { color: var(--map-muted); }
+.nik-place-label { stroke: #122D50; stroke-width: 1; stroke-linejoin: round; }
+.kind-office .nik-place-label, .kind-service .nik-place-label, .kind-outdoor .nik-place-label, .kind-circulation .nik-place-label, .kind-roof .nik-place-label, .nik-place[data-place-id="f-aula"] .nik-place-label { fill: #172D43; stroke: #F6F7F9; stroke-width: .8; }
+.nik-place[data-place-id$="-nik"] .nik-place-label, .nik-place[data-place-id="f-cafe"] .nik-place-label { fill: #FFFFFF; stroke: #122D50; }
+.kind-research .nik-place-shape { fill: #286879; }
+.kind-parking .nik-place-shape { fill: #41596B; }
+.nik-corridor-label, .nik-map-watermark { fill: var(--map-muted); letter-spacing: .08em; }
+.d3-room-label { stroke: #F6F7F9; stroke-width: 1.2; stroke-linejoin: round; }
+.d3-room-label[fill="#ffffff"] { stroke: #122D50; stroke-width: 1.5; }
+.d3-slab[data-floor]:is(:hover, :focus-visible) { opacity: 1; }
+.d3-slab[data-floor]:is(:hover, :focus-visible) .d3-slab-face-top { fill: var(--map-floor-hover); stroke: var(--map-focus); stroke-width: 3; }
+.d3-slab[data-floor]:is(:hover, :focus-visible) .d3-slab-face-side { fill: var(--map-floor-hover-side); stroke: var(--map-focus); }`;
 
-const lightMapThemeStyle = `:root { color-scheme: light; --map-canvas: #F6F7F9; --map-border: #D2D8E0; --map-control: #FFFFFF; --map-control-text: #00288C; --map-control-hover: #E9EDF4; --map-control-active-text: #FFFFFF; --map-focus: #00288C; --map-muted: #54657A; }
+const lightMapThemeStyle = `:root { color-scheme: only light; --map-canvas: #F6F7F9; --map-border: #D2D8E0; --map-control: #FFFFFF; --map-control-text: #00288C; --map-control-hover: #E9EDF4; --map-control-active-text: #FFFFFF; --map-focus: #00288C; --map-muted: #54657A; --map-floor-hover: #8DB4F2; --map-floor-hover-side: #527CC2; }
 #nik-grid circle { fill: #D2D8E0; }
 .nik-shell { fill: #FFFFFF; stroke: #B8C5D5; }
 .nik-inset { fill: #F6F7F9; stroke: #B8C5D5; }
@@ -48,11 +59,11 @@ const lightMapThemeStyle = `:root { color-scheme: light; --map-canvas: #F6F7F9; 
 #d3-grid circle { fill: #CBD5E2; }
 .d3-ground-grid path { stroke: #AABBD1; opacity: .55; }
 .d3-world-label { fill: #70839D; }
-.d3-slab:not(.is-active) { opacity: .38; }
+.d3-slab:not(.is-active):not(:hover):not(:focus-visible) { opacity: .38; }
 .d3-slab.is-active .d3-slab-face-top { fill: #DDE6F3; stroke: #AABBD1; }
 .d3-slab.is-active .d3-slab-face-side { fill: #AABBD1; stroke: #8FA5BF; }`;
 
-const darkMapThemeStyle = `:root { color-scheme: dark; --map-canvas: #111317; --map-border: #3C434C; --map-control: #2B3037; --map-control-text: #F0F2F5; --map-control-hover: #3C434C; --map-control-active-text: #111317; --map-focus: #9EB7ED; --map-muted: #BBC7D8; }
+const darkMapThemeStyle = `:root { color-scheme: only dark; --map-canvas: #111317; --map-border: #3C434C; --map-control: #2B3037; --map-control-text: #F0F2F5; --map-control-hover: #3C434C; --map-control-active-text: #111317; --map-focus: #9EB7ED; --map-muted: #BBC7D8; --map-floor-hover: #789EDF; --map-floor-hover-side: #4F70AA; }
 #nik-grid circle { fill: #343B48; }
 #nik-garden rect { fill: #263C35; }
 #nik-garden line { stroke: #4C7767; }
@@ -63,14 +74,14 @@ const darkMapThemeStyle = `:root { color-scheme: dark; --map-canvas: #111317; --
 .nik-corridor-label, .nik-map-watermark { fill: #A9BED3; }
 .nik-place-shape { stroke: #1B1E23; }
 .kind-teaching .nik-place-shape, .nik-place[data-place-id="f-cafe"] .nik-place-shape, .nik-place[data-place-id$="-nik"] .nik-place-shape { fill: #4267A6; }
-.kind-research .nik-place-shape { fill: #347D8B; }
+.kind-research .nik-place-shape { fill: #286879; }
 .kind-office .nik-place-shape { fill: #D9AC50; }
 .kind-service .nik-place-shape { fill: #5D9CB3; }
 .kind-outdoor .nik-place-shape { fill: #3E745C; stroke: #6EAB89; }
 .kind-circulation .nik-place-shape, .nik-place[data-place-id="f-aula"] .nik-place-shape { fill: #456983; }
 .kind-roof .nik-place-shape { fill: #526170; stroke: #8798AB; }
-.nik-place[data-place-id$="-nik"] .nik-place-label, .kind-service .nik-place-label, .kind-outdoor .nik-place-label, .kind-circulation .nik-place-label, .nik-place[data-place-id="f-aula"] .nik-place-label { fill: #F0F2F5; }
-.kind-office .nik-place-label { fill: #1E2732; }
+.nik-place[data-place-id$="-nik"] .nik-place-label, .kind-service .nik-place-label, .kind-outdoor .nik-place-label, .kind-circulation .nik-place-label, .kind-roof .nik-place-label, .nik-place[data-place-id="f-aula"] .nik-place-label { fill: #FFFFFF; stroke: #122D50; }
+.kind-office .nik-place-label { fill: #1E2732; stroke: #F6F7F9; }
 .nik-marker-ring { fill: #1B1E23; stroke: #9EB7ED; }
 .nik-marker-label { fill: #F0F2F5; }
 .nik-stair-platform { fill: #D8E2F2; stroke: #9EB7ED; }
@@ -80,7 +91,6 @@ const darkMapThemeStyle = `:root { color-scheme: dark; --map-canvas: #111317; --
 #d3-grid circle { fill: #3C434C; }
 .d3-ground-grid path { stroke: #52647D; opacity: .45; }
 .d3-world-label { fill: #8298B7; }
-.d3-room-top { filter: brightness(1.17); }
 .d3-slab.is-active .d3-slab-face-top { fill: #34455B; stroke: #7891AF; }
 .d3-slab.is-active .d3-slab-face-side { fill: #26364B; stroke: #607C9E; }`;
 

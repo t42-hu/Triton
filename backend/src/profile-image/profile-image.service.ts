@@ -72,13 +72,13 @@ export class ProfileImageService {
         return this.storageService.buildPublicUrl(trimmedKey)
     }
 
-    async deleteByPublicUrl(publicUrl?: string | null): Promise<void> {
+    async deleteByPublicUrl(publicUrl: string | null | undefined, userId: string): Promise<void> {
         if (!publicUrl) return
 
         try {
             const key = this.storageService.getKeyFromPublicUrl(publicUrl)
 
-            if (!key?.startsWith(`${PROFILE_IMAGE_KEY_PREFIX}/`)) return
+            if (!key?.startsWith(`${PROFILE_IMAGE_KEY_PREFIX}/${userId}/`)) return
 
             await this.storageService.deleteObject(key)
         } catch (error) {

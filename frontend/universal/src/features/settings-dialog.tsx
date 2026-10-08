@@ -1,7 +1,8 @@
+import { AccountSettings } from './account-settings';
 import { GlobalColorEditor } from './event-color-editor';
 import { useEffect, useRef, useState } from 'react';
-import { View, useWindowDimensions } from 'react-native';
-import { CalendarRange, Eye, Palette, RefreshCw } from 'lucide-react-native';
+import { View } from 'react-native';
+import { ArrowLeft, CalendarRange, ChevronRight, Palette, RefreshCw, Repeat2, type LucideIcon } from 'lucide-react-native';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Switch } from '@/components/ui/switch';
@@ -12,10 +13,11 @@ import { sources } from '../data/repository';
 import { discardStages, publishStages, stageSource, type StagedSource } from '../data/importer';
 import { useApp } from './app-state';
 import { DateField } from './date-time-field';
-import { Action, Choice, Confirm, Modal, Toggle } from './controls';
+import { Action, Choice, Confirm, Modal } from './controls';
 
 export function SettingsDialog({ close }: { close: () => void }) {
   const app = useApp();
+  const [category, setCategory] = useState<SettingsCategory | null>(null);
   const [date, setDate] = useState(app.anchor.date);
   const [week, setWeek] = useState(app.anchor.week);
   const [stages, setStages] = useState<StagedSource[]>([]);
@@ -41,31 +43,70 @@ export function SettingsDialog({ close }: { close: () => void }) {
   }
   function cancel() { controller.current.abort(); void discardStages(stages); close(); }
   const summary = stages.reduce((sum, stage) => ({ added: sum.added + stage.added, removed: sum.removed + stage.removed, lost: sum.lost + stage.lostOverrides }), { added: 0, removed: 0, lost: 0 });
-  return <Modal title="Beállítások" close={cancel}>
-    <SettingsOptions date={date} setDate={setDate} week={week} setWeek={setWeek} busy={busy} error={error} prepare={() => void prepare()} abort={() => controller.current.abort()} />
+  return <Modal title={categories.find(item => item.key === category)?.title ?? "Beállítások"} close={cancel}>
+    <SettingsOptions category={category} setCategory={setCategory} date={date} setDate={setDate} week={week} setWeek={setWeek} busy={busy} error={error} prepare={() => void prepare()} abort={() => controller.current.abort()} />
     {prepared ? <Confirm title="A/B rend módosítása" description={`Létrejön: ${summary.added}, eltűnik: ${summary.removed} alkalom. Törlődő felülírás: ${summary.lost}.`} accept={() => void accept()} cancel={() => { setPrepared(false); void discardStages(stages); }} /> : null}
   </Modal>;
 }
 type SettingsOptionsProps = { date: string; setDate: (date: string) => void; week: Anchor['week']; setWeek: (week: Anchor['week']) => void; busy: boolean; error: string; prepare: () => void; abort: () => void };
-function SettingsOptions({ date, setDate, week, setWeek, busy, error, prepare, abort }: SettingsOptionsProps) {
+type SettingsCategory = 'appearance' | 'calendar' | 'weeks' | 'colors' | 'sync';
+const categories: { key: SettingsCategory; title: string; icon: LucideIcon }[] = [
+  { key: 'appearance', title: 'Megjelenés', icon: Palette },
+  { key: 'calendar', title: 'Órarend', icon: CalendarRange },
+  { key: 'weeks', title: 'A/B hetek', icon: Repeat2 },
+  { key: 'colors', title: 'Eseményszínek', icon: Palette },
+  { key: 'sync', title: 'Szinkronizálás', icon: RefreshCw },
+];
+function SettingsOptions({ category, setCategory, ...options }: SettingsOptionsProps & { category: SettingsCategory | null; setCategory: (value: SettingsCategory | null) => void }) {
+  return <View className="gap-4">
+    {category ? <Button variant="ghost" className="self-start justify-start px-0" accessibilityLabel="Vissza a beállításokhoz" onPress={() => setCategory(null)}><Icon as={ArrowLeft} size={17} className="text-muted-foreground" /><Text className="text-sm text-muted-foreground">Beállítások</Text></Button> : <View>
+      {categories.map(item => <Button key={item.key} variant="ghost" accessibilityLabel={`${item.title} beállításai`} className="h-14 justify-start gap-3 rounded-none border-b border-border px-1" onPress={() => setCategory(item.key)}>
+        <Icon as={item.icon} size={20} className="text-muted-foreground" />
+        <Text className="min-w-0 flex-1 text-sm font-medium">{item.title}</Text>
+        <Icon as={ChevronRight} size={17} className="text-muted-foreground" />
+      </Button>)}
+    </View>}
+    <View style={{ display: category === 'appearance' ? 'flex' : 'none' }}><AppearanceSettings /></View>
+    <View style={{ display: category === 'calendar' ? 'flex' : 'none' }}><CalendarSettings /></View>
+    <View style={{ display: category === 'weeks' ? 'flex' : 'none' }}><WeekSettings {...options} /></View>
+    <View style={{ display: category === 'colors' ? 'flex' : 'none' }}><GlobalColorEditor /></View>
+    <View style={{ display: category === 'sync' ? 'flex' : 'none' }}><AccountSettings showSignOut={false} /></View>
+  </View>;
+}
+
+function AppearanceSettings() {
   const app = useApp();
-  const compact = useWindowDimensions().width < 600;
-  return <>
-    <GlobalColorEditor />
-    <View className="gap-4 rounded-xl border border-border bg-background/40 p-4">
-      <View className="flex-row items-center gap-2"><Icon as={Palette} size={19} className="text-primary" /><Text className="font-semibold">Megjelenés</Text></View>
-      <View className={compact ? 'gap-2' : 'flex-row items-center justify-between gap-3'}><Text className="text-sm">Téma</Text><Choice fullWidth={compact} label="Megjelenés" value={app.view.theme} onChange={theme => app.setView({ theme: theme as 'system' | 'light' | 'dark' })} options={[{ value: 'system', label: 'Rendszer témája' }, { value: 'light', label: 'Világos' }, { value: 'dark', label: 'Sötét' }]} /></View>
-      <View className="border-t border-border pt-3"><Toggle label="Hétvégék mutatása" checked={app.view.showWeekends} onChange={showWeekends => app.setView({ showWeekends })} /></View>
-      <View className="flex-row items-center justify-between gap-3 border-t border-border pt-3"><View className="min-w-0 flex-1 flex-row items-center gap-2"><Icon as={Eye} size={17} className="text-muted-foreground" /><Text className="shrink text-sm">Elrejtett alkalmak mutatása</Text></View><Switch accessibilityLabel="Elrejtett alkalmak mutatása" checked={app.view.hidden} onCheckedChange={hidden => app.setView({ hidden })} /></View>
+  return <View className="gap-2"><Text className="text-sm font-medium">Téma</Text>
+    <Choice fullWidth label="Téma" value={app.view.theme} onChange={theme => app.setView({ theme: theme as 'system' | 'light' | 'dark' })} options={[{ value: 'system', label: 'Rendszer' }, { value: 'light', label: 'Világos' }, { value: 'dark', label: 'Sötét' }]} />
+  </View>;
+}
+function CalendarSettings() {
+  const app = useApp();
+  return <View className="gap-6">
+    <View>
+      <SettingsSwitch title="Hétvégék" checked={app.view.showWeekends} onChange={showWeekends => app.setView({ showWeekends })} />
+      <SettingsSwitch title="Elrejtett alkalmak" checked={app.view.hidden} onChange={hidden => app.setView({ hidden })} />
     </View>
-    <View className="gap-4 rounded-xl border border-border bg-background/40 p-4">
-      <View className="flex-row items-center gap-2"><Icon as={CalendarRange} size={19} className="text-primary" /><Text className="font-semibold">A/B hetek</Text></View>
-      <Text className="text-xs leading-5 text-muted-foreground">A referenciahét minden profilra érvényes. A dátumhoz kötött ICS-események nem változnak.</Text>
-      <DateField label="Referenciahét hétfője" value={date} onChange={setDate} />
-      <View className={compact ? 'gap-2' : 'flex-row items-center justify-between gap-3'}><Text className="text-sm">Hét</Text><Choice fullWidth={compact} label="Referenciahét jele" value={week} onChange={value => setWeek(value as Anchor['week'])} options={[{ value: 'A', label: 'A hét' }, { value: 'B', label: 'B hét' }]} /></View>
-      {error ? <Text accessibilityRole="alert" className="text-destructive">{error}</Text> : null}
-      <Button accessibilityLabel="A/B változás előnézete" disabled={busy} onPress={prepare}><Icon as={RefreshCw} size={17} className="text-primary-foreground" /><Text>{busy ? 'Újraszámítás…' : 'A/B előnézet'}</Text></Button>
-      {busy ? <Action secondary onPress={abort}>Megszakítás</Action> : null}
-    </View>
-  </>;
+    <View className="gap-3"><Text className="text-base font-semibold">Látható időszak</Text><View className="flex-row gap-3">
+      <View className="min-w-0 flex-1 gap-2"><Text className="text-sm">Kezdés</Text><Choice fullWidth label="Naptár kezdő órája" value={String(app.view.startHour)} options={hourOptions(0, app.view.endHour - 1)} onChange={value => app.setView({ startHour: Number(value) })} /></View>
+      <View className="min-w-0 flex-1 gap-2"><Text className="text-sm">Befejezés</Text><Choice fullWidth label="Naptár záró órája" value={String(app.view.endHour)} options={hourOptions(app.view.startHour + 1, 24)} onChange={value => app.setView({ endHour: Number(value) })} /></View>
+    </View></View>
+  </View>;
+}
+function WeekSettings({ date, setDate, week, setWeek, busy, error, prepare, abort }: SettingsOptionsProps) {
+  return <View className="gap-4">
+    <DateField label="Referenciahét hétfője" value={date} onChange={setDate} />
+    <View className="gap-2"><Text className="text-sm font-medium">Hét típusa</Text><Choice fullWidth label="Referenciahét jele" value={week} onChange={value => setWeek(value as Anchor['week'])} options={[{ value: 'A', label: 'A hét' }, { value: 'B', label: 'B hét' }]} /></View>
+    <Text className="text-xs leading-5 text-muted-foreground">Minden profil A/B rendjére érvényes.</Text>
+    {error ? <Text accessibilityRole="alert" className="text-sm text-destructive">{error}</Text> : null}
+    <Button accessibilityLabel="A/B változás előnézete" disabled={busy} onPress={prepare}><Icon as={RefreshCw} size={17} className="text-primary-foreground" /><Text>{busy ? 'Újraszámítás…' : 'Előnézet'}</Text></Button>
+    {busy ? <Action secondary onPress={abort}>Megszakítás</Action> : null}
+  </View>;
+}
+function SettingsSwitch({ title, checked, onChange }: { title: string; checked: boolean; onChange: (value: boolean) => void }) {
+  return <View className="min-h-14 flex-row items-center justify-between gap-4 border-b border-border py-3"><Text className="min-w-0 flex-1 text-sm">{title}</Text><Switch accessibilityLabel={title} checked={checked} onCheckedChange={onChange} /></View>;
+}
+function hourLabel(hour: number) { return `${String(hour).padStart(2, '0')}:00`; }
+function hourOptions(first: number, last: number) {
+  return Array.from({ length: last - first + 1 }, (_, index) => ({ value: String(first + index), label: hourLabel(first + index) }));
 }

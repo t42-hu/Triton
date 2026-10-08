@@ -390,3 +390,17 @@ await check('liveness stays outside request quotas while readiness is limited', 
     assert.equal(readiness.headers.get('x-ratelimit-limit'), '1000')
     assert.ok(Number(readiness.headers.get('x-ratelimit-remaining')) < 1000)
 })
+
+if (localServices && process.env.TEST_APP_DATABASE_URL) {
+    await check('calendar backend over authenticated HTTP', async () => {
+        const { Pool } = await import('pg')
+        const { verifyCalendarHttp } = await import('./calendar-http.mjs')
+        const pool = new Pool({ connectionString: process.env.TEST_APP_DATABASE_URL })
+        try {
+            // The isolated test stack destroys its storage volume on cleanup.
+            await verifyCalendarHttp(pool, origin, process.env.BETTER_AUTH_SECRET, process.env.APP_ID)
+        } finally {
+            await pool.end()
+        }
+    })
+}

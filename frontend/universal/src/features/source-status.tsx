@@ -64,7 +64,7 @@ export function CalendarSyncPanel({ syncState, onDisconnected }: { syncState: Re
   }
   if (!status?.url || Platform.OS === 'web') return null;
   const next = status.lastAttempt + SYNC_INTERVAL;
-  return <View className="gap-6 rounded-xl border border-border bg-card p-5">
+  return <View className="gap-6 border-t border-border pt-4">
     <Text className="font-semibold">Saját órarend · {owner?.name}</Text>
     <View className="gap-4"><SyncTimestamp label="Frissítve" time={status.lastSuccess} /><SyncTimestamp label="Következő szinkronizáció" time={next} /></View>
     {status.lastChange ? <Text accessibilityLiveRegion="polite">{status.lastChange}</Text> : null}

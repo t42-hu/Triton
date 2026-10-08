@@ -1,3 +1,4 @@
+import { DIRECTIONS_ACTION, DIRECTIONS_CATEGORY } from '../domain/directions';
 import { Linking, Platform } from 'react-native';
 import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
@@ -17,6 +18,7 @@ export async function reminderPermissionGranted(): Promise<boolean> {
 }
 async function reconcile(): Promise<void> {
   try {
+    await registerDirectionsCategory();
     const now = Date.now();
     const requests = await Notifications.getAllScheduledNotificationsAsync();
     const rearm = await readSetting('reminderRearm', false);
@@ -37,7 +39,7 @@ async function reconcile(): Promise<void> {
 async function schedule(item: PlannedReminder): Promise<void> {
   if (item.at <= Date.now()) return;
   await Notifications.scheduleNotificationAsync({ identifier: item.id,
-    content: { title: item.title, body: item.body, sound: 'default', data: { kind: 'class-reminder', fingerprint: item.fingerprint } },
+    content: { title: item.title, body: item.body, sound: 'default', ...(item.location ? { categoryIdentifier: DIRECTIONS_CATEGORY } : {}), data: { kind: 'class-reminder', fingerprint: item.fingerprint, location: item.location } },
     trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(item.at), channelId: item.channelId } });
 }
 /** Existing channels belong to the user; never overwrite their sound/vibration preferences. */
@@ -69,4 +71,8 @@ export async function openExactAlarmSettings(): Promise<void> {
   if (Platform.OS !== 'android') return;
   await saveSetting('reminderRearm', true);
   await Linking.sendIntent('android.settings.REQUEST_SCHEDULE_EXACT_ALARM');
+}
+
+export async function registerDirectionsCategory(): Promise<void> {
+  await Notifications.setNotificationCategoryAsync(DIRECTIONS_CATEGORY, [{ identifier: DIRECTIONS_ACTION, buttonTitle: 'Útvonaltervezés', options: { opensAppToForeground: true } }]);
 }

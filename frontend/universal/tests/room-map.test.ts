@@ -72,6 +72,31 @@ function placeById(id: string) {
   return place;
 }
 
+test('ordinary wheel input zooms both maps without modifiers and respects zoom limits', () => {
+  for (const mode of ['2d', '3d'] as const) {
+    const html = roomMapHtml(mode, 'F');
+    const listener = html.match(/stage\.addEventListener\("wheel", \(event\) => \{([\s\S]*?)\}, \{ passive: false, signal: aborter\.signal \}\);/)?.[1];
+    assert.ok(listener);
+    const run = new Script(`
+      let zoom = initialZoom;
+      let renders = 0;
+      let prevented = false;
+      const clampZoom = value => Math.max(0.5, Math.min(3, value));
+      const setViewBox = () => renders++;
+      const renderScene = setViewBox;
+      const event = { deltaY, ctrlKey: false, metaKey: false, preventDefault() { prevented = true; } };
+      (() => { ${listener} })();
+      ({ zoom, renders, prevented });
+    `);
+    for (const [initialZoom, deltaY, expected] of [[1, -100, 1.1], [1, 100, .9], [3, -100, 3], [.5, 100, .5], [1, 0, 1]]) {
+      const result = run.runInNewContext({ initialZoom, deltaY });
+      assert.equal(result.zoom, expected, mode);
+      assert.equal(result.prevented, deltaY !== 0, mode);
+      assert.equal(result.renders, deltaY === 0 ? 0 : 1, mode);
+    }
+  }
+});
+
 test('photographed vertical circulation remains aligned with the approved ground floor', () => {
   const groundLift = placeById('f-lift');
   const groundStairs = placeById('f-entry-stairs');

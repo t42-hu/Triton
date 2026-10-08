@@ -30,7 +30,7 @@ function AlertDialogOverlay({
         className={cn(
           'absolute bottom-0 left-0 right-0 top-0 z-50 flex items-center justify-center bg-black/50 p-2',
           Platform.select({
-            web: 'animate-in fade-in-0 fixed',
+            web: 'animate-in fade-in-0 fixed z-[1200]',
           }),
           className
         )}
@@ -68,7 +68,7 @@ function AlertDialogContent({
             className
           )}
           {...props}
-          style={StyleSheet.flatten([{ width: Math.min(width - 32, 576), maxWidth: 576, maxHeight: viewport.height }, props.style])}
+          style={StyleSheet.flatten([{ width: Math.min(width - 64, 512), maxWidth: 512, maxHeight: viewport.height }, props.style])}
         />
       </AlertDialogOverlay>
     </AlertDialogPortal>

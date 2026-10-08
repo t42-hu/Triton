@@ -1,6 +1,7 @@
+import { DirectionsDialog } from './directions-dialog';
 import { useEffect, useState } from 'react';
 import { Linking, Platform, Pressable, View, useColorScheme, useWindowDimensions } from 'react-native';
-import { Box, Map, MapPinned, Layers, MapPin, ExternalLink } from 'lucide-react-native';
+import { Box, Map, MapPinned, Layers, MapPin, ExternalLink, Navigation } from 'lucide-react-native';
 import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,15 +54,15 @@ function RoomMapStatus({ room }: { room: RoomLocation }) {
 }
 
 function MapViewPicker({ view, setView }: { view: MapMode; setView: (view: MapMode) => void }) {
-  return <View className="flex-row gap-1 rounded-lg border border-border bg-muted/40 p-1">
-    <Button accessibilityLabel="2D alaprajz" accessibilityState={{ selected: view === '2d' }} variant={view === '2d' ? 'default' : 'ghost'} className="h-8 gap-1.5 px-3" onPress={() => setView('2d')}><Icon as={Map} size={15} /><Text className="text-xs">2D</Text></Button>
-    <Button accessibilityLabel="Forgatható 3D térkép" accessibilityState={{ selected: view === '3d' }} variant={view === '3d' ? 'default' : 'ghost'} className="h-8 gap-1.5 px-3" onPress={() => setView('3d')}><Icon as={Box} size={15} /><Text className="text-xs">3D</Text></Button>
+  return <View className="flex-row gap-1 rounded-lg bg-muted p-1">
+    <Button accessibilityLabel="2D alaprajz" accessibilityState={{ selected: view === '2d' }} variant={view === '2d' ? 'default' : 'ghost'} className="h-11 gap-1.5 px-3" onPress={() => setView('2d')}><Icon as={Map} size={15} /><Text className="text-xs">2D</Text></Button>
+    <Button accessibilityLabel="Forgatható 3D térkép" accessibilityState={{ selected: view === '3d' }} variant={view === '3d' ? 'default' : 'ghost'} className="h-11 gap-1.5 px-3" onPress={() => setView('3d')}><Icon as={Box} size={15} /><Text className="text-xs">3D</Text></Button>
   </View>;
 }
 
 function FloorPicker({ floor, setFloor }: { floor: FloorId; setFloor: (floor: FloorId) => void }) {
   return <View className="gap-1.5"><Text className="text-xs font-medium text-muted-foreground">Szint kiválasztása</Text><View className="flex-row flex-wrap gap-1.5">
-    {FLOORS.map(item => <Button key={item.id} accessibilityLabel={item.name} accessibilityState={{ selected: floor === item.id }} variant={floor === item.id ? 'default' : 'outline'} className="h-8 min-w-10 px-2" onPress={() => setFloor(item.id)}><Icon as={Layers} size={13} /><Text className="text-xs">{item.id}</Text></Button>)}
+    {FLOORS.map(item => <Button key={item.id} accessibilityLabel={item.name} accessibilityState={{ selected: floor === item.id }} variant={floor === item.id ? 'default' : 'outline'} className="h-11 min-w-11 px-2" onPress={() => setFloor(item.id)}><Icon as={Layers} size={13} /><Text className="text-xs">{item.id}</Text></Button>)}
   </View></View>;
 }
 
@@ -72,19 +73,22 @@ export function RoomMapDialog({ location, close, open = true }: { location: stri
   const theme = appView.theme === 'system' ? (systemTheme === 'dark' ? 'dark' : 'light') : appView.theme;
   const { width } = useWindowDimensions();
   const [view, setView] = useState<MapMode>('2d');
+  const [directionsOpen, setDirectionsOpen] = useState(false);
   const [floorSelection, setFloorSelection] = useState({ location, floor: room?.floor ?? 'F' });
   const selectedFloor = floorSelection.location === location ? floorSelection.floor : room?.floor ?? 'F';
   function setSelectedFloor(floor: FloorId) { setFloorSelection({ location, floor }); }
   const mapHeight = width < 600 ? (view === '2d' ? 260 : 360) : 420;
   const floorName = FLOORS.find(item => item.id === selectedFloor)?.name ?? 'Földszint';
-  return <Modal title="Terem térképe" description={room ? `${location} · ${room.floorName}` : '2D és 3D épülettérkép'} close={close} open={open} keepMounted={Platform.OS === 'ios'} wide>
-    <View className="gap-3"><View className="flex-row items-center gap-3"><View className="h-10 w-10 items-center justify-center rounded-xl bg-primary/10"><Icon as={MapPinned} size={20} className="text-primary" /></View><View><Text className="text-lg font-semibold">{floorName}</Text><Text className="text-xs text-muted-foreground">NIK épülettérkép{room ? ` · ${room.roomCode}` : ''}</Text></View></View>
+  return <Modal title="Terem térképe" description={room ? `${location} · ${room.floorName}` : '2D és 3D épülettérkép a NIK-ről'} close={close} open={open} keepMounted={Platform.OS === 'ios'} wide>
+    <View className="gap-3"><View className="flex-row items-center gap-3"><View className="h-10 w-10 items-center justify-center"><Icon as={MapPinned} size={20} className="text-muted-foreground" /></View><View><Text className="text-lg font-semibold">{floorName}</Text><Text className="text-xs text-muted-foreground">NIK épülettérkép{room ? ` · ${room.roomCode}` : ''}</Text></View></View>
       {location.trim() && !room ? <Text className="text-sm text-muted-foreground">Ehhez a teremhez nincs adat a Bécsi úti NIK térképen.</Text> : null}
       <View className="flex-row items-center justify-between gap-2"><Text className="text-sm font-medium">Térkép</Text><MapViewPicker view={view} setView={setView} /></View>
       <FloorPicker floor={selectedFloor} setFloor={setSelectedFloor} />
-      <View className="overflow-hidden rounded-xl border border-border" style={{ height: mapHeight }}>{Platform.OS === 'ios' ? (['2d', '3d'] as const).map(mode => <View key={`${mode}-${theme}`} pointerEvents={view === mode ? 'auto' : 'none'} importantForAccessibility={view === mode ? 'auto' : 'no-hide-descendants'} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, opacity: view === mode ? 1 : 0 }}><RoomMap mode={mode} floor={selectedFloor} theme={theme} placeId={room?.place?.id} height={mapHeight} onFloorChange={async floor => setSelectedFloor(floor)} /></View>) : <RoomMap key={`${view}-${theme}`} mode={view} floor={selectedFloor} theme={theme} placeId={room?.place?.id} height={mapHeight} onFloorChange={async floor => setSelectedFloor(floor)} />}</View>
+      <View className="overflow-hidden rounded-lg border border-border" style={{ height: mapHeight }}>{Platform.OS === 'ios' ? (['2d', '3d'] as const).map(mode => <View key={`${mode}-${theme}`} pointerEvents={view === mode ? 'auto' : 'none'} importantForAccessibility={view === mode ? 'auto' : 'no-hide-descendants'} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, opacity: view === mode ? 1 : 0 }}><RoomMap mode={mode} floor={selectedFloor} theme={theme} placeId={room?.place?.id} height={mapHeight} onFloorChange={async floor => setSelectedFloor(floor)} /></View>) : <RoomMap key={`${view}-${theme}`} mode={view} floor={selectedFloor} theme={theme} placeId={room?.place?.id} height={mapHeight} onFloorChange={async floor => setSelectedFloor(floor)} />}</View>
       {room && selectedFloor === room.floor ? <RoomMapStatus room={room} /> : <Text className="text-sm text-muted-foreground">{room ? `Aktuális szint: ${floorName} · Keresett terem: ${room.floorName}` : floorName}</Text>}
+      {hasMappedRoom(location) ? <Button variant="outline" onPress={() => setDirectionsOpen(true)}><Icon as={Navigation} size={17} /><Text>Útvonal a NIK-hez</Text></Button> : null}
       <Text className="text-xs text-muted-foreground">Szemléltető, nem méretarányos térkép.</Text>
+      {directionsOpen ? <DirectionsDialog location={location} close={() => setDirectionsOpen(false)} /> : null}
     </View>
   </Modal>;
 }

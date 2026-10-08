@@ -74,7 +74,7 @@ export class UserService {
         await this.databaseService.db.update(user).set(updates).where(eq(user.id, userId))
 
         if ('profileImage' in updates && currentUser.profileImage !== updates.profileImage) {
-            void this.profileImagesService.deleteByPublicUrl(currentUser.profileImage)
+            void this.profileImagesService.deleteByPublicUrl(currentUser.profileImage, userId)
         }
 
         return {

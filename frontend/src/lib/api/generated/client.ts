@@ -5,24 +5,58 @@
  * OpenAPI spec version: 1.0.0
  */
 import type {
+    AcknowledgeSync201,
+    AcknowledgeSyncBody,
     AuthorizeNativeAuth201,
     AuthorizeNativeAuthBody,
+    CreateCalendarRecord201,
+    CreateCalendarRecordBody,
     CreateCheckoutSession201,
     CreateCheckoutSessionBody,
+    CreateMeeting201,
+    CreateMeetingBody,
+    DeleteCalendarRecord200,
+    DeleteCalendarRecordBody,
     ExchangeNativeAuth201,
     ExchangeNativeAuthBody,
+    GetCalendarRecord200,
+    GetCalendarSourceContent200,
     GetCurrentUserProfile200,
     GetHealth200,
     GetLiveness200,
     GetPublicConfig200,
+    GetSyncSnapshot200,
+    GetSyncSnapshotParams,
     HandleStripeWebhook201,
     HandleStripeWebhookBody,
+    InviteCalendarUser201,
+    InviteCalendarUserBody,
+    InviteMeetingUsers201,
+    InviteMeetingUsersBody,
+    ListCalendarRecords200,
+    ListCalendarRecordsParams,
+    PublishCalendarImport201,
+    PublishCalendarImportBody,
+    PullSyncChanges200,
+    PullSyncChangesParams,
+    PushSyncMutations201,
+    PushSyncMutationsBody,
+    RegisterSyncDevice201,
+    RegisterSyncDeviceBody,
     ResetNativeAuth201,
     ResetNativeAuthBody,
+    RespondCalendarInvitation201,
+    RespondCalendarInvitationBody,
+    RespondMeeting201,
+    RespondMeetingBody,
     StartNativeAuth201,
     StartNativeAuthBody,
+    UpdateCalendarRecord200,
+    UpdateCalendarRecordBody,
     UpdateCurrentUserProfile200,
     UpdateCurrentUserProfileBody,
+    UploadCalendarAttachment201,
+    UploadCalendarAttachmentBody,
     UploadProfileImage201,
     UploadProfileImageBody,
 } from './models'
@@ -353,6 +387,851 @@ export const getLocalProfileImage = async (
     options?: Parameters<typeof generatedApiRequest>[1],
 ): Promise<Blob> => {
     return generatedApiRequest<Blob>(getGetLocalProfileImageUrl(userId, filename), {
+        ...options,
+        method: 'GET',
+    })
+}
+
+export const getListCalendarRecordsUrl = (
+    resource:
+        | 'calendars'
+        | 'members'
+        | 'invitations'
+        | 'profiles'
+        | 'profile-calendars'
+        | 'calendar-preferences'
+        | 'sources'
+        | 'source-connections'
+        | 'source-revisions'
+        | 'events'
+        | 'recurrences'
+        | 'exceptions'
+        | 'overrides'
+        | 'attachments'
+        | 'meetings'
+        | 'participants'
+        | 'palettes'
+        | 'palette-colors'
+        | 'color-rules'
+        | 'tasks'
+        | 'notebook-links'
+        | 'reminder-settings'
+        | 'event-reminder-settings'
+        | 'reminder-rules'
+        | 'preferences'
+        | 'devices'
+        | 'device-preferences',
+    params?: ListCalendarRecordsParams,
+) => {
+    const normalizedParams = new URLSearchParams()
+
+    Object.entries(params || {}).forEach(([key, value]) => {
+        if (value !== undefined) {
+            normalizedParams.append(key, value === null ? 'null' : String(value))
+        }
+    })
+
+    const stringifiedParams = normalizedParams.toString()
+
+    return stringifiedParams.length > 0 ? `/api/calendar/${resource}?${stringifiedParams}` : `/api/calendar/${resource}`
+}
+
+/**
+ * @summary List accessible records
+ */
+export const listCalendarRecords = async (
+    resource:
+        | 'calendars'
+        | 'members'
+        | 'invitations'
+        | 'profiles'
+        | 'profile-calendars'
+        | 'calendar-preferences'
+        | 'sources'
+        | 'source-connections'
+        | 'source-revisions'
+        | 'events'
+        | 'recurrences'
+        | 'exceptions'
+        | 'overrides'
+        | 'attachments'
+        | 'meetings'
+        | 'participants'
+        | 'palettes'
+        | 'palette-colors'
+        | 'color-rules'
+        | 'tasks'
+        | 'notebook-links'
+        | 'reminder-settings'
+        | 'event-reminder-settings'
+        | 'reminder-rules'
+        | 'preferences'
+        | 'devices'
+        | 'device-preferences',
+    params?: ListCalendarRecordsParams,
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<ListCalendarRecords200> => {
+    return generatedApiRequest<ListCalendarRecords200>(getListCalendarRecordsUrl(resource, params), {
+        ...options,
+        method: 'GET',
+    })
+}
+
+export const getCreateCalendarRecordUrl = (
+    resource:
+        | 'calendars'
+        | 'members'
+        | 'invitations'
+        | 'profiles'
+        | 'profile-calendars'
+        | 'calendar-preferences'
+        | 'sources'
+        | 'source-connections'
+        | 'source-revisions'
+        | 'events'
+        | 'recurrences'
+        | 'exceptions'
+        | 'overrides'
+        | 'attachments'
+        | 'meetings'
+        | 'participants'
+        | 'palettes'
+        | 'palette-colors'
+        | 'color-rules'
+        | 'tasks'
+        | 'notebook-links'
+        | 'reminder-settings'
+        | 'event-reminder-settings'
+        | 'reminder-rules'
+        | 'preferences'
+        | 'devices'
+        | 'device-preferences',
+) => {
+    return `/api/calendar/${resource}`
+}
+
+/**
+ * @summary Create a record in the selected resource
+ */
+export const createCalendarRecord = async (
+    resource:
+        | 'calendars'
+        | 'members'
+        | 'invitations'
+        | 'profiles'
+        | 'profile-calendars'
+        | 'calendar-preferences'
+        | 'sources'
+        | 'source-connections'
+        | 'source-revisions'
+        | 'events'
+        | 'recurrences'
+        | 'exceptions'
+        | 'overrides'
+        | 'attachments'
+        | 'meetings'
+        | 'participants'
+        | 'palettes'
+        | 'palette-colors'
+        | 'color-rules'
+        | 'tasks'
+        | 'notebook-links'
+        | 'reminder-settings'
+        | 'event-reminder-settings'
+        | 'reminder-rules'
+        | 'preferences'
+        | 'devices'
+        | 'device-preferences',
+    createCalendarRecordBody: CreateCalendarRecordBody,
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<CreateCalendarRecord201> => {
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+        if (!h) return {}
+        if (h instanceof Headers) return Object.fromEntries(h.entries())
+        if (Symbol.iterator in h) {
+            return Object.fromEntries(
+                Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+            )
+        }
+        const headers: Record<string, string | readonly string[]> = {}
+        for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+            if (value !== undefined) headers[name] = value
+        }
+        return headers
+    }
+    return generatedApiRequest<CreateCalendarRecord201>(getCreateCalendarRecordUrl(resource), {
+        ...options,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+        body: JSON.stringify(createCalendarRecordBody),
+    })
+}
+
+export const getGetCalendarRecordUrl = (
+    resource:
+        | 'calendars'
+        | 'members'
+        | 'invitations'
+        | 'profiles'
+        | 'profile-calendars'
+        | 'calendar-preferences'
+        | 'sources'
+        | 'source-connections'
+        | 'source-revisions'
+        | 'events'
+        | 'recurrences'
+        | 'exceptions'
+        | 'overrides'
+        | 'attachments'
+        | 'meetings'
+        | 'participants'
+        | 'palettes'
+        | 'palette-colors'
+        | 'color-rules'
+        | 'tasks'
+        | 'notebook-links'
+        | 'reminder-settings'
+        | 'event-reminder-settings'
+        | 'reminder-rules'
+        | 'preferences'
+        | 'devices'
+        | 'device-preferences',
+    id: string,
+) => {
+    return `/api/calendar/${resource}/${id}`
+}
+
+/**
+ * @summary Get an accessible record
+ */
+export const getCalendarRecord = async (
+    resource:
+        | 'calendars'
+        | 'members'
+        | 'invitations'
+        | 'profiles'
+        | 'profile-calendars'
+        | 'calendar-preferences'
+        | 'sources'
+        | 'source-connections'
+        | 'source-revisions'
+        | 'events'
+        | 'recurrences'
+        | 'exceptions'
+        | 'overrides'
+        | 'attachments'
+        | 'meetings'
+        | 'participants'
+        | 'palettes'
+        | 'palette-colors'
+        | 'color-rules'
+        | 'tasks'
+        | 'notebook-links'
+        | 'reminder-settings'
+        | 'event-reminder-settings'
+        | 'reminder-rules'
+        | 'preferences'
+        | 'devices'
+        | 'device-preferences',
+    id: string,
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<GetCalendarRecord200> => {
+    return generatedApiRequest<GetCalendarRecord200>(getGetCalendarRecordUrl(resource, id), {
+        ...options,
+        method: 'GET',
+    })
+}
+
+export const getUpdateCalendarRecordUrl = (
+    resource:
+        | 'calendars'
+        | 'members'
+        | 'invitations'
+        | 'profiles'
+        | 'profile-calendars'
+        | 'calendar-preferences'
+        | 'sources'
+        | 'source-connections'
+        | 'source-revisions'
+        | 'events'
+        | 'recurrences'
+        | 'exceptions'
+        | 'overrides'
+        | 'attachments'
+        | 'meetings'
+        | 'participants'
+        | 'palettes'
+        | 'palette-colors'
+        | 'color-rules'
+        | 'tasks'
+        | 'notebook-links'
+        | 'reminder-settings'
+        | 'event-reminder-settings'
+        | 'reminder-rules'
+        | 'preferences'
+        | 'devices'
+        | 'device-preferences',
+    id: string,
+) => {
+    return `/api/calendar/${resource}/${id}`
+}
+
+/**
+ * @summary Update with the expected record version
+ */
+export const updateCalendarRecord = async (
+    resource:
+        | 'calendars'
+        | 'members'
+        | 'invitations'
+        | 'profiles'
+        | 'profile-calendars'
+        | 'calendar-preferences'
+        | 'sources'
+        | 'source-connections'
+        | 'source-revisions'
+        | 'events'
+        | 'recurrences'
+        | 'exceptions'
+        | 'overrides'
+        | 'attachments'
+        | 'meetings'
+        | 'participants'
+        | 'palettes'
+        | 'palette-colors'
+        | 'color-rules'
+        | 'tasks'
+        | 'notebook-links'
+        | 'reminder-settings'
+        | 'event-reminder-settings'
+        | 'reminder-rules'
+        | 'preferences'
+        | 'devices'
+        | 'device-preferences',
+    id: string,
+    updateCalendarRecordBody: UpdateCalendarRecordBody,
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<UpdateCalendarRecord200> => {
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+        if (!h) return {}
+        if (h instanceof Headers) return Object.fromEntries(h.entries())
+        if (Symbol.iterator in h) {
+            return Object.fromEntries(
+                Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+            )
+        }
+        const headers: Record<string, string | readonly string[]> = {}
+        for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+            if (value !== undefined) headers[name] = value
+        }
+        return headers
+    }
+    return generatedApiRequest<UpdateCalendarRecord200>(getUpdateCalendarRecordUrl(resource, id), {
+        ...options,
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+        body: JSON.stringify(updateCalendarRecordBody),
+    })
+}
+
+export const getDeleteCalendarRecordUrl = (
+    resource:
+        | 'calendars'
+        | 'members'
+        | 'invitations'
+        | 'profiles'
+        | 'profile-calendars'
+        | 'calendar-preferences'
+        | 'sources'
+        | 'source-connections'
+        | 'source-revisions'
+        | 'events'
+        | 'recurrences'
+        | 'exceptions'
+        | 'overrides'
+        | 'attachments'
+        | 'meetings'
+        | 'participants'
+        | 'palettes'
+        | 'palette-colors'
+        | 'color-rules'
+        | 'tasks'
+        | 'notebook-links'
+        | 'reminder-settings'
+        | 'event-reminder-settings'
+        | 'reminder-rules'
+        | 'preferences'
+        | 'devices'
+        | 'device-preferences',
+    id: string,
+) => {
+    return `/api/calendar/${resource}/${id}`
+}
+
+/**
+ * @summary Soft-delete with the expected record version
+ */
+export const deleteCalendarRecord = async (
+    resource:
+        | 'calendars'
+        | 'members'
+        | 'invitations'
+        | 'profiles'
+        | 'profile-calendars'
+        | 'calendar-preferences'
+        | 'sources'
+        | 'source-connections'
+        | 'source-revisions'
+        | 'events'
+        | 'recurrences'
+        | 'exceptions'
+        | 'overrides'
+        | 'attachments'
+        | 'meetings'
+        | 'participants'
+        | 'palettes'
+        | 'palette-colors'
+        | 'color-rules'
+        | 'tasks'
+        | 'notebook-links'
+        | 'reminder-settings'
+        | 'event-reminder-settings'
+        | 'reminder-rules'
+        | 'preferences'
+        | 'devices'
+        | 'device-preferences',
+    id: string,
+    deleteCalendarRecordBody: DeleteCalendarRecordBody,
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<DeleteCalendarRecord200> => {
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+        if (!h) return {}
+        if (h instanceof Headers) return Object.fromEntries(h.entries())
+        if (Symbol.iterator in h) {
+            return Object.fromEntries(
+                Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+            )
+        }
+        const headers: Record<string, string | readonly string[]> = {}
+        for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+            if (value !== undefined) headers[name] = value
+        }
+        return headers
+    }
+    return generatedApiRequest<DeleteCalendarRecord200>(getDeleteCalendarRecordUrl(resource, id), {
+        ...options,
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+        body: JSON.stringify(deleteCalendarRecordBody),
+    })
+}
+
+export const getInviteCalendarUserUrl = () => {
+    return `/api/calendar-actions/invitations`
+}
+
+/**
+ * @summary Invite a user to a calendar
+ */
+export const inviteCalendarUser = async (
+    inviteCalendarUserBody: InviteCalendarUserBody,
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<InviteCalendarUser201> => {
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+        if (!h) return {}
+        if (h instanceof Headers) return Object.fromEntries(h.entries())
+        if (Symbol.iterator in h) {
+            return Object.fromEntries(
+                Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+            )
+        }
+        const headers: Record<string, string | readonly string[]> = {}
+        for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+            if (value !== undefined) headers[name] = value
+        }
+        return headers
+    }
+    return generatedApiRequest<InviteCalendarUser201>(getInviteCalendarUserUrl(), {
+        ...options,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+        body: JSON.stringify(inviteCalendarUserBody),
+    })
+}
+
+export const getRespondCalendarInvitationUrl = (id: string) => {
+    return `/api/calendar-actions/invitations/${id}/respond`
+}
+
+/**
+ * @summary Accept or decline your invitation
+ */
+export const respondCalendarInvitation = async (
+    id: string,
+    respondCalendarInvitationBody: RespondCalendarInvitationBody,
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<RespondCalendarInvitation201> => {
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+        if (!h) return {}
+        if (h instanceof Headers) return Object.fromEntries(h.entries())
+        if (Symbol.iterator in h) {
+            return Object.fromEntries(
+                Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+            )
+        }
+        const headers: Record<string, string | readonly string[]> = {}
+        for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+            if (value !== undefined) headers[name] = value
+        }
+        return headers
+    }
+    return generatedApiRequest<RespondCalendarInvitation201>(getRespondCalendarInvitationUrl(id), {
+        ...options,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+        body: JSON.stringify(respondCalendarInvitationBody),
+    })
+}
+
+export const getCreateMeetingUrl = () => {
+    return `/api/calendar-actions/meetings`
+}
+
+/**
+ * @summary Create an event, meeting and invitations atomically
+ */
+export const createMeeting = async (
+    createMeetingBody: CreateMeetingBody,
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<CreateMeeting201> => {
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+        if (!h) return {}
+        if (h instanceof Headers) return Object.fromEntries(h.entries())
+        if (Symbol.iterator in h) {
+            return Object.fromEntries(
+                Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+            )
+        }
+        const headers: Record<string, string | readonly string[]> = {}
+        for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+            if (value !== undefined) headers[name] = value
+        }
+        return headers
+    }
+    return generatedApiRequest<CreateMeeting201>(getCreateMeetingUrl(), {
+        ...options,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+        body: JSON.stringify(createMeetingBody),
+    })
+}
+
+export const getInviteMeetingUsersUrl = (id: string) => {
+    return `/api/calendar-actions/meetings/${id}/invite`
+}
+
+/**
+ * @summary Invite users to one meeting
+ */
+export const inviteMeetingUsers = async (
+    id: string,
+    inviteMeetingUsersBody: InviteMeetingUsersBody,
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<InviteMeetingUsers201> => {
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+        if (!h) return {}
+        if (h instanceof Headers) return Object.fromEntries(h.entries())
+        if (Symbol.iterator in h) {
+            return Object.fromEntries(
+                Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+            )
+        }
+        const headers: Record<string, string | readonly string[]> = {}
+        for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+            if (value !== undefined) headers[name] = value
+        }
+        return headers
+    }
+    return generatedApiRequest<InviteMeetingUsers201>(getInviteMeetingUsersUrl(id), {
+        ...options,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+        body: JSON.stringify(inviteMeetingUsersBody),
+    })
+}
+
+export const getRespondMeetingUrl = (id: string) => {
+    return `/api/calendar-actions/meetings/${id}/respond`
+}
+
+/**
+ * @summary Set your participation response
+ */
+export const respondMeeting = async (
+    id: string,
+    respondMeetingBody: RespondMeetingBody,
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<RespondMeeting201> => {
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+        if (!h) return {}
+        if (h instanceof Headers) return Object.fromEntries(h.entries())
+        if (Symbol.iterator in h) {
+            return Object.fromEntries(
+                Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+            )
+        }
+        const headers: Record<string, string | readonly string[]> = {}
+        for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+            if (value !== undefined) headers[name] = value
+        }
+        return headers
+    }
+    return generatedApiRequest<RespondMeeting201>(getRespondMeetingUrl(id), {
+        ...options,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+        body: JSON.stringify(respondMeetingBody),
+    })
+}
+
+export const getPublishCalendarImportUrl = (id: string) => {
+    return `/api/calendar-actions/sources/${id}/publish`
+}
+
+/**
+ * @summary Publish normalized imported events atomically
+ */
+export const publishCalendarImport = async (
+    id: string,
+    publishCalendarImportBody: PublishCalendarImportBody,
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<PublishCalendarImport201> => {
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+        if (!h) return {}
+        if (h instanceof Headers) return Object.fromEntries(h.entries())
+        if (Symbol.iterator in h) {
+            return Object.fromEntries(
+                Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+            )
+        }
+        const headers: Record<string, string | readonly string[]> = {}
+        for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+            if (value !== undefined) headers[name] = value
+        }
+        return headers
+    }
+    return generatedApiRequest<PublishCalendarImport201>(getPublishCalendarImportUrl(id), {
+        ...options,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+        body: JSON.stringify(publishCalendarImportBody),
+    })
+}
+
+export const getRegisterSyncDeviceUrl = () => {
+    return `/api/sync/devices`
+}
+
+/**
+ * @summary Register or reactivate this user installation
+ */
+export const registerSyncDevice = async (
+    registerSyncDeviceBody: RegisterSyncDeviceBody,
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<RegisterSyncDevice201> => {
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+        if (!h) return {}
+        if (h instanceof Headers) return Object.fromEntries(h.entries())
+        if (Symbol.iterator in h) {
+            return Object.fromEntries(
+                Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+            )
+        }
+        const headers: Record<string, string | readonly string[]> = {}
+        for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+            if (value !== undefined) headers[name] = value
+        }
+        return headers
+    }
+    return generatedApiRequest<RegisterSyncDevice201>(getRegisterSyncDeviceUrl(), {
+        ...options,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+        body: JSON.stringify(registerSyncDeviceBody),
+    })
+}
+
+export const getGetSyncSnapshotUrl = (params: GetSyncSnapshotParams) => {
+    const normalizedParams = new URLSearchParams()
+
+    Object.entries(params || {}).forEach(([key, value]) => {
+        if (value !== undefined) {
+            normalizedParams.append(key, value === null ? 'null' : String(value))
+        }
+    })
+
+    const stringifiedParams = normalizedParams.toString()
+
+    return stringifiedParams.length > 0 ? `/api/sync/snapshot?${stringifiedParams}` : `/api/sync/snapshot`
+}
+
+/**
+ * @summary Read frozen authorized snapshot pages
+ */
+export const getSyncSnapshot = async (
+    params: GetSyncSnapshotParams,
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<GetSyncSnapshot200> => {
+    return generatedApiRequest<GetSyncSnapshot200>(getGetSyncSnapshotUrl(params), {
+        ...options,
+        method: 'GET',
+    })
+}
+
+export const getPullSyncChangesUrl = (params: PullSyncChangesParams) => {
+    const normalizedParams = new URLSearchParams()
+
+    Object.entries(params || {}).forEach(([key, value]) => {
+        if (value !== undefined) {
+            normalizedParams.append(key, value === null ? 'null' : String(value))
+        }
+    })
+
+    const stringifiedParams = normalizedParams.toString()
+
+    return stringifiedParams.length > 0 ? `/api/sync/pull?${stringifiedParams}` : `/api/sync/pull`
+}
+
+/**
+ * @summary Pull changes or request a replacement snapshot
+ */
+export const pullSyncChanges = async (
+    params: PullSyncChangesParams,
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<PullSyncChanges200> => {
+    return generatedApiRequest<PullSyncChanges200>(getPullSyncChangesUrl(params), {
+        ...options,
+        method: 'GET',
+    })
+}
+
+export const getPushSyncMutationsUrl = () => {
+    return `/api/sync/push`
+}
+
+/**
+ * @summary Apply an atomic idempotent mutation batch
+ */
+export const pushSyncMutations = async (
+    pushSyncMutationsBody: PushSyncMutationsBody,
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<PushSyncMutations201> => {
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+        if (!h) return {}
+        if (h instanceof Headers) return Object.fromEntries(h.entries())
+        if (Symbol.iterator in h) {
+            return Object.fromEntries(
+                Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+            )
+        }
+        const headers: Record<string, string | readonly string[]> = {}
+        for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+            if (value !== undefined) headers[name] = value
+        }
+        return headers
+    }
+    return generatedApiRequest<PushSyncMutations201>(getPushSyncMutationsUrl(), {
+        ...options,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+        body: JSON.stringify(pushSyncMutationsBody),
+    })
+}
+
+export const getAcknowledgeSyncUrl = () => {
+    return `/api/sync/ack`
+}
+
+/**
+ * @summary Acknowledge a fully delivered snapshot or cursor
+ */
+export const acknowledgeSync = async (
+    acknowledgeSyncBody: AcknowledgeSyncBody,
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<AcknowledgeSync201> => {
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+        if (!h) return {}
+        if (h instanceof Headers) return Object.fromEntries(h.entries())
+        if (Symbol.iterator in h) {
+            return Object.fromEntries(
+                Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+            )
+        }
+        const headers: Record<string, string | readonly string[]> = {}
+        for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+            if (value !== undefined) headers[name] = value
+        }
+        return headers
+    }
+    return generatedApiRequest<AcknowledgeSync201>(getAcknowledgeSyncUrl(), {
+        ...options,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+        body: JSON.stringify(acknowledgeSyncBody),
+    })
+}
+
+export const getUploadCalendarAttachmentUrl = (id: string) => {
+    return `/api/calendar-files/events/${id}`
+}
+
+/**
+ * @summary Upload a private event attachment (20 MiB limit)
+ */
+export const uploadCalendarAttachment = async (
+    id: string,
+    uploadCalendarAttachmentBody: UploadCalendarAttachmentBody,
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<UploadCalendarAttachment201> => {
+    const formData = new FormData()
+    formData.append(`file`, uploadCalendarAttachmentBody.file)
+
+    return generatedApiRequest<UploadCalendarAttachment201>(getUploadCalendarAttachmentUrl(id), {
+        ...options,
+        method: 'POST',
+        body: formData,
+    })
+}
+
+export const getGetCalendarSourceContentUrl = (id: string) => {
+    return `/api/calendar-files/sources/${id}/content`
+}
+
+/**
+ * @summary Read the current private source content as the calendar owner
+ */
+export const getCalendarSourceContent = async (
+    id: string,
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<GetCalendarSourceContent200> => {
+    return generatedApiRequest<GetCalendarSourceContent200>(getGetCalendarSourceContentUrl(id), {
+        ...options,
+        method: 'GET',
+    })
+}
+
+export const getDownloadCalendarAttachmentUrl = (id: string) => {
+    return `/api/calendar-files/attachments/${id}`
+}
+
+/**
+ * @summary Download a private attachment after checking event access
+ */
+export const downloadCalendarAttachment = async (
+    id: string,
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<Blob> => {
+    return generatedApiRequest<Blob>(getDownloadCalendarAttachmentUrl(id), {
         ...options,
         method: 'GET',
     })

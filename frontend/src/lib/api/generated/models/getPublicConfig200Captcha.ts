@@ -7,5 +7,7 @@
 
 export type GetPublicConfig200Captcha = {
     enabled: boolean
+    /** @nullable */
+    siteKey?: string | null
     expoReturnUrls: string[]
 }

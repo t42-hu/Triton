@@ -29,7 +29,7 @@ if [[ -z "$agent" ]]; then
     exit 1
 fi
 
-if ! status="$(docker exec "$agent" ./main status 2>&1)"; then
+if ! status="$(docker exec "$agent" /app/statsd status 2>&1)"; then
     printf '%s\n' "$status" >&2
     exit 1
 fi

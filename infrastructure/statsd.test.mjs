@@ -40,7 +40,10 @@ fs.appendFileSync('calls', JSON.stringify([name, ...args]) + '\\n')
 if (name === 'uname') console.log('Darwin')
 if (name === 'docker') {
     if (args[0] === 'ps') console.log('abc123\\towner-dev\\texelban/statsd:latest')
-    if (args[0] === 'exec') console.log('AUTHORIZATION: ' + (process.env.TEST_PAIRED === 'yes' ? 'Authorized' : 'Not Authorized'))
+    if (args[0] === 'exec') {
+        if (args[2] !== '/app/statsd' || args[3] !== 'status') process.exit(1)
+        console.log('AUTHORIZATION: ' + (process.env.TEST_PAIRED === 'yes' ? 'Authorized' : 'Not Authorized'))
+    }
     if (args[0] === 'logs') console.log('https://auth.system-stats.com/device?code=disposable-test')
 }
 `

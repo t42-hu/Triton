@@ -1,3 +1,14 @@
+import * as calendarContract from '@fullstack-starter/shared'
+import {
+    CalendarController,
+    CalendarActionsController,
+    CalendarSyncController,
+    CalendarFilesController,
+} from './calendar/calendar.controller.js'
+import { CalendarService } from './calendar/calendar.service.js'
+import { CalendarActions } from './calendar/calendar.actions.js'
+import { CalendarSync } from './calendar/calendar.sync.js'
+import { CalendarFiles } from './calendar/calendar.files.js'
 import { Module } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { DocumentBuilder, SwaggerModule, type OpenAPIObject } from '@nestjs/swagger'
@@ -39,6 +50,10 @@ import { VirusScannerService } from './virusscanner/virusscanner.service.js'
         ProfileImageController,
         PaymentController,
         StorageController,
+        CalendarController,
+        CalendarActionsController,
+        CalendarSyncController,
+        CalendarFilesController,
     ],
     providers: [
         DatabaseService,
@@ -50,11 +65,32 @@ import { VirusScannerService } from './virusscanner/virusscanner.service.js'
         ProfileImageService,
         PaymentService,
         StorageService,
+        CalendarService,
+        CalendarActions,
+        CalendarSync,
+        CalendarFiles,
     ].map((provide) => ({ provide, useValue: {} })),
 })
 class ApiContractModule {}
 
-const schema = (value: z.ZodType, io: 'input' | 'output') => z.toJSONSchema(value, { target: 'openapi-3.0', io })
+// OpenAPI 3.0 does not support JSON Schema's recursive local definitions.
+// Arbitrary nested JSON values remain unconstrained in the generated contract.
+const schema = (value: z.ZodType, io: 'input' | 'output') => {
+    const clean = (item: unknown): unknown => {
+        if (Array.isArray(item)) return item.map(clean)
+        if (item && typeof item === 'object') {
+            const record = item as Record<string, unknown>
+            if (typeof record.$ref === 'string' && record.$ref.startsWith('#/definitions/')) return {}
+            return Object.fromEntries(
+                Object.entries(record)
+                    .filter(([key]) => key !== 'definitions')
+                    .map(([key, child]) => [key, clean(child)]),
+            )
+        }
+        return item
+    }
+    return clean(z.toJSONSchema(value, { target: 'openapi-3.0', io })) as Record<string, unknown>
+}
 const json = (value: z.ZodType, io: 'input' | 'output' = 'output') => ({
     content: { 'application/json': { schema: schema(value, io) } },
 })
@@ -82,6 +118,7 @@ const operations: Record<
         operationId: string
         tags: string[]
         summary: string
+        parameters?: object[]
         requestBody?: object
         responses: Record<string, object>
         security?: object[]
@@ -227,6 +264,269 @@ const operations: Record<
             404: problem,
         },
     },
+}
+
+const c = calendarContract
+const record = c.CalendarRecordSchema
+const records = z.object({ participants: z.array(record) })
+const protectedResponse = (value: z.ZodType, code = 200) => ({
+    [code]: response(value),
+    400: problem,
+    401: problem,
+    403: problem,
+    404: problem,
+    409: problem,
+})
+const resourceParameter = {
+    in: 'path',
+    name: 'resource',
+    required: true,
+    schema: { type: 'string', enum: Object.keys(c.CalendarResourceSchemas) },
+}
+const idParameter = { in: 'path', name: 'id', required: true, schema: { type: 'string' } }
+const queryParameters = (value: z.ZodType) => {
+    const object = schema(value, 'input') as { properties: Record<string, object>; required?: string[] }
+    return Object.entries(object.properties).map(([name, property]) => ({
+        in: 'query',
+        name,
+        required: object.required?.includes(name) || false,
+        schema: property,
+    }))
+}
+const addOperation = (
+    method: string,
+    path: string,
+    operationId: string,
+    summary: string,
+    output: z.ZodType,
+    input?: z.ZodType,
+    parameters?: object[],
+    code = 200,
+) => {
+    operations[`${method} /api/${path}`] = {
+        operationId,
+        tags: ['calendar'],
+        summary,
+        security: [{ session: [] }, { nativeToken: [] }],
+        responses: protectedResponse(output, code),
+        ...(input ? { requestBody: { required: true, ...json(input, 'input') } } : {}),
+        ...(parameters ? { parameters } : {}),
+    }
+}
+const createBodies = z.union(Object.values(c.CalendarResourceSchemas))
+const updateBodies = z.union(
+    Object.values(c.CalendarResourceSchemas).map((value) =>
+        (value as z.ZodObject<z.ZodRawShape>).partial().omit({ id: true }).extend({ version: c.CalendarVersionSchema }),
+    ),
+)
+addOperation(
+    'get',
+    'calendar/{resource}',
+    'listCalendarRecords',
+    'List accessible records',
+    c.CalendarListResponseSchema,
+    undefined,
+    [resourceParameter, ...queryParameters(c.CalendarListSchema)],
+)
+addOperation('get', 'calendar/{resource}/{id}', 'getCalendarRecord', 'Get an accessible record', record, undefined, [
+    resourceParameter,
+    idParameter,
+])
+addOperation(
+    'post',
+    'calendar/{resource}',
+    'createCalendarRecord',
+    'Create a record in the selected resource',
+    record,
+    createBodies,
+    [resourceParameter],
+    201,
+)
+addOperation(
+    'patch',
+    'calendar/{resource}/{id}',
+    'updateCalendarRecord',
+    'Update with the expected record version',
+    record,
+    updateBodies,
+    [resourceParameter, idParameter],
+)
+addOperation(
+    'delete',
+    'calendar/{resource}/{id}',
+    'deleteCalendarRecord',
+    'Soft-delete with the expected record version',
+    record,
+    c.CalendarDeleteSchema,
+    [resourceParameter, idParameter],
+)
+addOperation(
+    'post',
+    'calendar-actions/invitations',
+    'inviteCalendarUser',
+    'Invite a user to a calendar',
+    record,
+    c.CalendarInviteSchema,
+    undefined,
+    201,
+)
+addOperation(
+    'post',
+    'calendar-actions/invitations/{id}/respond',
+    'respondCalendarInvitation',
+    'Accept or decline your invitation',
+    record,
+    c.CalendarInviteResponseSchema,
+    [idParameter],
+    201,
+)
+addOperation(
+    'post',
+    'calendar-actions/meetings',
+    'createMeeting',
+    'Create an event, meeting and invitations atomically',
+    z.object({ event: record, meeting: record, participants: z.array(record) }),
+    c.MeetingCreateSchema,
+    undefined,
+    201,
+)
+addOperation(
+    'post',
+    'calendar-actions/meetings/{id}/invite',
+    'inviteMeetingUsers',
+    'Invite users to one meeting',
+    records,
+    c.MeetingInviteSchema,
+    [idParameter],
+    201,
+)
+addOperation(
+    'post',
+    'calendar-actions/meetings/{id}/respond',
+    'respondMeeting',
+    'Set your participation response',
+    record,
+    c.MeetingResponseSchema,
+    [idParameter],
+    201,
+)
+addOperation(
+    'post',
+    'calendar-actions/sources/{id}/publish',
+    'publishCalendarImport',
+    'Publish normalized imported events atomically',
+    z.object({ source: record, revision: record, eventCount: z.number().int() }),
+    c.ImportPublishSchema,
+    [idParameter],
+    201,
+)
+addOperation(
+    'post',
+    'sync/devices',
+    'registerSyncDevice',
+    'Register or reactivate this user installation',
+    record,
+    c.CalendarResourceSchemas.devices.omit({ id: true }),
+    undefined,
+    201,
+)
+addOperation(
+    'get',
+    'sync/snapshot',
+    'getSyncSnapshot',
+    'Read frozen authorized snapshot pages',
+    z.object({
+        snapshotToken: z.string(),
+        highSequence: z.string(),
+        items: z.array(z.object({ resource: c.CalendarResourceSchema, record })),
+        nextOffset: z.number().int().nullable(),
+        totalItems: z.number().int(),
+    }),
+    undefined,
+    queryParameters(c.SyncSnapshotSchema),
+)
+addOperation(
+    'get',
+    'sync/pull',
+    'pullSyncChanges',
+    'Pull changes or request a replacement snapshot',
+    z.object({
+        requiresSnapshot: z.boolean(),
+        changes: z.array(
+            z.object({
+                sequence: z.string(),
+                resource: c.CalendarResourceSchema,
+                id: z.string(),
+                operation: z.enum(['upsert', 'delete']),
+                record: record.nullable(),
+            }),
+        ),
+        nextSequence: z.string(),
+        highSequence: z.string(),
+        hasMore: z.boolean(),
+    }),
+    undefined,
+    queryParameters(c.SyncPullSchema),
+)
+addOperation(
+    'post',
+    'sync/push',
+    'pushSyncMutations',
+    'Apply an atomic idempotent mutation batch',
+    c.SyncPushResponseSchema,
+    c.SyncPushSchema,
+    undefined,
+    201,
+)
+addOperation(
+    'post',
+    'sync/ack',
+    'acknowledgeSync',
+    'Acknowledge a fully delivered snapshot or cursor',
+    z.object({ sequence: z.string() }),
+    c.SyncAckSchema,
+    undefined,
+    201,
+)
+addOperation(
+    'get',
+    'calendar-files/sources/{id}/content',
+    'getCalendarSourceContent',
+    'Read the current private source content as the calendar owner',
+    z.object({ content: z.string().nullable() }),
+    undefined,
+    [idParameter],
+)
+addOperation(
+    'post',
+    'calendar-files/events/{id}',
+    'uploadCalendarAttachment',
+    'Upload a private event attachment (20 MiB limit)',
+    record,
+    undefined,
+    [idParameter],
+    201,
+)
+operations['post /api/calendar-files/events/{id}'].requestBody = {
+    required: true,
+    content: {
+        'multipart/form-data': {
+            schema: { type: 'object', required: ['file'], properties: { file: { type: 'string', format: 'binary' } } },
+        },
+    },
+}
+addOperation(
+    'get',
+    'calendar-files/attachments/{id}',
+    'downloadCalendarAttachment',
+    'Download a private attachment after checking event access',
+    record,
+    undefined,
+    [idParameter],
+)
+operations['get /api/calendar-files/attachments/{id}'].responses[200] = {
+    description: 'Private file download',
+    content: { 'application/octet-stream': { schema: { type: 'string', format: 'binary' } } },
 }
 
 export async function createApiContract(): Promise<OpenAPIObject> {

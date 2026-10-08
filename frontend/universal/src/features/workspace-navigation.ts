@@ -10,6 +10,9 @@ export function useWorkspaceNavigation() {
   const screen: WorkspaceScreen = workspace === 'calendar' || workspace === 'tasks' || workspace === 'search' ? workspace : 'today';
   const history = useRef<WorkspaceScreen[]>([]);
   const isPanelOpen = usePanelLock();
+  useEffect(() => {
+    router.setParams({ workspace: 'today' });
+  }, []);
   function navigate(next: WorkspaceScreen) {
     if (isPanelOpen || next === screen) return;
     history.current.push(screen);

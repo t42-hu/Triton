@@ -1,12 +1,14 @@
+import { EventQuickLinks } from './event-quick-links';
 import { AnimatedDisclosure } from './animated-disclosure';
 import { EventColorDialog } from './event-color-editor';
 import { ReminderDialog } from './reminder-dialog';
-import { NotebookPen, Palette, Bell, Repeat2, Save, RotateCcw, Trash2, BookOpen, FileText, ListTodo, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { NotebookPen, Palette, Bell, BellOff, Repeat2, Save, RotateCcw, Trash2, BookOpen, FileText, ListTodo, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { useEventRemindersEnabled } from './reminder-bell';
 import { EVENT_CATEGORIES } from '../domain/student';
 import { LessonTasks } from './lesson-tasks';
 import { NotebookDialog } from './notebook-dialog';
 import { useState } from 'react';
-import { Platform, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { Tabs, SlidingTabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
@@ -24,9 +26,10 @@ import { eventCategoryIcon, eventCategoryName } from './event-presentation';
 
 export function EventDialog({ event, close, openMap }: { event: DisplayEvent; close: () => void; openMap: (location: string, onClose: () => void) => void }) {
   const app = useApp(); const editor = useEventEditor(event);
+  const remindersEnabled = useEventRemindersEnabled(event);
   const [colorsOpen, setColorsOpen] = useState(false);
   const [remindersOpen, setRemindersOpen] = useState(false); const [mapOpen, setMapOpen] = useState(false); const [deleting, setDeleting] = useState(false);
-  const [notebookOpen, setNotebookOpen] = useState(false); const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [notebookOpen, setNotebookOpen] = useState<'notebook' | 'learning' | null>(null); const [advancedOpen, setAdvancedOpen] = useState(false);
   async function save(reset = false) {
     try {
       const changes = editor.candidates.length ? editor.candidates.filter(item => editor.selected.has(eventIdentity(item))).map(item => ({ event: item, patch: patchForTarget(createPatch(event, editor.fields, true), item) })) : [{ event, patch: reset ? null : createPatch(event, editor.fields, false) }];
@@ -37,14 +40,20 @@ export function EventDialog({ event, close, openMap }: { event: DisplayEvent; cl
   async function remove() { try { await deleteManualSource(event.sourceId); await app.refresh(); close(); } catch (error) { editor.setError(String(error)); } }
   if (colorsOpen) return <EventColorDialog event={event} close={() => setColorsOpen(false)} />;
   if (remindersOpen) return <ReminderDialog event={event} close={() => setRemindersOpen(false)} />;
-  if (notebookOpen) return <NotebookDialog event={event} close={() => setNotebookOpen(false)} />;
+  if (notebookOpen) return <NotebookDialog event={event} learning={notebookOpen === 'learning'} close={() => setNotebookOpen(null)} />;
   if (mapOpen) return null;
   return <Modal title={`${eventCategoryName(editor.fields.category)} részletei`} close={close} footer={<Action icon={Save} disabled={editor.candidates.length > 0 && !editor.selected.size} onPress={() => void save()}>Módosítások mentése</Action>}>
-    <View className="flex-row gap-2"><Action secondary icon={NotebookPen} onPress={() => setNotebookOpen(true)}>Jegyzetfüzet</Action>{Platform.OS !== 'web' ? <Action secondary icon={Bell} onPress={() => setRemindersOpen(true)}>Emlékeztető</Action> : null}</View>
-    <Action secondary icon={Palette} onPress={() => setColorsOpen(true)}>Színezés</Action>
+    <EventQuickLinks event={{ ...event, location: editor.fields.location, category: editor.fields.category }} actionGroups={{
+      learning: [{ label: 'Jegyzetfüzet', icon: NotebookPen, secondary: true, onPress: () => setNotebookOpen('notebook') }],
+      directions: [
+        { label: 'Emlékeztető', accessibilityLabel: remindersEnabled ? 'Emlékeztető, jelzések bekapcsolva' : 'Emlékeztető, jelzések némítva', icon: remindersEnabled ? Bell : BellOff, iconClassName: remindersEnabled ? 'text-primary' : 'text-destructive', secondary: true, onPress: () => setRemindersOpen(true) },
+        { label: 'Színezés', icon: Palette, secondary: true, onPress: () => setColorsOpen(true) },
+      ],
+    }} />
     <EventEditorSections event={event} editor={editor} openMap={() => { setMapOpen(true); openMap(editor.fields.location, () => setMapOpen(false)); }} />
     <Action quiet expanded={advancedOpen} icon={advancedOpen ? ChevronUp : ChevronDown} onPress={() => setAdvancedOpen(!advancedOpen)}>További műveletek</Action>
     <AnimatedDisclosure expanded={advancedOpen} gap={20}><View className="gap-4 border-t border-border pt-4">
+      {(event.category ?? 'lesson') === 'lesson' ? <Action secondary icon={NotebookPen} onPress={() => setNotebookOpen('learning')}>Kurzuslinkek szerkesztése</Action> : null}
       <Toggle label="Alkalom elrejtése / kihagyása" checked={editor.fields.hidden} onChange={hidden => editor.change({ hidden })} />
       <Action secondary expanded={editor.candidates.length > 0} icon={Repeat2} onPress={() => void suggest()}>Több alkalom módosítása</Action>
       <AnimatedDisclosure expanded={editor.candidates.length > 0} gap={16}><CandidateList items={editor.candidates} selected={editor.selected} setSelected={editor.setSelected} /></AnimatedDisclosure>
@@ -62,7 +71,7 @@ function EventEditorSections({ event, editor, openMap }: { event: DisplayEvent; 
   return <View className="gap-4">
     <Tabs value={section} onValueChange={setSection}><SlidingTabsList values={['details', 'notes', 'tasks']} className="w-full border-0 bg-muted">
       <TabsTrigger value="details" className="flex-1 px-1"><Icon as={BookOpen} size={15} /><Text>Adatok</Text></TabsTrigger>
-      <TabsTrigger value="notes" className="flex-1 px-1"><Icon as={FileText} size={15} /><Text>Jegyzetek</Text></TabsTrigger>
+      <TabsTrigger value="notes" className="flex-1 px-1"><Icon as={FileText} size={15} /><Text>Megjegyzések</Text></TabsTrigger>
       <TabsTrigger value="tasks" className="flex-1 px-1"><Icon as={ListTodo} size={15} /><Text>Feladatok</Text></TabsTrigger>
     </SlidingTabsList></Tabs>
     {section === 'details' ? <EventDetails event={event} editor={editor} openMap={openMap} /> : null}

@@ -67,7 +67,7 @@ function ManualDetails({ draft, change, openMap }: { draft: Draft; change: (patc
 }
 
 function ManualSection({ icon, title, children }: { icon: typeof BookOpen; title: string; children: React.ReactNode }) {
-  return <View className="gap-3 rounded-xl border border-border bg-background/40 p-4"><View className="flex-row items-center gap-2"><Icon as={icon} size={18} className="text-primary" /><Text className="font-semibold">{title}</Text></View>{children}</View>;
+  return <View className="gap-3 border-t border-border pt-4"><View className="flex-row items-center gap-2"><Icon as={icon} size={18} className="text-primary" /><Text className="font-semibold">{title}</Text></View>{children}</View>;
 }
 
 function ManualSchedule({ kind, setKind, start, setStart, end, setEnd }: { kind: string; setKind: (value: string) => void; start: string; setStart: (value: string) => void; end: string; setEnd: (value: string) => void }) {

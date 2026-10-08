@@ -14,8 +14,8 @@ export function EventNotesField({ value, onChange }: { value: string; onChange: 
   function reportError(reason: unknown) { setError(String(reason)); }
   function open(link: string) { void Linking.openURL(link).catch(reportError); }
   return <View className="gap-1.5">
-    <Text className="text-sm font-medium">Jegyzetek</Text>
-    <Textarea accessibilityLabel="Jegyzetek" value={value} onChangeText={onChange} placeholder="Téma, teendők, linkek…" autoCapitalize="sentences" />
+    <Text className="text-sm font-medium">Megjegyzések</Text>
+    <Textarea accessibilityLabel="Megjegyzések" value={value} onChangeText={onChange} placeholder="Téma, teendők, linkek…" autoCapitalize="sentences" />
     {links.map(link => <NoteLink key={link} link={link} open={open} />)}
     {error ? <Text accessibilityRole="alert" className="text-sm text-destructive">{error}</Text> : null}
   </View>;

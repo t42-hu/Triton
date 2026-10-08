@@ -36,8 +36,10 @@ export function useImport(profileId: number, close: () => void) {
     if (busy || !staged.current.length) return;
     setBusy(true);
     try {
+      const hasEvents = staged.current.some(source => source.count > 0);
       await publishStages(staged.current); staged.current = []; setStage(undefined); await app.refresh();
       app.setView(current => openProfile(current, profileId));
+      app.presentCalendarImport(profileId, hasEvents);
       close();
     }
     catch (error) { report(error); await cancelStage(); } finally { setBusy(false); }

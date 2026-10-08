@@ -19,17 +19,17 @@ export async function lessonRooms(profileId: number): Promise<string[]> {
   return rows.map(row => row.location);
 }
 
-export async function notebookLinks(event: DisplayEvent): Promise<NotebookLink[]> {
-  return (await getDatabase()).getAllAsync<NotebookLink>('SELECT * FROM notebook_links WHERE profileId=? AND notebookKey=? ORDER BY rowid', event.profileId, notebookIdentity(event));
+export async function notebookLinks(event: DisplayEvent, learning = false): Promise<NotebookLink[]> {
+  return (await getDatabase()).getAllAsync<NotebookLink>('SELECT * FROM notebook_links WHERE profileId=? AND notebookKey=? ORDER BY rowid', event.profileId, learning ? `lms:${notebookIdentity(event)}` : notebookIdentity(event));
 }
 
 /** Stores a subject link once so every lecture and practice can reuse it. */
-export async function addNotebookLink(event: DisplayEvent, title: string, address: string): Promise<void> {
+export async function addNotebookLink(event: DisplayEvent, title: string, address: string, learning = false): Promise<void> {
   const url = notebookUrl(address);
   const name = title.trim() || new URL(url).hostname;
   if (name.length > 200) throw new Error('A link neve legfeljebb 200 karakter lehet.');
   const subject = (event.category ?? 'lesson') === 'lesson' ? subjectName(event.originalTitle) || event.title : event.title;
-  await write(async db => { await db.runAsync('INSERT INTO notebook_links VALUES (?,?,?,?,?,?,?)', uniqueId(), event.profileId, notebookIdentity(event), subject, name, url, searchableText(`${subject} ${name} ${url}`)); });
+  await write(async db => { await db.runAsync('INSERT INTO notebook_links VALUES (?,?,?,?,?,?,?)', uniqueId(), event.profileId, learning ? `lms:${notebookIdentity(event)}` : notebookIdentity(event), subject, name, url, searchableText(`${subject} ${name} ${url}`)); });
 }
 
 export async function removeNotebookLink(id: string): Promise<void> {

@@ -23,6 +23,7 @@ services:
             - /app/cloudflare-tunnel.mjs
         environment:
             APP_DOMAIN: ${DEV_APP_DOMAIN:-${APP_DOMAIN:-}}
+            MOBILE_APP_DOMAIN: ${MOBILE_APP_DOMAIN:-}
             APP_ENVIRONMENT: development
             CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID:-}
             CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
@@ -58,6 +59,7 @@ services:
             - ${DEV_BIND_ADDRESS:-127.0.0.1}:${DEV_HTTP_PORT:-8080}:80
         volumes:
             - ./proxy/nginx.dev.conf:/etc/nginx/conf.d/default.conf:ro
+            - ./proxy/nginx.mobile.conf:/etc/nginx/conf.d/mobile.conf:ro
         depends_on:
             frontend:
                 condition: service_healthy
@@ -99,6 +101,8 @@ services:
         volumes:
             - frontend-next-cache:/app/frontend/.next
             - ./frontend/src:/app/frontend/src:ro
+            - ./frontend/public/triton:/app/frontend/public/triton
+            - ./frontend/universal/src:/app/frontend/universal/src:ro
             - ./shared/src:/app/shared/src:ro
         depends_on:
             backend:
@@ -126,6 +130,7 @@ services:
             APP_ID: ${APP_ID}
             APP_NAME: ${APP_NAME:-Fullstack Starter}
             APP_DOMAIN: ${APP_DOMAIN:-}
+            MOBILE_APP_DOMAIN: ${MOBILE_APP_DOMAIN:-}
             BACKEND_PORT: '4000'
             LOG_LEVEL: ${LOG_LEVEL:-info}
             OTEL_ENABLED: ${OTEL_ENABLED:-false}

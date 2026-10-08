@@ -14,8 +14,6 @@ const excludedNames = new Set([
     '.next',
     'dist',
     'build',
-    'ios',
-    'android',
     'Pods',
     'output',
     'test-results',
@@ -25,6 +23,7 @@ const excludedNames = new Set([
 /** Copies build inputs without secrets, dependencies, or generated native projects. */
 function isBuildInput(source) {
     const name = basename(source)
+    if (['ios', 'android'].includes(name) && source === join(repository, 'frontend/universal', name)) return false
     return !excludedNames.has(name) && !name.startsWith('.env.')
 }
 

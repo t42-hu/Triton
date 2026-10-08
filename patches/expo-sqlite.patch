@@ -1,0 +1,59 @@
+diff --git a/web/createStorageVFS.js b/web/createStorageVFS.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..15cab924283645747204d0789acf1eda6854133f
+--- /dev/null
++++ b/web/createStorageVFS.js
+@@ -0,0 +1,11 @@
++/** Preserve named databases in memory only when the browser denies its file storage. */
++export async function createStorageVFS(persistent, memory) {
++  try {
++    return await persistent();
++  } catch (error) {
++    if (!['UnknownError', 'SecurityError', 'NotAllowedError', 'NotSupportedError'].includes(error?.name)) {
++      throw error;
++    }
++    return memory();
++  }
++}
+diff --git a/web/worker.ts b/web/worker.ts
+index deaf7218f98add013b73876130f2c496ec3820fa..67db07b54635e6b49dad36607a2c0922d18096ec 100644
+--- a/web/worker.ts
++++ b/web/worker.ts
+@@ -7,6 +7,7 @@ import { SQLiteOptions } from './SQLiteOptions';
+ import { sendWorkerResult } from './WorkerChannel';
+ import { type Changeset } from '../src/NativeSession';
+ import { type SQLiteColumnNames, type SQLiteColumnValues } from '../src/NativeStatement';
++import { createStorageVFS } from './createStorageVFS';
+ import { AccessHandlePoolVFS } from './wa-sqlite/AccessHandlePoolVFS';
+ import { MemoryVFS } from './wa-sqlite/MemoryVFS';
+ import * as SQLite from './wa-sqlite/sqlite-api';
+@@ -52,7 +53,7 @@ const MAX_INT32 = 0x7fffffff;
+ const MIN_INT32 = -0x80000000;
+ 
+ let _sqlite3: SQLiteAPI | null = null;
+-let _vfs: AccessHandlePoolVFS | null = null;
++let _vfs: AccessHandlePoolVFS | MemoryVFS | null = null;
+ let _vfsMemory: MemoryVFS | null = null;
+ 
+ const databaseIdMap = new Map<number, DatabaseEntity>();
+@@ -774,7 +775,7 @@ async function maybeFinalizeAllStatements(nativeDatabaseId: number) {
+ 
+ async function maybeInitAsync(): Promise<{
+   sqlite3: SQLiteAPI;
+-  vfs: AccessHandlePoolVFS;
++  vfs: AccessHandlePoolVFS | MemoryVFS;
+   vfsMemory: MemoryVFS;
+ }> {
+   if (!_sqlite3) {
+@@ -787,7 +788,10 @@ async function maybeInitAsync(): Promise<{
+     }
+ 
+     if (_vfs == null) {
+-      _vfs = await AccessHandlePoolVFS.create(VFS_NAME_PERSISTENT, module);
++      _vfs = await createStorageVFS(
++        () => AccessHandlePoolVFS.create(VFS_NAME_PERSISTENT, module),
++        () => MemoryVFS.create(VFS_NAME_PERSISTENT, module)
++      );
+       if (_vfs == null) {
+         throw new Error('Failed to initialize AccessHandlePoolVFS');
+       }

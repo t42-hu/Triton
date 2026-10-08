@@ -1,9 +1,13 @@
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
 
+const namedDatabases = new Map<string, DatabaseSync>();
+
 /** Runs production SQL against SQLite in memory; UI/browser tests cover the Expo adapter. */
-export async function openDatabaseAsync() {
-  const database = new DatabaseSync(':memory:');
+export async function openDatabaseAsync(name?: string) {
+  const database = name ? namedDatabases.get(name) ?? new DatabaseSync(':memory:') : new DatabaseSync(':memory:');
+  if (name) namedDatabases.set(name, database);
   return {
+    closeAsync: async () => undefined,
     execAsync: async (sql: string) => { database.exec(sql); },
     runAsync: async (sql: string, ...values: SQLInputValue[]) => {
       const result = database.prepare(sql).run(...values);
@@ -21,4 +25,9 @@ export async function openDatabaseAsync() {
       catch (error) { database.exec('ROLLBACK'); throw error; }
     },
   };
+}
+
+export async function deleteDatabaseAsync(name: string) {
+  namedDatabases.get(name)?.close();
+  namedDatabases.delete(name);
 }

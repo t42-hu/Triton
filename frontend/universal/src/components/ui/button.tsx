@@ -7,16 +7,16 @@ import { Keyboard, Platform, Pressable, type GestureResponderEvent } from 'react
 
 const buttonVariants = cva(
   cn(
-    'group shrink-0 flex-row items-center justify-center gap-2 overflow-hidden rounded-xl shadow-none',
+    'group shrink-0 flex-row items-center justify-center gap-2 overflow-hidden rounded-lg shadow-none',
     Platform.select({
-      web: "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive whitespace-nowrap outline-none motion-safe:transition-colors duration-150 focus-visible:ring-[3px] disabled:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+      web: "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive whitespace-nowrap outline-none motion-safe:transition-colors duration-150 focus-visible:ring-[3px] focus-visible:ring-inset disabled:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
     })
   ),
   {
     variants: {
       variant: {
         default: cn(
-          'bg-primary hover:bg-primary/90 active:bg-primary/80 shadow-sm shadow-black/5',
+          'bg-primary hover:bg-primary/90 active:bg-primary/80',
           Platform.select({ web: 'hover:bg-primary/90' })
         ),
         destructive: cn(
@@ -26,26 +26,26 @@ const buttonVariants = cva(
           })
         ),
         outline: cn(
-          'border-foreground/50 bg-card hover:bg-accent/60 active:bg-accent border',
+          'border-border bg-card hover:bg-accent/60 active:bg-accent border',
           Platform.select({
             web: 'hover:bg-accent dark:hover:bg-input/50',
           })
         ),
         secondary: cn(
-          'border border-foreground/50 bg-secondary hover:bg-accent/60 active:bg-accent',
+          'border border-transparent bg-secondary hover:bg-accent/60 active:bg-accent',
           Platform.select({ web: 'hover:bg-secondary/80' })
         ),
         ghost: cn(
-          'border border-foreground/50 bg-card hover:bg-accent/60 active:bg-accent',
+          'border-0 bg-transparent hover:bg-accent/60 active:bg-accent',
           Platform.select({ web: 'hover:bg-accent dark:hover:bg-accent/50' })
         ),
         link: 'hover:bg-primary/5 active:bg-primary/10',
       },
       size: {
         default: cn('h-[44px] px-4 py-2', Platform.select({ web: 'has-[>svg]:px-3' })),
-        sm: cn('h-9 gap-1.5 rounded-md px-3 sm:h-8', Platform.select({ web: 'has-[>svg]:px-2.5' })),
-        lg: cn('h-11 rounded-md px-6 sm:h-10', Platform.select({ web: 'has-[>svg]:px-4' })),
-        icon: 'h-10 w-10 sm:h-9 sm:w-9',
+        sm: cn('h-9 gap-1.5 rounded-lg px-3', Platform.select({ web: 'has-[>svg]:px-2.5' })),
+        lg: cn('h-12 rounded-lg px-6', Platform.select({ web: 'has-[>svg]:px-4' })),
+        icon: 'h-11 w-11',
       },
     },
     defaultVariants: {
@@ -92,7 +92,7 @@ const buttonTextVariants = cva(
 
 type ButtonProps = React.ComponentProps<typeof Pressable> & React.RefAttributes<typeof Pressable> & VariantProps<typeof buttonVariants> & { revealOnExpand?: boolean };
 
-function Button({ className, variant, size, onPress, revealOnExpand = true, ...props }: ButtonProps) {
+function Button({ className, variant, size, onPress, style, revealOnExpand = true, ...props }: ButtonProps) {
   const revealExpandedContent = useContext(PanelScrollContext);
   function press(event: GestureResponderEvent) {
     if (Platform.OS !== 'web') Keyboard.dismiss();
@@ -105,6 +105,7 @@ function Button({ className, variant, size, onPress, revealOnExpand = true, ...p
         className={cn(props.disabled && 'opacity-50', buttonVariants({ variant, size }), className)}
         role="button"
         {...props}
+        style={Platform.OS === 'web' ? style : state => [typeof style === 'function' ? style(state) : style, { minHeight: Platform.OS === 'android' ? 48 : 44, minWidth: Platform.OS === 'android' ? 48 : 44 }]}
         onPress={press}
       />
     </TextClassContext.Provider>

@@ -5,7 +5,7 @@ import { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } fr
 export function useMotionValue(value: number) {
   const progress = useSharedValue(value);
   useEffect(() => {
-    progress.value = withTiming(value, { duration: 130, easing: Easing.out(Easing.cubic), reduceMotion: ReduceMotion.System });
+    progress.set(withTiming(value, { duration: 130, easing: Easing.out(Easing.cubic), reduceMotion: ReduceMotion.System }));
   }, [value, progress]);
   return progress;
 }
@@ -17,10 +17,10 @@ export function usePeriodTransition(period: string) {
   const direction = useSharedValue(1);
   useEffect(() => {
     if (previousPeriod.current === period) return;
-    direction.value = period > previousPeriod.current ? 1 : -1;
+    direction.set(period > previousPeriod.current ? 1 : -1);
     previousPeriod.current = period;
-    progress.value = 0;
-    progress.value = withTiming(1, { duration: 160, easing: Easing.out(Easing.cubic), reduceMotion: ReduceMotion.System });
+    progress.set(0);
+    progress.set(withTiming(1, { duration: 160, easing: Easing.out(Easing.cubic), reduceMotion: ReduceMotion.System }));
   }, [period, progress, direction]);
-  return useAnimatedStyle(() => ({ opacity: 0.35 + progress.value * 0.65, transform: [{ translateX: direction.value * (1 - progress.value) * 12 }] }));
+  return useAnimatedStyle(() => ({ opacity: 0.35 + progress.get() * 0.65, transform: [{ translateX: direction.get() * (1 - progress.get()) * 12 }] }));
 }

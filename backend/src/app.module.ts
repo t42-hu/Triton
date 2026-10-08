@@ -1,3 +1,6 @@
+import { StorageService } from './storage/storage.service.js'
+import { ProfileImageService } from './profile-image/profile-image.service.js'
+import { CalendarModule } from './calendar/calendar.module.js'
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { AuthModule } from '@thallesp/nestjs-better-auth'
@@ -37,10 +40,15 @@ import { VirusScannerModule } from './virusscanner/virusscanner.module.js'
         DatabaseModule,
         MailModule,
         AuthModule.forRootAsync({
-            imports: [DatabaseModule, MailModule],
-            inject: [DatabaseService, MailService],
-            useFactory: (databaseService: DatabaseService, mailService: MailService) => ({
-                auth: createAuth(databaseService, mailService),
+            imports: [DatabaseModule, MailModule, ProfileImageModule, StorageModule],
+            inject: [DatabaseService, MailService, ProfileImageService, StorageService],
+            useFactory: (
+                databaseService: DatabaseService,
+                mailService: MailService,
+                profileImages: ProfileImageService,
+                storage: StorageService,
+            ) => ({
+                auth: createAuth(databaseService, mailService, profileImages, storage),
                 bodyParser: {
                     json: { limit: '2mb' },
                     urlencoded: { limit: '2mb', extended: true },
@@ -57,6 +65,7 @@ import { VirusScannerModule } from './virusscanner/virusscanner.module.js'
         ProfileImageModule,
         UserModule,
         PaymentModule,
+        CalendarModule,
     ],
     controllers: [AppController, NativeAuthController],
     providers: [NativeAuthService, ApiExceptionFilter, TelemetryLifecycleService],

@@ -10,13 +10,7 @@ export class StorageController {
 
     @Get('images/profile-images/:userId/:filename')
     async image(@Param('userId') userId: string, @Param('filename') filename: string) {
-        if (
-            process.env.NODE_ENV === 'production' ||
-            process.env.STORAGE_AUTO_CREATE_BUCKET !== 'true' ||
-            !/^[a-zA-Z0-9_-]+$/.test(userId) ||
-            !/^[a-f0-9-]{36}\.webp$/.test(filename)
-        )
-            throw new NotFoundException()
+        if (!/^[a-zA-Z0-9_-]+$/.test(userId) || !/^[a-f0-9-]{36}\.webp$/.test(filename)) throw new NotFoundException()
         try {
             const object = await this.storage.getObject(`images/profile-images/${userId}/${filename}`)
             if (!(object.Body instanceof Readable)) throw new Error('Missing object stream')

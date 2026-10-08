@@ -13,6 +13,7 @@ export type WorkspaceFrameProps = {
   navigate: (screen: WorkspaceScreen) => void;
   create: () => void;
   openProfiles: () => void;
+  openAccount: () => void;
   openSettings: () => void;
   openMap: () => void;
   showMap: boolean;

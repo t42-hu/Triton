@@ -4,7 +4,13 @@ export const SocialProviderSchema = z.enum(['google', 'microsoft', 'github', 'fa
 
 export const PublicConfigSchema = z.object({
     native: z.object({ enabled: z.boolean(), scheme: z.string().nullable() }).optional(),
-    captcha: z.object({ enabled: z.boolean(), expoReturnUrls: z.array(z.string()) }).optional(),
+    captcha: z
+        .object({
+            enabled: z.boolean(),
+            siteKey: z.string().nullable().optional(),
+            expoReturnUrls: z.array(z.string()),
+        })
+        .optional(),
     socialProviders: z.array(SocialProviderSchema),
     features: z.object({
         search: z.boolean(),

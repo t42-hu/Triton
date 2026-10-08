@@ -5,7 +5,7 @@ import type { ViewState } from '../src/features/app-state';
 
 const view: ViewState = {
   left: 1, right: 2, openProfiles: [2], leftDate: '2026-09-28', rightDate: '2026-09-21',
-  mode: 'week', compare: true, arrangement: 'column', sync: false, common: true, hidden: false, showWeekends: true,
+  mode: 'week', compare: true, arrangement: 'column', sync: false, common: true, hidden: false, showWeekends: true, startHour: 7, endHour: 20,
   zoom: 1, leftScroll: 420, rightScroll: 420, theme: 'system',
 };
 

@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { openDatabaseAsync } from 'expo-sqlite';
 import type { DisplayEvent } from '../src/domain/model';
 import { notebookIdentity, notebookUrl, subjectName, importedCategory } from '../src/domain/student';
-import { dailyAnalysis, freeSlots, scheduleConflicts } from '../src/domain/schedule-analysis';
+import { commonBreaks, dailyAnalysis, freeSlots, scheduleConflicts } from '../src/domain/schedule-analysis';
 import { fromWall } from '../src/domain/time';
 import { addNotebookLink, notebookLinks, addLessonTask, lessonTasks, searchStudentData, setTaskCompleted, taskEvent, lessonRooms } from '../src/data/student-repository';
 import { createManualEvent } from '../src/data/manual-event';
@@ -11,7 +11,7 @@ import { saveProfile, deleteProfile, updateEvents, visibleEvents } from '../src/
 import { publishStages, stageSource } from '../src/data/importer';
 import { initializeStudentStorage } from '../src/data/student-migration';
 import { saveEventReminders, eventReminders } from '../src/data/reminders';
-import { coveredWindows } from '../src/data/free-time';
+import { dailyWindows, findCommonFreeTime } from '../src/data/free-time';
 import { hasMappedRoom } from '../src/features/room-location';
 
 const anchor = { date: '2026-09-07', week: 'A' as const };
@@ -54,6 +54,11 @@ test('links, tasks, categories and accent-insensitive search survive edits and s
   const practice = await createManualEvent(profileId, { id: 'practice', title: 'Fizika gyakorlat', category: 'lesson', kind: 'timed', start: '2026-09-08T08:00:00+02:00', end: '2026-09-08T09:30:00+02:00' }, anchor);
   await addNotebookLink(lecture, 'Árvíztűrő jegyzetek', 'https://example.com/fizika');
   assert.equal((await notebookLinks(practice)).length, 1);
+  await addNotebookLink(lecture, 'Moodle', 'https://moodle.example.com/course/view.php?id=42', true);
+  assert.equal((await notebookLinks(practice, true))[0].title, 'Moodle');
+  assert.equal((await notebookLinks(practice)).length, 1);
+  assert.equal((await notebookLinks({ ...practice, profileId: profileId + 999 }, true)).length, 0);
+  await assert.rejects(addNotebookLink(lecture, 'Unsafe', 'javascript:alert(1)', true));
   await addLessonTask(lecture, 'Olvasd el az összefoglalót');
   assert.equal((await lessonTasks(profileId, practice)).length, 0);
   const [task] = await lessonTasks(profileId, lecture);
@@ -103,28 +108,18 @@ test('category and note patches keep search current when an imported source is r
   await deleteProfile(profileId);
 });
 
-test('common free time keeps days separate and breaks at missing imported coverage', () => {
-  const source = (fromDate: string, toDate: string, isManual = 0) => ({ fromDate, toDate, isManual });
-  const full = { id: 1, sources: [source('2026-10-01', '2026-10-04')] };
-  const split = { id: 2, sources: [source('2026-10-01', '2026-10-02'), source('2026-10-04', '2026-10-04'), source('2026-10-03', '2026-10-03', 1)] };
+test('common free time separates daily windows without requiring imported coverage', () => {
   const start = fromWall('2026-10-01T08:00'); const end = fromWall('2026-10-04T20:00');
-  const result = coveredWindows([full, split], start, end);
-  assert.deepEqual(result.missing, [{ date: '2026-10-03', profileIds: [2] }]);
-  assert.deepEqual(result.windows, [{ start, end: fromWall('2026-10-02') }, { start: fromWall('2026-10-02'), end: fromWall('2026-10-03') }, { start: fromWall('2026-10-04'), end }]);
-  const continuous = coveredWindows([full, { ...full, id: 2 }], start, end);
-  assert.equal(continuous.windows.length, 4);
-  assert.equal(continuous.windows[0].start, start);
-  assert.equal(continuous.windows.at(-1)?.end, end);
-  assert.deepEqual(freeSlots([], start, end), [{ start, end }]);
-  const eventAtMidnight = event('Program', '2026-10-02T23:00', '2026-10-03T01:00');
-  assert.deepEqual(freeSlots([eventAtMidnight], start, end), [{ start, end: eventAtMidnight.start }, { start: eventAtMidnight.end, end }]);
+  const windows = dailyWindows(start, end);
+  assert.equal(windows.length, 4);
+  assert.equal(windows[0].start, start);
+  assert.equal(windows.at(-1)?.end, end);
+  assert.equal(windows[0].end, windows[1].start);
 });
 
-
 test('evening and morning availability cannot combine to meet the minimum duration', () => {
-  const profiles = [1, 2].map(id => ({ id, sources: [{ fromDate: '2026-10-05', toDate: '2026-10-06', isManual: 0 }] }));
   const start = fromWall('2026-10-05T23:30'); const end = fromWall('2026-10-06T00:30');
-  const { windows } = coveredWindows(profiles, start, end);
+  const windows = dailyWindows(start, end);
   const slots = windows.flatMap(window => freeSlots([], window.start, window.end, 60));
   assert.deepEqual(slots, []);
   const shorter = windows.flatMap(window => freeSlots([], window.start, window.end, 30));
@@ -134,7 +129,30 @@ test('evening and morning availability cannot combine to meet the minimum durati
 });
 
 test('daily free-time boundaries follow Budapest daylight saving time', () => {
-  const profiles = [1, 2].map(id => ({ id, sources: [{ fromDate: '2026-10-24', toDate: '2026-10-25', isManual: 0 }] }));
-  const { windows } = coveredWindows(profiles, fromWall('2026-10-24'), fromWall('2026-10-26'));
+  const windows = dailyWindows(fromWall('2026-10-24'), fromWall('2026-10-26'));
   assert.deepEqual(windows.map(slot => (slot.end - slot.start) / 3600000), [24, 25]);
+});
+
+
+test('shared breaks stay inside each participant’s first and last event', () => {
+  const first = [event('A1', '2026-10-07T08:00', '2026-10-07T09:00'), event('A2', '2026-10-07T14:00', '2026-10-07T15:00')];
+  const second = [event('B1', '2026-10-07T10:00', '2026-10-07T11:00'), event('B2', '2026-10-07T13:00', '2026-10-07T16:00')];
+  const start = fromWall('2026-10-07'); const end = fromWall('2026-10-08');
+  assert.deepEqual(commonBreaks([first, second], start, end, start, end), [{ start: fromWall('2026-10-07T11:00'), end: fromWall('2026-10-07T13:00') }]);
+  assert.deepEqual(commonBreaks([first, []], start, end, start, end), [{ start: fromWall('2026-10-07T09:00'), end: fromWall('2026-10-07T14:00') }]);
+  assert.deepEqual(commonBreaks([[], []], start, end, start, end), []);
+  assert.deepEqual(commonBreaks([first, second], start, end, fromWall('2026-10-07T12:00'), end, 90), []);
+  assert.deepEqual(commonBreaks([first, second.map(item => ({ ...item, hidden: 1 }))], start, end, start, end), commonBreaks([first, []], start, end, start, end));
+  assert.deepEqual(commonBreaks([first, second.map(item => ({ ...item, category: 'assignment' }))], start, end, start, end), commonBreaks([first, []], start, end, start, end));
+});
+
+
+test('an empty profile follows another profile’s manual programs without imported data', async () => {
+  const firstId = await saveProfile('Free-time busy'); const emptyId = await saveProfile('Free-time empty');
+  try {
+    await createManualEvent(firstId, { id: 'morning', title: 'Morning', kind: 'timed', start: '2026-10-07T08:00:00+02:00', end: '2026-10-07T09:00:00+02:00', category: 'event' }, anchor);
+    await createManualEvent(firstId, { id: 'afternoon', title: 'Afternoon', kind: 'timed', start: '2026-10-07T14:00:00+02:00', end: '2026-10-07T15:00:00+02:00', category: 'event' }, anchor);
+    const result = await findCommonFreeTime([firstId, emptyId], fromWall('2026-10-07'), fromWall('2026-10-09'), 30);
+    assert.deepEqual(result.slots, [{ start: fromWall('2026-10-07T09:00'), end: fromWall('2026-10-07T14:00') }]);
+  } finally { await deleteProfile(firstId); await deleteProfile(emptyId); }
 });

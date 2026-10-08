@@ -37,3 +37,5 @@ allowBuilds:
     protobufjs: false
     sharp: true
     '@scarf/scarf': false
+patchedDependencies:
+    expo-sqlite: patches/expo-sqlite.patch

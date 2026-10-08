@@ -31,6 +31,9 @@ const normalizeDomain = (value) => {
 const accountId = required('CLOUDFLARE_ACCOUNT_ID')
 const apiToken = required('CLOUDFLARE_API_TOKEN')
 const domain = normalizeDomain(required('APP_DOMAIN'))
+const mobileDomain = process.env.MOBILE_APP_DOMAIN?.trim() ? normalizeDomain(process.env.MOBILE_APP_DOMAIN) : null
+if (mobileDomain && !mobileDomain.endsWith(`.${domain}`))
+    throw new Error('MOBILE_APP_DOMAIN must be a subdomain of APP_DOMAIN.')
 const environment = (process.env.APP_ENVIRONMENT || 'production')
     .trim()
     .toLowerCase()
@@ -38,6 +41,7 @@ const environment = (process.env.APP_ENVIRONMENT || 'production')
 const tunnelName =
     process.env.CLOUDFLARE_TUNNEL_NAME?.trim() || `fullstack-starter-${domain.replace(/\./g, '-')}-${environment}`
 const originUrl = process.env.CLOUDFLARE_ORIGIN_URL?.trim() || 'http://proxy:80'
+const mobileOriginUrl = process.env.CLOUDFLARE_MOBILE_ORIGIN_URL?.trim() || 'http://proxy:8082'
 const tokenFile = process.env.CLOUDFLARE_TUNNEL_TOKEN_FILE || '/run/cloudflare/tunnel-token'
 const managedDnsComment = 'Managed automatically by Fullstack Starter Cloudflare Tunnel'
 
@@ -138,14 +142,18 @@ async function configureTunnel(tunnelId) {
         method: 'PUT',
         body: JSON.stringify({
             config: {
-                ingress: [{ hostname: domain, service: originUrl }, { service: 'http_status:404' }],
+                ingress: [
+                    { hostname: domain, service: originUrl },
+                    ...(mobileDomain ? [{ hostname: mobileDomain, service: mobileOriginUrl }] : []),
+                    { service: 'http_status:404' },
+                ],
             },
         }),
     })
     console.log(`Configured ${domain} -> ${originUrl}`)
 }
 
-async function configureDns(zoneId, tunnelId) {
+async function configureDns(zoneId, tunnelId, domain) {
     const target = `${tunnelId}.cfargotunnel.com`
     const records = await listAll(`/zones/${zoneId}/dns_records?name=${encodeURIComponent(domain)}`)
     const addressRecords = records.filter((record) => ['A', 'AAAA', 'CNAME'].includes(record.type))
@@ -215,7 +223,8 @@ async function main() {
     const zone = await findZone()
     const tunnel = await findOrCreateTunnel()
     await configureTunnel(tunnel.id)
-    await configureDns(zone.id, tunnel.id)
+    await configureDns(zone.id, tunnel.id, domain)
+    if (mobileDomain) await configureDns(zone.id, tunnel.id, mobileDomain)
     await writeTunnelToken(tunnel.id)
     console.log(`Cloudflare setup complete: https://${domain}`)
 }

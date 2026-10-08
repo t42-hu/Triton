@@ -6,17 +6,23 @@ import { saveSetting } from '@/data/database';
 import { requiredImportProfile } from '@/data/required-setup';
 import type { Profile } from '@/domain/model';
 import { useApp } from './app-state';
+import { SetupShell } from './setup-shell';
 import { ProfilesDialog } from './profiles-dialog';
+import { AccountDialog } from './account-dialog';
 import { ImportDialog } from './import-dialog';
 
 /** Keeps navigation unmounted until the first profile and its import are complete. */
 export function WorkspaceSetupGate({ children }: { children: ReactNode }) {
   const app = useApp();
   const setup = useRequiredSetup();
+  const [showAccount, setShowAccount] = useState(false);
   if (setup.isChecking) return <View className="flex-1 items-center justify-center bg-background"><ActivityIndicator /></View>;
   if (setup.error) return <View className="flex-1 items-center justify-center gap-4 bg-background p-6"><Text accessibilityRole="alert">{setup.error}</Text><Button onPress={setup.retry}><Text>Újrapróbálás</Text></Button></View>;
-  if (setup.isCreating || !app.profileList.length) return <View className="flex-1 bg-background"><ProfilesDialog required close={ignoreDismissal} onCreated={setup.created} onImport={ignoreDismissal} /></View>;
-  if (setup.profileId !== null) return <View className="flex-1 bg-background"><ImportDialog required profileId={setup.profileId} close={setup.completed} /></View>;
+  if (setup.isCreating || !app.profileList.length || setup.profileId !== null) return <SetupShell>
+    {setup.isCreating || !app.profileList.length ? <ProfilesDialog required open={!showAccount} onAccount={() => setShowAccount(true)} setupProfile={app.profileList.find(profile => profile.id === setup.profileId)} close={ignoreDismissal} onCreated={setup.created} onImport={ignoreDismissal} /> : null}
+    {showAccount ? <AccountDialog setup close={ignoreDismissal} onContinue={() => setShowAccount(false)} /> : null}
+    {setup.profileId !== null ? <ImportDialog required open={!setup.isCreating && !showAccount} onBack={setup.back} onAccount={() => { setup.back(); setShowAccount(true); }} profileId={setup.profileId} close={setup.completed} /> : null}
+  </SetupShell>;
   return children;
 }
 
@@ -46,8 +52,9 @@ function useRequiredSetup() {
   }
   async function complete() { await saveSetting('setupProfileId', null); setProfileId(null); }
   function completed() { void complete().catch(error => setError(error instanceof Error ? error.message : String(error))); }
+  function back() { setIsCreating(true); }
   function retry() { setIsChecking(true); setError(''); setAttempt(value => value + 1); }
-  return { isChecking, isCreating, profileId, error, created, completed, retry };
+  return { isChecking, isCreating, profileId, error, created, completed, back, retry };
 }
 
 function ignoreDismissal() {}

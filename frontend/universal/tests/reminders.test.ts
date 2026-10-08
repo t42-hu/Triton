@@ -81,3 +81,11 @@ test('SQLite rules survive refresh and overrides, follow ownership, and disappea
   await deleteProfile(owner.id); await deleteProfile(peer.id);
   assert.deepEqual(await reminderEvents(now), []);
 });
+
+test('notification route actions use campus destination and are refreshed when the destination changes', () => {
+  const planned = planReminders([{ ...event, location: 'BA.F.08' }], global, now);
+  assert.match(planned[0].location!, /Neumann János Informatikai Kar/);
+  const online = planReminders([{ ...event, location: 'https://meet.google.com/abc' }], global, now);
+  assert.equal(online[0].location, null);
+  assert.equal(reminderDifference(online, planned.map(item => ({ id: item.id, fingerprint: item.fingerprint }))).schedule.length, 3);
+});
