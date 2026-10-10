@@ -2,7 +2,7 @@ import ICAL from 'ical.js';
 import type { DateRange, ImportControl, Occurrence } from './model';
 import { addDays, fromWall, validateRange } from './time';
 import { checkpoint, intersects } from './json-import';
-import { EVENT_CATEGORIES, importedCategory } from './student';
+import { EVENT_CATEGORIES, importedCategory, isWageTrackrUid } from './student';
 
 function instant(time: ICAL.Time): number {
   if (time.isDate || time.zone.tzid === 'floating') return fromWall(time.toString());
@@ -93,6 +93,7 @@ function normalizePeriods(component: ICAL.Component): Map<string, number> {
 
 /** Preserves Triton categories through export without guessing from renamed titles. */
 function calendarCategory(component: ICAL.Component, title: string) {
+  if (isWageTrackrUid(component.getFirstPropertyValue('uid'))) return 'work';
   const value = component.getFirstPropertyValue('x-triton-category');
   return EVENT_CATEGORIES.find(category => category.value === value)?.value ?? importedCategory(title);
 }

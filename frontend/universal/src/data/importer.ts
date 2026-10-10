@@ -16,7 +16,7 @@ export function uniqueId(): string { return `${Date.now().toString(36)}-${Math.r
 export async function stageSource(input: SourceInput, anchor: Anchor, control: ImportControl): Promise<StagedSource> {
   validateRange(input.fromDate, input.toDate);
   if (input.content.length > 50000000) throw new Error('A fájl túl nagy (legfeljebb 50 MB).');
-  return write(async db => buildStage(db, input, anchor, control));
+  return write(async db => buildStage(db, input, anchor, control), false);
 }
 async function buildStage(db: SQLiteDatabase, input: SourceInput, anchor: Anchor, control: ImportControl): Promise<StagedSource> {
   const revision = uniqueId();
@@ -93,13 +93,13 @@ async function applyStoredPatch(db: SQLiteDatabase, id: string, revision: string
   const base: Occurrence = JSON.parse(event.base);
   const patch: EventPatch = JSON.parse(row.patch);
   const value = { ...base, ...patch };
-  if (value.end < value.start) throw new Error('A forrásváltozás és a helyi időpont együtt érvénytelen. Állítsd vissza az érintett felülírást.');
+  if (value.end < value.start) throw new Error('A forrásváltozás és a módosított időpont együtt érvénytelen. Állítsd vissza az érintett felülírást.');
   await db.runAsync('UPDATE events SET title=?,start=?,end=?,location=?,notes=?,hidden=?,category=?,searchText=? WHERE sourceId=? AND revision=? AND key=?', value.title, value.start, value.end, value.location, value.notes ?? '', Number(value.hidden ?? false), value.category ?? 'lesson', searchableText(`${value.title} ${value.location} ${value.notes ?? ''}`), id, revision, row.key);
 }
 export async function discardStages(stages: StagedSource[]): Promise<void> {
   await write(async db => {
     for (const stage of stages) await db.runAsync('DELETE FROM events WHERE sourceId=? AND revision=? AND revision<>COALESCE((SELECT revision FROM sources WHERE id=?),\'\')', stage.input.id, stage.revision, stage.input.id);
-  });
+  }, false);
 }
 export async function sourceById(id: string): Promise<Source | null> {
   return (await getDatabase()).getFirstAsync<Source>('SELECT * FROM sources WHERE id=?', id);

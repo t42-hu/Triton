@@ -16,7 +16,7 @@ test('available browser storage retains the persistent filesystem', async () => 
 
 test('private browsing storage refusal can open a temporary filesystem', async () => {
   const { createStorageVFS } = await loadStorage();
-  for (const name of ['UnknownError', 'SecurityError', 'NotAllowedError', 'NotSupportedError']) {
+  for (const name of ['UnknownError', 'SecurityError', 'NotAllowedError', 'NotSupportedError', 'InvalidStateError']) {
     const memory = {};
     assert.equal(await createStorageVFS(async () => { throw new DOMException('Storage unavailable', name); }, async () => memory), memory);
   }

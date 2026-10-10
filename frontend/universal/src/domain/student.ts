@@ -3,9 +3,26 @@ import type { DisplayEvent, EventCategory } from './model';
 export type NotebookLink = { id: string; profileId: number; notebookKey: string; subject: string; title: string; url: string };
 export type LessonTask = { id: string; profileId: number; sourceId: string; eventKey: string; title: string; completed: number; eventTitle: string; due: number };
 export const EVENT_CATEGORIES: { value: EventCategory; label: string }[] = [
-  { value: 'lesson', label: 'Óra' }, { value: 'event', label: 'Egyéb esemény' },
+  { value: 'lesson', label: 'Óra' }, { value: 'event', label: 'Egyéb esemény' }, { value: 'work', label: 'Munka' },
   { value: 'assignment', label: 'Beadandó' }, { value: 'test', label: 'ZH' }, { value: 'exam', label: 'Vizsga' },
 ];
+
+/** WageTrackr's exported UID survives imports, edits, and account synchronization. */
+export function isWageTrackrUid(uid: unknown): boolean {
+  return typeof uid === 'string' && /@wagetrackr\.eu$/i.test(uid);
+}
+
+export function supportsStudyLinks(event: Pick<DisplayEvent, 'key' | 'category'>): boolean {
+  if (event.category === 'work') return false;
+  try {
+    const identity: unknown = JSON.parse(event.key);
+    return !(Array.isArray(identity) && isWageTrackrUid(identity[0]));
+  } catch { return true; }
+}
+
+export function supportsCourseLink(event: Pick<DisplayEvent, 'key' | 'category'>): boolean {
+  return supportsStudyLinks(event) && ((event.category ?? 'lesson') === 'lesson' || event.category === 'assignment');
+}
 
 /** Folds Hungarian accents and case for local search and subject matching. */
 export function searchableText(value: string): string {

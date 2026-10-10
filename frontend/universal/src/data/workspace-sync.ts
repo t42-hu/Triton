@@ -2,10 +2,10 @@ import type { RemoteRow } from './workspace-types';
 import { Platform } from 'react-native';
 import type { SQLiteDatabase } from 'expo-sqlite';
 import { backend } from './backend';
-import { write } from './database';
+import { completeAccountMigration, configureServerCommit, write } from './database';
 import { hydrateWorkspace, type RemoteRecord } from './workspace-hydration';
 import { projectWorkspace, stable, type CloudRecord, type IdentityMap, type LocalWorkspace } from './workspace-projection';
-import { mutationsFor, repairRejectedUpdates, type Baseline, type Mutation } from './workspace-mutations';
+import { mutationsFor, reconcileDeletions, repairRejectedUpdates, type Baseline, type Mutation } from './workspace-mutations';
 type State = { installation: string; deviceId: string; identities: IdentityMap; baseline: Baseline[]; pending: Mutation[]; sources: Record<string, string>; initialized: boolean };
 const tables = ['profiles', 'sources', 'events', 'overrides', 'source_sync', 'event_reminders', 'lesson_tasks', 'notebook_links', 'settings'] as const;
 let applying = false;
@@ -19,7 +19,8 @@ async function setting(db: SQLiteDatabase, key: string, value: unknown) { await 
 async function state(db: SQLiteDatabase): Promise<State> {
   const row = await db.getFirstAsync<{ value: string }>("SELECT value FROM settings WHERE key='cloudSync'");
   if (row) return JSON.parse(row.value);
-  return { installation: uid(), deviceId: '', identities: {}, baseline: [], pending: [], sources: {}, initialized: false };
+  const owner = await db.getFirstAsync<{ value: string }>("SELECT value FROM settings WHERE key='accountOwner'");
+  return { installation: owner ? `account-${JSON.parse(owner.value)}-${Platform.OS}` : uid(), deviceId: '', identities: {}, baseline: [], pending: [], sources: {}, initialized: false };
 }
 async function snapshot(deviceId: string): Promise<RemoteRecord[]> {
   const records: RemoteRecord[] = [];
@@ -79,8 +80,15 @@ export async function synchronizeWorkspace(resolution?: 'local' | 'server'): Pro
     applying = true;
     try { await new WorkspaceSynchronization(db, await state(db)).run(resolution); }
     finally { setTimeout(finishCloudWrite, 0); }
-  });
+  }, false);
 }
+async function commitWorkspace(db: SQLiteDatabase) {
+  if (!await unsyncedChanges(db)) return;
+  applying = true;
+  try { await new WorkspaceSynchronization(db, await state(db)).run(); await completeAccountMigration(); }
+  finally { applying = false; }
+}
+configureServerCommit(commitWorkspace);
 class WorkspaceSynchronization {
   local!: LocalWorkspace;
   remote: RemoteRecord[] = [];
@@ -97,9 +105,10 @@ class WorkspaceSynchronization {
     this.sync.pending = repairRejectedUpdates(this.sync.pending, this.sync.baseline);
     if (!this.sync.pending.length) this.sync.pending = mutationsFor(this.desired, this.sync.baseline);
     await this.persist(); await this.push();
-    // A failed upload may have been followed by additional offline edits.
+    // Complete any pre-migration upload before committing the latest state.
     this.sync.pending = mutationsFor(this.desired, this.sync.baseline);
-    await this.persist(); await this.push(); await this.publish(); await this.restore();
+    await this.persist(); await this.push(); await this.restore();
+    await completeAccountMigration();
   }
   persist() { return setting(this.db, 'cloudSync', this.sync); }
   async register() {
@@ -129,34 +138,29 @@ class WorkspaceSynchronization {
   validateSources() {
     for (const source of this.local.sources) {
       const count = this.local.events.filter(event => event.sourceId === source.id).length;
-      if (source.content.length > 1000000 || count > 5000) throw new Error(`A(z) ${source.name} forrás meghaladja a szerver importkorlátját (1 MB / 5000 alkalom). A helyi példány megmaradt.`);
+      if (source.content.length > 1000000 || count > 5000) throw new Error(`A(z) ${source.name} forrás meghaladja a szerver importkorlátját (1 MB / 5000 alkalom). Válassz rövidebb időtartományt.`);
     }
   }
   async push() {
-    while (this.sync.pending.length) {
-      const batch = this.sync.pending.slice(0, 100);
-      const response = await backend<{ results: { clientMutationId: string; record: RemoteRow }[] }>('/sync/push', 'POST', { deviceId: this.sync.deviceId, mutations: batch });
-      for (const mutation of batch) this.acceptMutation(mutation, response.results.find(row => row.clientMutationId === mutation.clientMutationId)?.record);
-      this.sync.pending = this.sync.pending.slice(batch.length); await this.persist();
-    }
+    this.sync.pending = reconcileDeletions(this.sync.pending, this.remote);
+    const versions = new Map(this.sync.baseline.filter(row => row.resource === 'sources').map(row => [row.id, row.version]));
+    const contents = this.local.sources.filter(source => this.sync.sources[source.id] !== stable([source.content, source.fromDate, source.toDate])).map(source => {
+      const sourceId = this.sync.identities[`sources:${source.id}`];
+      const version = versions.get(sourceId);
+      return { sourceId, ...(version ? { version } : {}), content: source.content };
+    });
+    if (!this.sync.pending.length && !contents.length) return;
+    const response = await backend<{ results: { clientMutationId: string; record: RemoteRow }[] }>('/sync/commit', 'POST', { deviceId: this.sync.deviceId, mutations: this.sync.pending, contents });
+    const results = new Map(response.results.map(row => [row.clientMutationId, row.record]));
+    for (const mutation of this.sync.pending) this.acceptMutation(mutation, results.get(mutation.clientMutationId));
+    this.sync.pending = [];
+    for (const source of this.local.sources) this.sync.sources[source.id] = stable([source.content, source.fromDate, source.toDate]);
+    await this.persist();
   }
   acceptMutation(mutation: Mutation, result?: RemoteRow) {
     const old = this.sync.baseline.find(row => row.resource === mutation.resource && row.id === mutation.id);
     this.sync.baseline = this.sync.baseline.filter(row => row.resource !== mutation.resource || row.id !== mutation.id);
     if (mutation.operation !== 'delete' && result) this.sync.baseline.push({ resource: mutation.resource, id: mutation.id, data: { ...old?.data, ...mutation.data }, version: result.version });
-  }
-  async publish() { for (const source of this.local.sources) await this.publishSource(source); }
-  async publishSource(source: LocalWorkspace['sources'][number]) {
-    const signature = stable([source.content, source.fromDate, source.toDate]);
-    if (this.sync.sources[source.id] === signature) return;
-    const sourceId = this.sync.identities[`sources:${source.id}`];
-    const record = this.sync.baseline.find(row => row.resource === 'sources' && row.id === sourceId);
-    if (!record) throw new Error('Az import forrása még nincs mentve a szerveren.');
-    const events = this.desired.filter(row => row.resource === 'events' && row.data.sourceId === sourceId).map(publicationEvent);
-    const payload = { version: record.version, content: source.content, coverageFrom: source.fromDate, coverageTo: source.toDate, events };
-    if (JSON.stringify(payload).length > 1900000) throw new Error('A kibontott import túl nagy a szerver számára. A helyi példány megmaradt.');
-    await backend(`/calendar-actions/sources/${sourceId}/publish`, 'POST', payload);
-    this.sync.sources[source.id] = signature; await this.persist();
   }
   async restore() {
     this.remote = await snapshot(this.sync.deviceId);
@@ -168,10 +172,12 @@ class WorkspaceSynchronization {
     await this.persist();
   }
 }
-function publicationEvent(row: CloudRecord) { const { calendarId: _calendar, sourceId: _source, ...event } = row.data; return event; }
 export async function hasUnsyncedChanges(): Promise<boolean> {
   const { getDatabase } = await import('./database');
-  const db = await getDatabase(); const sync = await state(db);
+  return unsyncedChanges(await getDatabase());
+}
+async function unsyncedChanges(db: SQLiteDatabase) {
+  const sync = await state(db);
   if (!sync.initialized || sync.pending.length) return true;
   const local = await localWorkspace(db);
   const desired = projectWorkspace(local, sync.identities, sync.installation, sync.deviceId);

@@ -1,6 +1,16 @@
 import { stable, type CloudRecord } from './workspace-projection';
 export type Baseline = CloudRecord & { version: number };
 export type Mutation = { clientMutationId: string; resource: string; operation: 'create' | 'update' | 'delete'; id: string; version?: number; data?: Record<string, unknown> };
+/** A deletion is already complete if the latest accessible snapshot no longer contains it. */
+export function reconcileDeletions(mutations: Mutation[], remote: { resource: string; id: string; version: number }[]): Mutation[] {
+  const result: Mutation[] = [];
+  for (const mutation of mutations) {
+    if (mutation.operation !== 'delete') { result.push(mutation); continue; }
+    const current = remote.find(row => row.resource === mutation.resource && row.id === mutation.id);
+    if (current) result.push({ ...mutation, ...(current.version !== mutation.version ? { version: current.version, clientMutationId: uid() } : {}) });
+  }
+  return result;
+}
 const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
 /** Only changed local records are uploaded; expected versions protect concurrent edits. */
 export function mutationsFor(desired: CloudRecord[], baseline: Baseline[]): Mutation[] {

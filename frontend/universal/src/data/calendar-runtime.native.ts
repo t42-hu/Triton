@@ -3,7 +3,9 @@ import * as Notifications from 'expo-notifications';
 import * as TaskManager from 'expo-task-manager';
 import * as BackgroundTask from 'expo-background-task';
 import { isDevice } from 'expo-device';
-import { getDatabase, readSetting, saveSetting } from './database';
+import { getDatabase, readSetting, saveSetting, selectAccountDatabase } from './database';
+import { backend } from './backend';
+import { synchronizeWorkspace } from './workspace-sync';
 import { syncOwnCalendar, type SyncResult } from './calendar-sync';
 
 import { hasReminders } from './reminders';
@@ -28,7 +30,11 @@ export async function refreshCalendar(): Promise<SyncResult> {
   return result;
 }
 async function runBackground(): Promise<BackgroundTask.BackgroundTaskResult> {
-  try { return (await refreshCalendar()).status === 'failed' ? BackgroundTask.BackgroundTaskResult.Failed : BackgroundTask.BackgroundTaskResult.Success; }
+  try {
+    const session = await backend<{ user: { id: string } } | null>('/auth/get-session');
+    if (!session) return BackgroundTask.BackgroundTaskResult.Failed;
+    await selectAccountDatabase(session.user.id); await synchronizeWorkspace();
+    return (await refreshCalendar()).status === 'failed' ? BackgroundTask.BackgroundTaskResult.Failed : BackgroundTask.BackgroundTaskResult.Success; }
   catch { return BackgroundTask.BackgroundTaskResult.Failed; }
 }
 async function createChannel(): Promise<void> {

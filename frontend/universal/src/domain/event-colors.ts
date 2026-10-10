@@ -30,7 +30,7 @@ export function eventAppearance(event: DisplayEvent, colors: EventColors, now: n
   const series = colors.series[colorSeriesKey(event)];
   const deadline = isDeadline(event.category);
   const rules = colors.occurrences[colorOccurrenceKey(event)] ?? series?.urgency ?? (deadline ? colors.deadline : colors.lesson);
-  const urgency = event.category === 'event' ? undefined : urgencyColor(event.start, event.end, now, rules, deadline);
+  const urgency = event.category === 'event' || event.category === 'work' ? undefined : urgencyColor(event.start, event.end, now, rules, deadline);
   return { color: series?.color, urgency };
 }
 export function validateUrgencyRules(rules: UrgencyRules): void {

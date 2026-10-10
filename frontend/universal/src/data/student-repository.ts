@@ -1,6 +1,7 @@
 import type { DisplayEvent } from '../domain/model';
-import { notebookIdentity, notebookUrl, searchableText, subjectName, type LessonTask, type NotebookLink } from '../domain/student';
+import { notebookIdentity, notebookUrl, searchableText, subjectName, supportsStudyLinks, type LessonTask, type NotebookLink } from '../domain/student';
 import { getDatabase, transaction, write } from './database';
+import type { SQLiteDatabase } from 'expo-sqlite';
 import { uniqueId } from './importer';
 
 const taskSelection = `SELECT t.*,COALESCE(e.title,t.eventTitle) eventTitle,COALESCE(e.start,t.due) due
@@ -20,20 +21,37 @@ export async function lessonRooms(profileId: number): Promise<string[]> {
 }
 
 export async function notebookLinks(event: DisplayEvent, learning = false): Promise<NotebookLink[]> {
+  if (!supportsStudyLinks(event)) return [];
   return (await getDatabase()).getAllAsync<NotebookLink>('SELECT * FROM notebook_links WHERE profileId=? AND notebookKey=? ORDER BY rowid', event.profileId, learning ? `lms:${notebookIdentity(event)}` : notebookIdentity(event));
 }
 
 /** Stores a subject link once so every lecture and practice can reuse it. */
-export async function addNotebookLink(event: DisplayEvent, title: string, address: string, learning = false): Promise<void> {
+export async function addNotebookLink(event: DisplayEvent, title: string, address: string, learning = false, replaceId?: string): Promise<void> {
+  if (!supportsStudyLinks(event)) throw new Error('WageTrackr-eseményhez nem adható kurzuslink vagy jegyzetfüzet.');
   const url = notebookUrl(address);
   const name = title.trim() || new URL(url).hostname;
   if (name.length > 200) throw new Error('A link neve legfeljebb 200 karakter lehet.');
   const subject = (event.category ?? 'lesson') === 'lesson' ? subjectName(event.originalTitle) || event.title : event.title;
-  await write(async db => { await db.runAsync('INSERT INTO notebook_links VALUES (?,?,?,?,?,?,?)', uniqueId(), event.profileId, learning ? `lms:${notebookIdentity(event)}` : notebookIdentity(event), subject, name, url, searchableText(`${subject} ${name} ${url}`)); });
+  const key = learning ? `lms:${notebookIdentity(event)}` : notebookIdentity(event);
+  await write(async db => {
+    if (learning && await saveCourseLink(db, event.profileId, key, name, url, subject, replaceId)) return;
+    await db.runAsync('INSERT INTO notebook_links VALUES (?,?,?,?,?,?,?)', uniqueId(), event.profileId, key, subject, name, url, searchableText(`${subject} ${name} ${url}`));
+  });
+}
+
+async function saveCourseLink(db: SQLiteDatabase, profileId: number, key: string, name: string, url: string, subject: string, replaceId?: string): Promise<boolean> {
+  const existing = await db.getAllAsync<NotebookLink>('SELECT * FROM notebook_links WHERE profileId=? AND notebookKey=?', profileId, key);
+  if (replaceId) {
+    if (!existing.some(link => link.id === replaceId)) throw new Error('Ez a kurzuslink már nem érhető el.');
+    await db.runAsync('UPDATE notebook_links SET title=?,url=?,searchText=? WHERE id=?', name, url, searchableText(`${subject} ${name} ${url}`), replaceId);
+    return true;
+  }
+  if (existing.length) throw new Error('Ehhez a kurzushoz már van link. Módosítsd vagy töröld a meglévőt.');
+  return false;
 }
 
 export async function removeNotebookLink(id: string): Promise<void> {
-  await write(async db => { await db.runAsync('DELETE FROM notebook_links WHERE id=?', id); });
+  await write(async db => { await db.runAsync('DELETE FROM notebook_links WHERE id=?', id); }, true, true);
 }
 
 /** Reads occurrence tasks with current imported/edited event dates. */
@@ -57,7 +75,7 @@ export async function setTaskCompleted(id: string, completed: boolean): Promise<
 }
 
 export async function removeLessonTask(id: string): Promise<void> {
-  await write(async db => { await db.runAsync('DELETE FROM lesson_tasks WHERE id=?', id); });
+  await write(async db => { await db.runAsync('DELETE FROM lesson_tasks WHERE id=?', id); }, true, true);
 }
 
 /** Resolves a task to its current occurrence, without opening an obsolete import revision. */

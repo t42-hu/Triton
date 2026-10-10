@@ -33,7 +33,7 @@ export async function deleteProfile(id: number): Promise<void> {
   await transaction(async db => {
     await db.runAsync('DELETE FROM events WHERE sourceId IN (SELECT id FROM sources WHERE profileId=?)', id);
     await db.runAsync('DELETE FROM profiles WHERE id=?', id);
-  });
+  }, true);
 }
 export async function sources(profileId?: number): Promise<Source[]> {
   const db = await getDatabase();
@@ -85,5 +85,5 @@ export async function deleteManualSource(sourceId: string): Promise<void> {
     if (!source?.isManual) throw new Error('Csak kézzel felvitt sorozat törölhető.');
     await db.runAsync('DELETE FROM events WHERE sourceId=?', sourceId);
     await db.runAsync('DELETE FROM sources WHERE id=?', sourceId);
-  });
+  }, true);
 }

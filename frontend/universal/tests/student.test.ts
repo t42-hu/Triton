@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { openDatabaseAsync } from 'expo-sqlite';
 import type { DisplayEvent } from '../src/domain/model';
-import { notebookIdentity, notebookUrl, subjectName, importedCategory } from '../src/domain/student';
+import { notebookIdentity, notebookUrl, subjectName, importedCategory, supportsStudyLinks, supportsCourseLink } from '../src/domain/student';
+import { expandIcs } from '../src/domain/ics-import';
 import { commonBreaks, dailyAnalysis, freeSlots, scheduleConflicts } from '../src/domain/schedule-analysis';
 import { fromWall } from '../src/domain/time';
 import { addNotebookLink, notebookLinks, addLessonTask, lessonTasks, searchStudentData, setTaskCompleted, taskEvent, lessonRooms } from '../src/data/student-repository';
@@ -18,6 +19,30 @@ const anchor = { date: '2026-09-07', week: 'A' as const };
 function event(title: string, start: string, end: string, patch: Partial<DisplayEvent> = {}): DisplayEvent {
   return { key: title, title, originalTitle: title, start: fromWall(start), end: fromWall(end), location: '', kind: 'timed', category: 'lesson', sourceId: title, profileId: 1, hidden: 0, base: '{}', patch: null, ...patch };
 }
+
+test('WageTrackr import identity disables study links after edits and source publication', async () => {
+  const profileId = await saveProfile('WageTrackr import');
+  const content = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//WageTrackr//Műszakok//HU\r\nBEGIN:VEVENT\r\nUID:shift-42@wagetrackr.eu\r\nDTSTAMP:20260907T060000Z\r\nDTSTART:20260907T060000Z\r\nDTEND:20260907T140000Z\r\nSUMMARY:Tesco\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n';
+  const input = { id: `${profileId}:import`, profileId, format: 'ics' as const, content, name: 'WageTrackr', fromDate: '2026-09-07', toDate: '2026-09-08', isManual: 0 };
+  const control = { signal: new AbortController().signal, progress: () => undefined };
+  for await (const occurrence of expandIcs(content, { from: input.fromDate, to: input.toDate }, control)) assert.equal(supportsStudyLinks(occurrence), false);
+  await publishStages([await stageSource(input, anchor, control)]);
+  const [shift] = await visibleEvents(profileId, input.fromDate, 1, false);
+  assert.equal(shift.category, 'work');
+  assert.equal(supportsStudyLinks(shift), false);
+  assert.equal(supportsCourseLink(shift), false);
+  await updateEvents([{ event: shift, patch: { title: 'Fizika', category: 'assignment' } }]);
+  const [edited] = (await searchStudentData('Fizika', profileId)).events;
+  assert.equal(supportsCourseLink(edited), false);
+  for (const learning of [false, true]) {
+    await assert.rejects(addNotebookLink(edited, 'Link', 'https://example.com', learning), /WageTrackr/);
+    assert.deepEqual(await notebookLinks(edited, learning), []);
+  }
+  assert.equal(supportsStudyLinks({ key: JSON.stringify(['shift-42@other.example', 'once']) }), true);
+  assert.equal(supportsStudyLinks({ key: 'manual-event' }), true);
+  assert.equal(supportsCourseLink({ key: 'manual-event', category: 'assignment' }), true);
+  await deleteProfile(profileId);
+});
 
 test('notebooks group teaching formats but retain distinct numbered subjects and personal event identity', () => {
   const lecture = event('Fizika - előadás (NIXFIZ_EA_01)', '2026-09-07T08:00', '2026-09-07T09:00');
@@ -83,6 +108,22 @@ test('general events keep their category and reminders and midnight creation use
   await saveEventReminders(created, { excludeGlobal: true, rules: [{ minutes: 20, profile: 'standard' }] });
   assert.equal((await eventReminders(created)).rules[0].minutes, 20);
   assert.ok(hasMappedRoom('BA.F.08')); assert.equal(hasMappedRoom('BA.F.999'), false); assert.equal(hasMappedRoom('X-123'), false);
+  await deleteProfile(profileId);
+});
+
+for (const category of ['lesson', 'assignment'] as const) test(`a ${category} has one editable course link while notebook links remain unrestricted`, async () => {
+  const profileId = await saveProfile('Single course link');
+  const lesson = event('Fizika előadás', '2026-09-07T08:00', '2026-09-07T09:00', { profileId, category });
+  await addNotebookLink(lesson, 'Moodle', 'https://example.com/course', true);
+  const [link] = await notebookLinks(lesson, true);
+  await assert.rejects(addNotebookLink(lesson, 'Second', 'https://example.com/second', true), /már van link/);
+  await addNotebookLink(lesson, 'Updated', 'https://example.com/updated', true, link.id);
+  assert.deepEqual((await notebookLinks(lesson, true)).map(row => [row.id, row.title, row.url]), [[link.id, 'Updated', 'https://example.com/updated']]);
+  await assert.rejects(addNotebookLink(lesson, 'Wrong link', 'https://example.com/wrong', true, 'missing'), /már nem érhető el/);
+  await addNotebookLink(lesson, 'Notes 1', 'https://example.com/notes-1');
+  await addNotebookLink(lesson, 'Notes 2', 'https://example.com/notes-2');
+  assert.equal((await notebookLinks(lesson)).length, 2);
+  if (category === 'assignment') assert.equal((await notebookLinks({ ...lesson, key: 'another-assignment' }, true)).length, 0);
   await deleteProfile(profileId);
 });
 

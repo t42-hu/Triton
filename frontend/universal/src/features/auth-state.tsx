@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { backend, clearChallenge, onSessionExpired } from '@/data/backend';
 import { setSessionToken } from '@/data/session-token';
-import { selectAccountDatabase } from '@/data/database';
+import { clearAccountMemory, selectAccountDatabase } from '@/data/database';
 import { legacyProfileCount, finishLegacyChoice } from '@/data/legacy-workspace';
 type User = { id: string; email: string; name: string; image?: string | null; twoFactorEnabled?: boolean };
 type Auth = { twoFactorPending: boolean; verifySecondFactor: (code: string, backup: boolean) => Promise<void>; cancelSecondFactor: () => void; refreshUser: () => Promise<void>; clearAccount: () => Promise<void>; user: User | null; legacyCount: number; finishSetup: (include: boolean) => Promise<void>; checking: boolean; error: string; retry: () => void; authenticate: (email: string, password: string, register: boolean, captchaToken?: string) => Promise<void>; signOut: () => Promise<void> };
@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const session = await backend<{ user: User }>('/auth/get-session');
     await selectAccountDatabase(session.user.id); setLegacyCount(await legacyProfileCount(session.user.id)); setUser(session.user); setTwoFactorPending(false); setError('');
   }
-  async function clearAccount() { clearChallenge(); setTwoFactorPending(false); setLegacyCount(0); await setSessionToken(null); setUser(null); }
+  async function clearAccount() { clearChallenge(); setTwoFactorPending(false); setLegacyCount(0); await setSessionToken(null); await clearAccountMemory(); setUser(null); }
   async function signOut() {
     await backend('/auth/sign-out', 'POST', {});
     await clearAccount();

@@ -45,7 +45,7 @@ class WorkspaceProjector {
     if (!calendarId) return;
     const sourceId = this.add('sources', source.id, { calendarId, name: source.name, format: source.isManual ? 'manual' : source.format, coverageFrom: source.fromDate, coverageTo: source.toDate });
     const connection = this.local.source_sync.find(row => row.sourceId === source.id);
-    if (connection?.url) this.add('source-connections', source.id, { sourceId, url: connection.url, autoSync: Boolean(connection.autoSync) });
+    if (connection) this.add('source-connections', source.id, { sourceId, url: connection.url, autoSync: Boolean(connection.autoSync), importedAt: new Date(connection.importedAt).toISOString(), lastAttemptAt: connection.lastAttempt ? new Date(connection.lastAttempt).toISOString() : null, lastSuccessAt: connection.lastSuccess ? new Date(connection.lastSuccess).toISOString() : null, lastError: connection.lastError, lastChange: connection.lastChange });
     for (const event of this.local.events.filter(row => row.sourceId === source.id)) this.event(source.id, sourceId, calendarId, event);
   }
   event(localSource: string, sourceId: string, calendarId: string, event: LocalWorkspace['events'][number]) {
@@ -75,7 +75,7 @@ class WorkspaceProjector {
   const anchor = this.settings.anchor as Anchor | undefined;
   this.add('preferences', 'main', { theme: view.theme ?? 'system', calendarView: view.mode ?? 'week', showWeekends: view.showWeekends ?? true, startHour: view.startHour ?? 7, endHour: view.endHour ?? 20, ...(anchor ? { anchorDate: anchor.date, anchorWeek: anchor.week } : {}) });
   // Device state holds navigation/setup state, never account credentials or calendar content.
-  this.add('device-preferences', 'main', { deviceId: this.deviceId, arrangement: view.arrangement ?? 'column', zoomPercent: Math.round((view.zoom ?? 1) * 100), batteryPromptShownAt: this.settings.batteryOptimizationPromptSeen ? new Date(0).toISOString() : null, viewState: { ...view, left: this.profileIds.get(view.left ?? 0) ?? null, right: this.profileIds.get(view.right ?? 0) ?? null, openProfiles: (view.openProfiles ?? []).map(id => this.profileIds.get(id)).filter(Boolean), setupProfileId: this.settings.setupProfileId ? this.profileIds.get(Number(this.settings.setupProfileId)) : null } });
+  this.add('device-preferences', 'main', { deviceId: this.deviceId, arrangement: view.arrangement ?? 'column', zoomPercent: Math.round((view.zoom ?? 1) * 100), batteryPromptShownAt: this.settings.batteryOptimizationPromptSeen ? new Date(0).toISOString() : null, viewState: { ...view, accountSettings: Object.fromEntries(Object.entries(this.settings).filter(([key]) => !/^(cloud|accountOwner|view$|anchor$|eventColors$|savedColors$|classReminders$|setupProfileId$)/.test(key))), left: this.profileIds.get(view.left ?? 0) ?? null, right: this.profileIds.get(view.right ?? 0) ?? null, openProfiles: (view.openProfiles ?? []).map(id => this.profileIds.get(id)).filter(Boolean), setupProfileId: this.settings.setupProfileId ? this.profileIds.get(Number(this.settings.setupProfileId)) : null } });
   }
   palette() {
   const reminders: GlobalReminders = (this.settings.classReminders as GlobalReminders | undefined) ?? DEFAULT_REMINDERS;
@@ -90,6 +90,7 @@ class WorkspaceProjector {
   for (const role of ['lesson', 'deadline'] as const) this.add('color-rules', role, { scope: 'default', targetKey: role, ...urgency(colors[role]) });
   for (const [key, appearance] of Object.entries(colors.series)) {
     const [profile, category, title] = JSON.parse(key);
+    if (!this.profileIds.has(profile)) continue;
     const targetKey = JSON.stringify([this.profileIds.get(profile), category, title]);
     this.add('color-rules', `series-${key}`, { scope: 'series', targetKey, calendarId: this.calendars.get(profile), color: appearance.color ?? null, ...urgency(appearance.urgency) });
   }

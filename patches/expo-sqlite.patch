@@ -9,7 +9,7 @@ index 0000000000000000000000000000000000000000..15cab924283645747204d0789acf1eda
 +  try {
 +    return await persistent();
 +  } catch (error) {
-+    if (!['UnknownError', 'SecurityError', 'NotAllowedError', 'NotSupportedError'].includes(error?.name)) {
++    if (!['UnknownError', 'SecurityError', 'NotAllowedError', 'NotSupportedError', 'InvalidStateError'].includes(error?.name)) {
 +      throw error;
 +    }
 +    return memory();

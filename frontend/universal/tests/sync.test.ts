@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { importedCalendars, removeImportedCalendar } from '../src/data/imported-calendar-links';
+import { createManualEvent } from '../src/data/manual-event';
+import { getDatabase } from '../src/data/database';
+import { addLessonTask, lessonTasks } from '../src/data/student-repository';
 import { calendarUrl, fetchCalendar, MAX_CALENDAR_BYTES } from '../src/data/calendar-fetch';
 import { disconnectCalendar, SYNC_INTERVAL, syncOwnCalendar, syncStatus } from '../src/data/calendar-sync';
 import { discardStages, publishStages, sourceById, stageSource } from '../src/data/importer';
@@ -141,4 +145,27 @@ test('a peer profile accepts a calendar link and sync starts after marking it ow
   t.mock.method(globalThis, 'fetch', async () => new Response(calendar(course('Updated peer'))));
   assert.equal((await syncOwnCalendar()).status, 'success');
   assert.equal((await visibleEvents(peerId, '2026-09-07', 1, false))[0].title, 'Updated peer');
+});
+
+test('removing an imported link deletes its events and linked tasks but preserves other sources and blocks stale refreshes', async t => {
+  const { profile, input } = await subscribe();
+  t.after(() => deleteProfile(profile.id));
+  const manual = await createManualEvent(profile.id, { id: 'manual-keep', title: 'Manual keep', kind: 'timed', start: '2026-09-07T10:00:00Z', end: '2026-09-07T11:00:00Z' }, anchor);
+  const secondInput = { ...input, id: `${profile.id}:second`, name: 'Second' };
+  const second = await stageSource(secondInput, anchor, control());
+  second.connection = { url: 'https://calendar.example.test/second.ics', autoSync: 0, fetchedAt: 1 };
+  await publishStages([second]);
+  const imported = (await visibleEvents(profile.id, '2026-09-07', 7, false)).find(event => event.sourceId === input.id)!;
+  await addLessonTask(imported, 'Delete with import'); await addLessonTask(manual, 'Keep manual task');
+  const stale = await stageSource({ ...input, content: calendar(course('Stale refresh')) }, anchor, control());
+  const links = await importedCalendars(); assert.equal(links.length, 2);
+  assert.equal(links.find(link => link.sourceId === input.id)?.eventCount, 1);
+  await assert.rejects(removeImportedCalendar(manual.sourceId), /nem található/);
+  await removeImportedCalendar(input.id);
+  assert.equal(await syncStatus(input.id), null); assert.equal(await sourceById(input.id), null);
+  assert.equal((await importedCalendars()).length, 1);
+  assert.deepEqual((await visibleEvents(profile.id, '2026-09-07', 7, false)).map(event => event.sourceId).sort(), [manual.sourceId, secondInput.id].sort());
+  assert.deepEqual((await lessonTasks(profile.id)).map(task => task.title), ['Keep manual task']);
+  assert.equal((await (await getDatabase()).getAllAsync('SELECT * FROM events WHERE sourceId=?', input.id)).length, 0);
+  await assert.rejects(publishStages([stale]), /időközben megváltozott/);
 });

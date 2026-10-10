@@ -63,7 +63,7 @@ class WorkspaceHydration {
     const connection = rows('source-connections').find(row => row.sourceId === source.id);
     if (connection) {
       bind('source-connections', id, connection.id);
-      next.source_sync.push({ sourceId: id, url: connection.url, autoSync: Number(connection.autoSync), importedAt: previousSource ? previous.source_sync.find(row => row.sourceId === id)?.importedAt ?? Date.now() : Date.now(), lastAttempt: 0, lastSuccess: 0, lastError: '', lastChange: '' });
+      next.source_sync.push({ sourceId: id, url: connection.url, autoSync: Number(connection.autoSync), importedAt: Date.parse(String(connection.importedAt)) || (previousSource ? previous.source_sync.find(row => row.sourceId === id)?.importedAt ?? Date.now() : Date.now()), lastAttempt: Date.parse(String(connection.lastAttemptAt)) || 0, lastSuccess: Date.parse(String(connection.lastSuccessAt)) || 0, lastError: String(connection.lastError ?? ''), lastChange: String(connection.lastChange ?? '') });
     }
     for (const event of rows('events').filter(row => row.sourceId === source.id)) this.event(source, id, profileId, event);
   }
@@ -129,16 +129,21 @@ class WorkspaceHydration {
     const set = this.set.bind(this);
   const oldSettings = Object.fromEntries(previous.settings.map(row => [row.key, JSON.parse(row.value)]));
   const preferences = rows('preferences')[0];
-  const device = rows('device-preferences').find(row => row.deviceId === deviceId);
+  const platform = rows('devices').find(row => row.id === deviceId)?.platform;
+  const devices = new Set(rows('devices').filter(row => row.platform === platform).map(row => row.id));
+  const device = rows('device-preferences').find(row => row.deviceId === deviceId) ?? rows('device-preferences').filter(row => devices.has(row.deviceId)).sort((a, b) => Date.parse(String(b.updatedAt)) - Date.parse(String(a.updatedAt)))[0];
+  const extras = device?.viewState?.accountSettings;
+  const entries = extras && typeof extras === 'object' && !Array.isArray(extras) ? Object.entries(extras).filter(([key]) => !/^(cloud|accountOwner)/.test(key)) : [];
+  for (const [key, value] of entries) set(key, value);
   const view = { ...(oldSettings.view ?? {}), ...(device?.viewState ?? {}) };
   if (preferences) {
     bind('preferences', 'main', preferences.id);
     Object.assign(view, { theme: preferences.theme, mode: preferences.calendarView, showWeekends: preferences.showWeekends, startHour: preferences.startHour, endHour: preferences.endHour });
     if (preferences.anchorDate) set('anchor', { date: preferences.anchorDate, week: preferences.anchorWeek });
   }
-  if (device) { bind('device-preferences', 'main', device.id); set('setupProfileId', profileIds.get(String(device.viewState?.setupProfileId ?? '')) ?? null); if (device.batteryPromptShownAt) set('batteryOptimizationPromptSeen', true); }
+  if (device) { if (device.deviceId === deviceId) bind('device-preferences', 'main', device.id); set('setupProfileId', profileIds.get(String(device.viewState?.setupProfileId ?? '')) ?? null); if (device.batteryPromptShownAt) set('batteryOptimizationPromptSeen', true); }
   if (device) Object.assign(view, { left: profileIds.get(String(device.viewState.left)) ?? 0, right: profileIds.get(String(device.viewState.right)) ?? 0, openProfiles: Array.isArray(device.viewState.openProfiles) ? device.viewState.openProfiles.map(id => profileIds.get(String(id))).filter(id => id !== undefined) : [] });
-  delete view.setupProfileId; set('view', view);
+  delete view.setupProfileId; delete view.accountSettings; set('view', view);
 
   }
   reminders() {

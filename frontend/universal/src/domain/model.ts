@@ -1,5 +1,5 @@
 export type EventKind = 'timed' | 'allDay';
-export type EventCategory = 'lesson' | 'event' | 'assignment' | 'test' | 'exam';
+export type EventCategory = 'lesson' | 'event' | 'work' | 'assignment' | 'test' | 'exam';
 export type Week = 'A' | 'B';
 export type Anchor = { date: string; week: Week };
 export type DateRange = { from: string; to: string };
