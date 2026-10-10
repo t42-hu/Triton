@@ -2,7 +2,6 @@ import { useId, useState } from 'react';
 import { View, type GestureResponderEvent } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { Text } from '@/components/ui/text';
-import { Action } from './controls';
 import { colorHsv, hsvColor } from '../domain/color-contrast';
 
 const clamp = (value: number) => Math.max(0, Math.min(1, value));
@@ -27,6 +26,5 @@ export function GradientColorPicker({ color, onChange }: { color: string; onChan
     <View accessibilityLabel="Színárnyalat" onStartShouldSetResponder={() => true} onMoveShouldSetResponder={() => true} onResponderGrant={hue} onResponderMove={hue} onResponderTerminationRequest={() => false} style={{ height: 32, borderRadius: 8, overflow: 'hidden' }}>
       <View pointerEvents="none" style={{ flex: 1 }}><Svg width="100%" height="100%"><Defs><LinearGradient id={`${id}hue`} x1="0%" x2="100%">{['#ff0000', '#ffff00', '#00ff00', '#00ffff', '#0000ff', '#ff00ff', '#ff0000'].map((stop, index) => <Stop key={index} offset={index / 6} stopColor={stop} />)}</LinearGradient></Defs><Rect width="100%" height="100%" fill={`url(#${id}hue)`} /></Svg><View style={{ position: 'absolute', left: hsv.hue / 360 * (width - 10), top: 0, width: 10, height: 32, borderWidth: 2, borderColor: 'white', borderRadius: 5 }} /></View>
     </View>
-    <View className="flex-row flex-wrap gap-2"><Action secondary onPress={() => onChange(hsvColor((hsv.hue + 15) % 360, hsv.saturation, hsv.value))}>Árnyalat +</Action><Action secondary onPress={() => onChange(hsvColor(hsv.hue, Math.min(1, hsv.saturation + 0.1), hsv.value))}>Élénkebb</Action><Action secondary onPress={() => onChange(hsvColor(hsv.hue, Math.max(0, hsv.saturation - 0.1), hsv.value))}>Halványabb</Action><Action secondary onPress={() => onChange(hsvColor(hsv.hue, hsv.saturation, Math.min(1, hsv.value + 0.1)))}>Világosabb</Action><Action secondary onPress={() => onChange(hsvColor(hsv.hue, hsv.saturation, Math.max(0, hsv.value - 0.1)))}>Sötétebb</Action></View>
   </View>;
 }

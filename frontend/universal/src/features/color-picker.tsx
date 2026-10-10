@@ -1,7 +1,7 @@
 import { AnimatedDisclosure } from './animated-disclosure';
 import { useState } from 'react';
 import { View } from 'react-native';
-import { Check, ChevronRight, Clock, SlidersHorizontal } from 'lucide-react-native';
+import { Check, ChevronRight, Clock, SlidersHorizontal, Trash2 } from 'lucide-react-native';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
@@ -40,6 +40,9 @@ function ColorPickerDialog({ label, value, onChange, close }: ColorFieldProps & 
   const [draftColor, setDraftColor] = useState(value || EVENT_PALETTE[0]);
   const [isCustomOpen, setIsCustomOpen] = useState(Boolean(value && !EVENT_PALETTE.includes(value.toLowerCase())));
   const isValid = isHexColor(draftColor);
+  const customColors = app.savedColors.filter(color => !EVENT_PALETTE.includes(color.toLowerCase()));
+  const palette = [...EVENT_PALETTE, ...customColors];
+  function removeColor(color: string) { void app.removePaletteColor(color).catch(error => setError(String(error))); }
   function applyColor() {
     if (!isValid) return;
     onChange(draftColor.toLowerCase());
@@ -49,25 +52,24 @@ function ColorPickerDialog({ label, value, onChange, close }: ColorFieldProps & 
     <ColorPreview color={isValid ? draftColor : EVENT_PALETTE[0]} />
     <View className="gap-2">
       <View className="flex-row flex-wrap gap-2">
-        {EVENT_PALETTE.map((color, index) => <ColorPreset key={color} color={color} name={COLOR_NAMES[index]} selected={draftColor.toLowerCase() === color} onSelect={setDraftColor} />)}
+        {palette.map((color, index) => <ColorPreset key={color} color={color} name={COLOR_NAMES[index] ?? `Egyéni ${index - EVENT_PALETTE.length + 1}`} selected={draftColor.toLowerCase() === color} onSelect={setDraftColor} remove={app.savedColors.includes(color) ? () => removeColor(color) : undefined} />)}
       </View>
     </View>
     <Action secondary icon={SlidersHorizontal} expanded={isCustomOpen} revealOnExpand={false} onPress={() => setIsCustomOpen(!isCustomOpen)}>Egyéni szín</Action>
     <AnimatedDisclosure expanded={isCustomOpen} gap={20}><GradientColorPicker color={draftColor} onChange={setDraftColor} />
       <Action secondary disabled={app.savedColors.includes(draftColor.toLowerCase())} onPress={() => { void app.savePaletteColor(draftColor).catch(error => setError(String(error))); }}>{app.savedColors.includes(draftColor.toLowerCase()) ? 'Elmentve' : 'Mentés a palettára'}</Action>
     </AnimatedDisclosure>
-    {app.savedColors.length ? <View className="gap-2"><Text className="text-sm font-medium">Mentett színek</Text><View className="flex-row flex-wrap gap-2">{app.savedColors.map((color, index) => <ColorPreset key={color} color={color} name={`Egyéni ${index + 1}`} selected={draftColor === color} onSelect={setDraftColor} />)}</View></View> : null}
     {error ? <Text accessibilityRole="alert" className="text-destructive">{error}</Text> : null}
   </Modal>;
 }
 
-function ColorPreset({ color, name, selected, onSelect }: { color: string; name: string; selected: boolean; onSelect: (color: string) => void }) {
-  return <Button variant="outline" className={selected ? 'h-12 justify-start border-primary bg-primary/10' : 'h-12 justify-start border-border bg-background'} style={{ width: '47%', paddingHorizontal: 10 }} accessibilityLabel={name} accessibilityState={{ selected }} onPress={() => onSelect(color)}>
+function ColorPreset({ color, name, selected, onSelect, remove }: { color: string; name: string; selected: boolean; onSelect: (color: string) => void; remove?: () => void }) {
+  return <View className={`flex-row items-center rounded-lg border ${selected ? 'border-primary bg-primary/10' : 'border-border bg-background'}`} style={{ width: '47%' }}><Button variant="ghost" className="h-12 min-w-0 flex-1 justify-start px-2" accessibilityLabel={name} accessibilityState={{ selected }} onPress={() => onSelect(color)}>
     <View style={{ backgroundColor: color }} className="h-6 w-6 items-center justify-center rounded-full">
       {selected ? <Icon as={Check} size={15} color="#111827" /> : null}
     </View>
-    <Text className="text-sm">{name}</Text>
-  </Button>;
+    <Text className="shrink text-sm" numberOfLines={1}>{name}</Text>
+  </Button>{remove ? <Button variant="ghost" size="icon" accessibilityLabel={`${name} mentett szín törlése`} onPress={remove}><Icon as={Trash2} size={16} className="text-muted-foreground" /></Button> : null}</View>;
 }
 
 function ColorPreview({ color }: { color: string }) {
