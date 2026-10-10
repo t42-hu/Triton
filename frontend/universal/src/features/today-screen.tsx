@@ -10,14 +10,14 @@ import { Icon } from '@/components/ui/icon';
 import { WorkspaceHeading, WorkspaceSection } from './workspace-section';
 import { Text } from '@/components/ui/text';
 import type { DisplayEvent } from '../domain/model';
-import type { LessonTask } from '../domain/student';
+import { supportsStudyLinks, type LessonTask } from '../domain/student';
 import { dailyAnalysis } from '../domain/schedule-analysis';
 import { clockTime, dateLabel, wallTime } from '../domain/time';
 import { visibleEvents } from '../data/repository';
 import { lessonTasks, upcomingAssessments } from '../data/student-repository';
 import { Action } from './controls';
 import { useApp } from './app-state';
-import { hasMappedRoom } from './room-location';
+import { hasMappedRoom, locationLink } from './room-location';
 import { StudentEventRow, type EventActions } from './student-event-row';
 import { StudentTaskRow } from './student-tasks-screen';
 import { TodayLayout } from './today-layout';
@@ -70,7 +70,12 @@ function NextEvent({ event, now, openEvent, openNotebook, openMap }: Props & { e
   const notebook = useNotebookQuickLink(event, false, () => { if (event) openNotebook(event); });
   if (!event) return <View className="items-start gap-3 border-l-2 border-border py-6 pl-4"><Icon as={CheckCircle2} size={30} className="text-primary" /><Text className="text-lg font-semibold">Mára nincs több esemény</Text></View>;
   const remaining = Math.max(1, Math.ceil((event.start - now) / 60000));
-  return <View style={{ ...(appearance.urgency ? { borderColor: appearance.urgency } : {}), ...(appearance.color ? { borderColor: appearance.urgency ?? appearance.color, borderLeftColor: appearance.color, borderLeftWidth: 3 } : {}) }} className="gap-4 rounded-xl border border-border bg-card p-5"><View className="flex-row items-center gap-2"><Icon as={Clock3} size={17} {...(appearance.urgency || appearance.color ? { color: appearance.urgency ?? appearance.color } : {})} className="text-primary" /><Text style={appearance.urgency || appearance.color ? { color: appearance.urgency ?? appearance.color } : undefined} className="text-sm font-semibold text-primary">{event.start <= now ? 'Most tart' : `${remaining} perc múlva`}</Text><Text style={appearance.urgency || appearance.color ? { color: appearance.urgency ?? appearance.color } : undefined} className="ml-auto text-sm text-muted-foreground">{clockTime(event.start)}–{clockTime(event.end)}</Text></View><Text className="text-xl font-semibold" numberOfLines={3}>{event.title}</Text>{event.location ? <Text className="text-sm text-muted-foreground" numberOfLines={1}>{event.location}</Text> : null}<EventQuickLinks event={event} actions={[{ label: 'Megnyitás', icon: Clock3, onPress: () => openEvent(event) }, { label: 'Jegyzetfüzet', icon: NotebookPen, quiet: true, disabled: notebook.loading, onPress: notebook.open }, ...((event.category ?? 'lesson') === 'lesson' && hasMappedRoom(event.location) ? [{ label: 'Térkép', icon: MapPinned, quiet: true, onPress: () => openMap(event.location, () => undefined) }] : [])]} /></View>;
+  return <View style={{ ...(appearance.urgency ? { borderColor: appearance.urgency } : {}), ...(appearance.color ? { borderColor: appearance.urgency ?? appearance.color, borderLeftColor: appearance.color, borderLeftWidth: 3 } : {}) }} className="gap-4 rounded-xl border border-border bg-card p-5">
+    <View className="flex-row items-center gap-2"><Icon as={Clock3} size={17} {...(appearance.urgency || appearance.color ? { color: appearance.urgency ?? appearance.color } : {})} className="text-primary" /><Text style={appearance.urgency || appearance.color ? { color: appearance.urgency ?? appearance.color } : undefined} className="text-sm font-semibold text-primary">{event.start <= now ? 'Most tart' : `${remaining} perc múlva`}</Text><Text style={appearance.urgency || appearance.color ? { color: appearance.urgency ?? appearance.color } : undefined} className="ml-auto text-sm text-muted-foreground">{clockTime(event.start)}–{clockTime(event.end)}</Text></View>
+    <Text className="text-xl font-semibold" numberOfLines={3}>{event.title}</Text>
+    {event.location && !locationLink(event.location, false) ? <Text className="text-sm text-muted-foreground" numberOfLines={1}>{event.location}</Text> : null}
+    <EventQuickLinks event={event} actions={[{ label: 'Megnyitás', icon: Clock3, onPress: () => openEvent(event) }, ...(supportsStudyLinks(event) ? [{ label: 'Jegyzetfüzet', icon: NotebookPen, quiet: true, disabled: notebook.loading, onPress: notebook.open }] : []), ...((event.category ?? 'lesson') === 'lesson' && hasMappedRoom(event.location) ? [{ label: 'Térkép', icon: MapPinned, quiet: true, onPress: () => openMap(event.location, () => undefined) }] : [])]} />
+  </View>;
 }
 
 

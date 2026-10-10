@@ -21,3 +21,10 @@ test('directions encode the destination and delegate current location to the sel
   assert.equal(apple.searchParams.get('dirflg'), 'w');
   assert.equal(new URL(directionsUrl(NIK_DESTINATION, 'waze', 'driving')).searchParams.get('navigate'), 'yes');
 });
+test('map share links stay intact while unrelated links cannot become directions', () => {
+  const location = 'https://maps.apple/p/A3Aax7Q3fsqRYp';
+  assert.equal(directionsDestination(location), location);
+  assert.equal(directionsUrl(location, 'google', 'transit'), location);
+  for (const link of ['https://maps.app.goo.gl/example', 'https://www.google.com/maps/place/Budapest']) assert.equal(directionsDestination(link), link);
+  for (const link of ['https://maps.apple.evil.test/p/example', 'https://example.com', 'https://user:password@maps.apple/p/example']) assert.equal(directionsDestination(link), null);
+});
