@@ -1434,7 +1434,26 @@
                                                 "maxLength": 4096,
                                                 "format": "uri"
                                             },
-                                            "autoSync": { "type": "boolean" }
+                                            "autoSync": { "type": "boolean" },
+                                            "importedAt": {
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                            },
+                                            "lastAttemptAt": {
+                                                "nullable": true,
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                            },
+                                            "lastSuccessAt": {
+                                                "nullable": true,
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                            },
+                                            "lastError": { "nullable": true, "type": "string", "maxLength": 2000 },
+                                            "lastChange": { "nullable": true, "type": "string", "maxLength": 2000 }
                                         },
                                         "required": ["sourceId"],
                                         "additionalProperties": false
@@ -1496,7 +1515,7 @@
                                             },
                                             "category": {
                                                 "type": "string",
-                                                "enum": ["lesson", "event", "assignment", "test", "exam"]
+                                                "enum": ["lesson", "event", "work", "assignment", "test", "exam"]
                                             },
                                             "kind": { "type": "string", "enum": ["timed", "allDay"] },
                                             "startsAt": {
@@ -2669,6 +2688,25 @@
                                                 "format": "uri"
                                             },
                                             "autoSync": { "type": "boolean" },
+                                            "importedAt": {
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                            },
+                                            "lastAttemptAt": {
+                                                "nullable": true,
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                            },
+                                            "lastSuccessAt": {
+                                                "nullable": true,
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                            },
+                                            "lastError": { "nullable": true, "type": "string", "maxLength": 2000 },
+                                            "lastChange": { "nullable": true, "type": "string", "maxLength": 2000 },
                                             "version": {
                                                 "type": "integer",
                                                 "minimum": 0,
@@ -2730,7 +2768,7 @@
                                             },
                                             "category": {
                                                 "type": "string",
-                                                "enum": ["lesson", "event", "assignment", "test", "exam"]
+                                                "enum": ["lesson", "event", "work", "assignment", "test", "exam"]
                                             },
                                             "kind": { "type": "string", "enum": ["timed", "allDay"] },
                                             "startsAt": {
@@ -4066,7 +4104,7 @@
                                             },
                                             "category": {
                                                 "type": "string",
-                                                "enum": ["lesson", "event", "assignment", "test", "exam"]
+                                                "enum": ["lesson", "event", "work", "assignment", "test", "exam"]
                                             },
                                             "kind": { "type": "string", "enum": ["timed", "allDay"] },
                                             "startsAt": {
@@ -4643,7 +4681,7 @@
                                                 },
                                                 "category": {
                                                     "type": "string",
-                                                    "enum": ["lesson", "event", "assignment", "test", "exam"]
+                                                    "enum": ["lesson", "event", "work", "assignment", "test", "exam"]
                                                 },
                                                 "kind": { "type": "string", "enum": ["timed", "allDay"] },
                                                 "startsAt": {
@@ -5529,6 +5567,273 @@
                 }
             }
         },
+        "/api/sync/commit": {
+            "post": {
+                "operationId": "commitWorkspace",
+                "parameters": [],
+                "responses": {
+                    "201": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "results": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "clientMutationId": {
+                                                        "type": "string",
+                                                        "minLength": 1,
+                                                        "maxLength": 128,
+                                                        "pattern": "^[A-Za-z0-9_-]+$"
+                                                    },
+                                                    "record": { "type": "object", "additionalProperties": {} }
+                                                },
+                                                "required": ["clientMutationId", "record"],
+                                                "additionalProperties": false
+                                            }
+                                        }
+                                    },
+                                    "required": ["results"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": ["calendar"],
+                "summary": "Commit workspace mutations and private calendar source content atomically",
+                "security": [{ "session": [] }, { "nativeToken": [] }],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "deviceId": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 128,
+                                        "pattern": "^[A-Za-z0-9_-]+$"
+                                    },
+                                    "mutations": {
+                                        "maxItems": 20000,
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "clientMutationId": {
+                                                    "type": "string",
+                                                    "minLength": 1,
+                                                    "maxLength": 128,
+                                                    "pattern": "^[A-Za-z0-9_-]+$"
+                                                },
+                                                "resource": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "calendars",
+                                                        "members",
+                                                        "invitations",
+                                                        "profiles",
+                                                        "profile-calendars",
+                                                        "calendar-preferences",
+                                                        "sources",
+                                                        "source-connections",
+                                                        "source-revisions",
+                                                        "events",
+                                                        "recurrences",
+                                                        "exceptions",
+                                                        "overrides",
+                                                        "attachments",
+                                                        "meetings",
+                                                        "participants",
+                                                        "palettes",
+                                                        "palette-colors",
+                                                        "color-rules",
+                                                        "tasks",
+                                                        "notebook-links",
+                                                        "reminder-settings",
+                                                        "event-reminder-settings",
+                                                        "reminder-rules",
+                                                        "preferences",
+                                                        "devices",
+                                                        "device-preferences"
+                                                    ]
+                                                },
+                                                "operation": {
+                                                    "type": "string",
+                                                    "enum": ["create", "update", "delete"]
+                                                },
+                                                "id": {
+                                                    "type": "string",
+                                                    "minLength": 1,
+                                                    "maxLength": 128,
+                                                    "pattern": "^[A-Za-z0-9_-]+$"
+                                                },
+                                                "version": {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "exclusiveMinimum": true,
+                                                    "maximum": 9007199254740991
+                                                },
+                                                "data": { "type": "object", "additionalProperties": {} }
+                                            },
+                                            "required": ["clientMutationId", "resource", "operation"],
+                                            "additionalProperties": false
+                                        }
+                                    },
+                                    "contents": {
+                                        "maxItems": 100,
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "sourceId": {
+                                                    "type": "string",
+                                                    "minLength": 1,
+                                                    "maxLength": 128,
+                                                    "pattern": "^[A-Za-z0-9_-]+$"
+                                                },
+                                                "version": {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "exclusiveMinimum": true,
+                                                    "maximum": 9007199254740991
+                                                },
+                                                "content": { "type": "string", "maxLength": 1000000 }
+                                            },
+                                            "required": ["sourceId", "content"],
+                                            "additionalProperties": false
+                                        }
+                                    }
+                                },
+                                "required": ["deviceId", "mutations", "contents"],
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/sync/ack": {
             "post": {
                 "operationId": "acknowledgeSync",
@@ -6107,6 +6412,848 @@
                 "tags": ["calendar"],
                 "summary": "Download a private attachment after checking event access",
                 "security": [{ "session": [] }, { "nativeToken": [] }]
+            }
+        },
+        "/api/calendar-share": {
+            "get": {
+                "operationId": "listCalendarShares",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string",
+                                                "format": "uuid",
+                                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                            },
+                                            "calendarId": {
+                                                "type": "string",
+                                                "minLength": 1,
+                                                "maxLength": 128,
+                                                "pattern": "^[A-Za-z0-9_-]+$"
+                                            },
+                                            "name": { "type": "string" },
+                                            "createdAt": {
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                                            },
+                                            "revokedAt": {
+                                                "nullable": true,
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                                            },
+                                            "selection": {
+                                                "nullable": true,
+                                                "type": "object",
+                                                "properties": {
+                                                    "sourceIds": {
+                                                        "maxItems": 500,
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "string",
+                                                            "minLength": 1,
+                                                            "maxLength": 128,
+                                                            "pattern": "^[A-Za-z0-9_-]+$"
+                                                        }
+                                                    },
+                                                    "includeManual": { "type": "boolean" },
+                                                    "categories": {
+                                                        "minItems": 1,
+                                                        "maxItems": 6,
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                                "lesson",
+                                                                "event",
+                                                                "work",
+                                                                "assignment",
+                                                                "test",
+                                                                "exam"
+                                                            ]
+                                                        }
+                                                    }
+                                                },
+                                                "required": ["sourceIds", "includeManual", "categories"],
+                                                "additionalProperties": false
+                                            },
+                                            "available": { "type": "boolean" },
+                                            "url": { "nullable": true, "type": "string", "format": "uri" }
+                                        },
+                                        "required": [
+                                            "id",
+                                            "calendarId",
+                                            "name",
+                                            "createdAt",
+                                            "revokedAt",
+                                            "selection",
+                                            "available",
+                                            "url"
+                                        ],
+                                        "additionalProperties": false
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": ["calendar"],
+                "summary": "List your calendar sharing links",
+                "security": [{ "session": [] }, { "nativeToken": [] }]
+            },
+            "post": {
+                "operationId": "createCalendarShare",
+                "parameters": [],
+                "responses": {
+                    "201": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                        },
+                                        "calendarId": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 128,
+                                            "pattern": "^[A-Za-z0-9_-]+$"
+                                        },
+                                        "name": { "type": "string" },
+                                        "createdAt": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                                        },
+                                        "revokedAt": {
+                                            "nullable": true,
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                                        },
+                                        "selection": {
+                                            "nullable": true,
+                                            "type": "object",
+                                            "properties": {
+                                                "sourceIds": {
+                                                    "maxItems": 500,
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "minLength": 1,
+                                                        "maxLength": 128,
+                                                        "pattern": "^[A-Za-z0-9_-]+$"
+                                                    }
+                                                },
+                                                "includeManual": { "type": "boolean" },
+                                                "categories": {
+                                                    "minItems": 1,
+                                                    "maxItems": 6,
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "lesson",
+                                                            "event",
+                                                            "work",
+                                                            "assignment",
+                                                            "test",
+                                                            "exam"
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "required": ["sourceIds", "includeManual", "categories"],
+                                            "additionalProperties": false
+                                        },
+                                        "available": { "type": "boolean" },
+                                        "url": { "nullable": true, "type": "string", "format": "uri" }
+                                    },
+                                    "required": [
+                                        "id",
+                                        "calendarId",
+                                        "name",
+                                        "createdAt",
+                                        "revokedAt",
+                                        "selection",
+                                        "available",
+                                        "url"
+                                    ],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": ["calendar"],
+                "summary": "Create a revocable calendar sharing link",
+                "security": [{ "session": [] }, { "nativeToken": [] }],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "calendarId": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 128,
+                                        "pattern": "^[A-Za-z0-9_-]+$"
+                                    },
+                                    "selection": {
+                                        "type": "object",
+                                        "properties": {
+                                            "sourceIds": {
+                                                "maxItems": 500,
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string",
+                                                    "minLength": 1,
+                                                    "maxLength": 128,
+                                                    "pattern": "^[A-Za-z0-9_-]+$"
+                                                }
+                                            },
+                                            "includeManual": { "type": "boolean" },
+                                            "categories": {
+                                                "minItems": 1,
+                                                "maxItems": 6,
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string",
+                                                    "enum": ["lesson", "event", "work", "assignment", "test", "exam"]
+                                                }
+                                            }
+                                        },
+                                        "required": ["sourceIds", "includeManual", "categories"],
+                                        "additionalProperties": false
+                                    }
+                                },
+                                "required": ["calendarId", "selection"],
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/calendar-share/options": {
+            "get": {
+                "operationId": "getCalendarShareOptions",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "calendarId": {
+                                                "type": "string",
+                                                "minLength": 1,
+                                                "maxLength": 128,
+                                                "pattern": "^[A-Za-z0-9_-]+$"
+                                            },
+                                            "name": { "type": "string" },
+                                            "sources": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string",
+                                                            "minLength": 1,
+                                                            "maxLength": 128,
+                                                            "pattern": "^[A-Za-z0-9_-]+$"
+                                                        },
+                                                        "name": { "type": "string" },
+                                                        "type": { "type": "string" },
+                                                        "eventCount": {
+                                                            "type": "integer",
+                                                            "minimum": -9007199254740991,
+                                                            "maximum": 9007199254740991
+                                                        }
+                                                    },
+                                                    "required": ["id", "name", "type", "eventCount"],
+                                                    "additionalProperties": false
+                                                }
+                                            }
+                                        },
+                                        "required": ["calendarId", "name", "sources"],
+                                        "additionalProperties": false
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": ["calendar"],
+                "summary": "List your shareable calendars and import sources",
+                "security": [{ "session": [] }, { "nativeToken": [] }]
+            }
+        },
+        "/api/calendar-share/{id}": {
+            "delete": {
+                "operationId": "revokeCalendarShare",
+                "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": { "revoked": { "type": "boolean", "enum": [true] } },
+                                    "required": ["revoked"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": ["calendar"],
+                "summary": "Revoke your calendar sharing link",
+                "security": [{ "session": [] }, { "nativeToken": [] }]
+            }
+        },
+        "/api/calendar-share/{id}/{token}/calendar.ics": {
+            "get": {
+                "operationId": "downloadSharedCalendar",
+                "parameters": [
+                    { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } },
+                    { "in": "path", "name": "token", "required": true, "schema": { "type": "string" } }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Shared iCalendar feed",
+                        "content": { "text/calendar": { "schema": { "type": "string" } } }
+                    },
+                    "400": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Stable API error with a request ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "statusCode": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                        },
+                                        "code": { "type": "string" },
+                                        "message": { "type": "string" },
+                                        "requestId": { "type": "string" },
+                                        "details": { "type": "array", "items": { "type": "string" } }
+                                    },
+                                    "required": ["statusCode", "code", "message", "requestId"],
+                                    "additionalProperties": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": ["calendar"],
+                "summary": "Download the current events selected by an active sharing link",
+                "security": []
             }
         }
     },

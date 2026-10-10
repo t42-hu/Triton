@@ -9,8 +9,12 @@ import type {
     AcknowledgeSyncBody,
     AuthorizeNativeAuth201,
     AuthorizeNativeAuthBody,
+    CommitWorkspace201,
+    CommitWorkspaceBody,
     CreateCalendarRecord201,
     CreateCalendarRecordBody,
+    CreateCalendarShare201,
+    CreateCalendarShareBody,
     CreateCheckoutSession201,
     CreateCheckoutSessionBody,
     CreateMeeting201,
@@ -20,6 +24,7 @@ import type {
     ExchangeNativeAuth201,
     ExchangeNativeAuthBody,
     GetCalendarRecord200,
+    GetCalendarShareOptions200Item,
     GetCalendarSourceContent200,
     GetCurrentUserProfile200,
     GetHealth200,
@@ -35,6 +40,7 @@ import type {
     InviteMeetingUsersBody,
     ListCalendarRecords200,
     ListCalendarRecordsParams,
+    ListCalendarShares200Item,
     PublishCalendarImport201,
     PublishCalendarImportBody,
     PullSyncChanges200,
@@ -49,6 +55,7 @@ import type {
     RespondCalendarInvitationBody,
     RespondMeeting201,
     RespondMeetingBody,
+    RevokeCalendarShare200,
     StartNativeAuth201,
     StartNativeAuthBody,
     UpdateCalendarRecord200,
@@ -1148,6 +1155,39 @@ export const pushSyncMutations = async (
     })
 }
 
+export const getCommitWorkspaceUrl = () => {
+    return `/api/sync/commit`
+}
+
+/**
+ * @summary Commit workspace mutations and private calendar source content atomically
+ */
+export const commitWorkspace = async (
+    commitWorkspaceBody: CommitWorkspaceBody,
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<CommitWorkspace201> => {
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+        if (!h) return {}
+        if (h instanceof Headers) return Object.fromEntries(h.entries())
+        if (Symbol.iterator in h) {
+            return Object.fromEntries(
+                Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+            )
+        }
+        const headers: Record<string, string | readonly string[]> = {}
+        for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+            if (value !== undefined) headers[name] = value
+        }
+        return headers
+    }
+    return generatedApiRequest<CommitWorkspace201>(getCommitWorkspaceUrl(), {
+        ...options,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+        body: JSON.stringify(commitWorkspaceBody),
+    })
+}
+
 export const getAcknowledgeSyncUrl = () => {
     return `/api/sync/ack`
 }
@@ -1232,6 +1272,106 @@ export const downloadCalendarAttachment = async (
     options?: Parameters<typeof generatedApiRequest>[1],
 ): Promise<Blob> => {
     return generatedApiRequest<Blob>(getDownloadCalendarAttachmentUrl(id), {
+        ...options,
+        method: 'GET',
+    })
+}
+
+export const getListCalendarSharesUrl = () => {
+    return `/api/calendar-share`
+}
+
+/**
+ * @summary List your calendar sharing links
+ */
+export const listCalendarShares = async (
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<ListCalendarShares200Item[]> => {
+    return generatedApiRequest<ListCalendarShares200Item[]>(getListCalendarSharesUrl(), {
+        ...options,
+        method: 'GET',
+    })
+}
+
+export const getCreateCalendarShareUrl = () => {
+    return `/api/calendar-share`
+}
+
+/**
+ * @summary Create a revocable calendar sharing link
+ */
+export const createCalendarShare = async (
+    createCalendarShareBody: CreateCalendarShareBody,
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<CreateCalendarShare201> => {
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+        if (!h) return {}
+        if (h instanceof Headers) return Object.fromEntries(h.entries())
+        if (Symbol.iterator in h) {
+            return Object.fromEntries(
+                Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+            )
+        }
+        const headers: Record<string, string | readonly string[]> = {}
+        for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+            if (value !== undefined) headers[name] = value
+        }
+        return headers
+    }
+    return generatedApiRequest<CreateCalendarShare201>(getCreateCalendarShareUrl(), {
+        ...options,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+        body: JSON.stringify(createCalendarShareBody),
+    })
+}
+
+export const getGetCalendarShareOptionsUrl = () => {
+    return `/api/calendar-share/options`
+}
+
+/**
+ * @summary List your shareable calendars and import sources
+ */
+export const getCalendarShareOptions = async (
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<GetCalendarShareOptions200Item[]> => {
+    return generatedApiRequest<GetCalendarShareOptions200Item[]>(getGetCalendarShareOptionsUrl(), {
+        ...options,
+        method: 'GET',
+    })
+}
+
+export const getRevokeCalendarShareUrl = (id: string) => {
+    return `/api/calendar-share/${id}`
+}
+
+/**
+ * @summary Revoke your calendar sharing link
+ */
+export const revokeCalendarShare = async (
+    id: string,
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<RevokeCalendarShare200> => {
+    return generatedApiRequest<RevokeCalendarShare200>(getRevokeCalendarShareUrl(id), {
+        ...options,
+        method: 'DELETE',
+    })
+}
+
+export const getDownloadSharedCalendarUrl = (id: string, token: string) => {
+    return `/api/calendar-share/${id}/${token}/calendar.ics`
+}
+
+/**
+ * @summary Download the current events selected by an active sharing link
+ */
+export const downloadSharedCalendar = async (
+    id: string,
+    token: string,
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<string> => {
+    return generatedApiRequest<string>(getDownloadSharedCalendarUrl(id, token), {
         ...options,
         method: 'GET',
     })

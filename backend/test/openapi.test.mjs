@@ -11,7 +11,10 @@ test('Nest routes and checked-in OpenAPI document agree', async () => {
     const routes = Object.entries(fresh.paths).flatMap(([path, methods]) =>
         Object.keys(methods).map((method) => `${method} ${path}`),
     )
-    assert.equal(routes.length, 32)
+    assert.equal(routes.length, 38)
+    assert.ok(routes.includes('post /api/sync/commit'))
+    assert.ok(routes.includes('delete /api/calendar-share/{id}'))
+    assert.deepEqual(fresh.paths['/api/calendar-share/{id}/{token}/calendar.ics'].get.security, [])
     assert.ok(routes.includes('get /api/sync/snapshot'))
     assert.deepEqual(fresh.paths['/api/calendar/{resource}'].get.security, [{ session: [] }, { nativeToken: [] }])
     assert.ok(routes.includes('patch /api/users/me'))

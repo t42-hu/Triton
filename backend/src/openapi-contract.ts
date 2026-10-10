@@ -9,6 +9,8 @@ import { CalendarService } from './calendar/calendar.service.js'
 import { CalendarActions } from './calendar/calendar.actions.js'
 import { CalendarSync } from './calendar/calendar.sync.js'
 import { CalendarFiles } from './calendar/calendar.files.js'
+import { CalendarSharingController } from './calendar/calendar-sharing.controller.js'
+import { CalendarSharing } from './calendar/calendar-sharing.js'
 import { Module } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { DocumentBuilder, SwaggerModule, type OpenAPIObject } from '@nestjs/swagger'
@@ -54,6 +56,7 @@ import { VirusScannerService } from './virusscanner/virusscanner.service.js'
         CalendarActionsController,
         CalendarSyncController,
         CalendarFilesController,
+        CalendarSharingController,
     ],
     providers: [
         DatabaseService,
@@ -69,6 +72,7 @@ import { VirusScannerService } from './virusscanner/virusscanner.service.js'
         CalendarActions,
         CalendarSync,
         CalendarFiles,
+        CalendarSharing,
     ].map((provide) => ({ provide, useValue: {} })),
 })
 class ApiContractModule {}
@@ -478,6 +482,73 @@ addOperation(
     undefined,
     201,
 )
+addOperation(
+    'post',
+    'sync/commit',
+    'commitWorkspace',
+    'Commit workspace mutations and private calendar source content atomically',
+    c.SyncPushResponseSchema,
+    c.WorkspaceCommitSchema,
+    undefined,
+    201,
+)
+const calendarShare = z.object({
+    id: z.uuid(),
+    calendarId: c.CalendarIdSchema,
+    name: z.string(),
+    createdAt: z.string().datetime(),
+    revokedAt: z.string().datetime().nullable(),
+    selection: c.CalendarShareSelectionSchema.nullable(),
+    available: z.boolean(),
+    url: z.url().nullable(),
+})
+addOperation('get', 'calendar-share', 'listCalendarShares', 'List your calendar sharing links', z.array(calendarShare))
+addOperation(
+    'get',
+    'calendar-share/options',
+    'getCalendarShareOptions',
+    'List your shareable calendars and import sources',
+    z.array(
+        z.object({
+            calendarId: c.CalendarIdSchema,
+            name: z.string(),
+            sources: z.array(
+                z.object({ id: c.CalendarIdSchema, name: z.string(), type: z.string(), eventCount: z.number().int() }),
+            ),
+        }),
+    ),
+)
+addOperation(
+    'post',
+    'calendar-share',
+    'createCalendarShare',
+    'Create a revocable calendar sharing link',
+    calendarShare,
+    c.CalendarShareCreateSchema,
+    undefined,
+    201,
+)
+addOperation(
+    'delete',
+    'calendar-share/{id}',
+    'revokeCalendarShare',
+    'Revoke your calendar sharing link',
+    z.object({ revoked: z.literal(true) }),
+    undefined,
+    [idParameter],
+)
+operations['get /api/calendar-share/{id}/{token}/calendar.ics'] = {
+    operationId: 'downloadSharedCalendar',
+    tags: ['calendar'],
+    summary: 'Download the current events selected by an active sharing link',
+    security: [],
+    parameters: [idParameter, { in: 'path', name: 'token', required: true, schema: { type: 'string' } }],
+    responses: {
+        200: { description: 'Shared iCalendar feed', content: { 'text/calendar': { schema: { type: 'string' } } } },
+        400: problem,
+        404: problem,
+    },
+}
 addOperation(
     'post',
     'sync/ack',

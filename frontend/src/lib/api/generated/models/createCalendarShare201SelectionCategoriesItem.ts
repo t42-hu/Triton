@@ -5,10 +5,10 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export type PublishCalendarImportBodyEventsItemCategory =
-    (typeof PublishCalendarImportBodyEventsItemCategory)[keyof typeof PublishCalendarImportBodyEventsItemCategory]
+export type CreateCalendarShare201SelectionCategoriesItem =
+    (typeof CreateCalendarShare201SelectionCategoriesItem)[keyof typeof CreateCalendarShare201SelectionCategoriesItem]
 
-export const PublishCalendarImportBodyEventsItemCategory = {
+export const CreateCalendarShare201SelectionCategoriesItem = {
     lesson: 'lesson',
     event: 'event',
     work: 'work',

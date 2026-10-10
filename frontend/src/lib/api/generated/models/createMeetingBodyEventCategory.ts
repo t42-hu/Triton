@@ -11,6 +11,7 @@ export type CreateMeetingBodyEventCategory =
 export const CreateMeetingBodyEventCategory = {
     lesson: 'lesson',
     event: 'event',
+    work: 'work',
     assignment: 'assignment',
     test: 'test',
     exam: 'exam',
