@@ -9,6 +9,8 @@ import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { today, validDate } from '../domain/time';
 
+import { CalendarPicker } from './calendar-picker';
+
 type PickerMode = 'date' | 'time';
 
 function pickerValue(value: string): Date {
@@ -33,7 +35,7 @@ function PickerField({ mode, label, value, open, onChange }: { mode: PickerMode;
     input.current?.click();
   }
   return <View className={`relative min-w-0 ${mode === 'date' ? 'flex-[3]' : 'flex-[2]'}`}>
-    <Pressable accessibilityRole="button" accessibilityLabel={`${label} ${mode === 'date' ? 'dátuma' : 'időpontja'}`} accessibilityHint={mode === 'date' ? 'Naptár megnyitása' : 'Időválasztó megnyitása'} className="h-11 flex-row items-center gap-2 rounded-lg border border-input bg-background px-3 hover:bg-primary/5 active:bg-primary/10 dark:bg-input/30" onPress={activate}>
+    <Pressable accessibilityRole="button" accessibilityLabel={`${label} ${mode === 'date' ? 'dátuma' : 'időpontja'}`} accessibilityHint={mode === 'date' ? 'Naptár megnyitása' : 'Időválasztó megnyitása'} className="h-11 flex-row items-center gap-2 rounded-lg border border-input bg-card px-3 hover:border-primary/50 hover:bg-primary/5 active:bg-primary/10" onPress={activate}>
       <Icon as={mode === 'date' ? CalendarDays : Clock3} size={18} className="text-primary" />
       <Text className="min-w-0 flex-1 text-base" numberOfLines={1}>{value || (mode === 'date' ? 'Dátum' : 'Időpont')}</Text>
     </Pressable>
@@ -61,7 +63,7 @@ export function DateTimeField({ label, value, onChange, allDay = false }: { labe
       <PickerField mode="date" label={label} value={date} open={() => setPickerMode('date')} onChange={nextDate => onChange(`${nextDate}T${time}`)} />
       {allDay ? null : <PickerField mode="time" label={label} value={time} open={() => setPickerMode('time')} onChange={nextTime => onChange(`${date}T${nextTime}`)} />}
     </View>
-    {Platform.OS !== 'web' && pickerMode ? <NativePicker mode={pickerMode} value={value} onChange={onChange} close={() => setPickerMode(null)} /> : null}
+    {pickerMode === 'date' ? <CalendarPicker value={date} onChange={nextDate => onChange(`${nextDate}T${time}`)} close={() => setPickerMode(null)} /> : pickerMode === 'time' ? <NativePicker mode="time" value={value} onChange={onChange} close={() => setPickerMode(null)} /> : null}
   </View>;
 }
 

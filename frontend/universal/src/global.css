@@ -79,9 +79,9 @@
   --font-serif: Georgia, 'Times New Roman', serif;
 }
 
-/* Keep overflowing forms discoverable and their scrollbar inside the panel. */
+/* Form content also reserves 12px, because overlay scrollbars do not consume the CSS gutter. */
 .panel-scroll {
-  scrollbar-gutter: stable both-edges;
+  scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--muted-foreground) / 0.6) transparent;
 }

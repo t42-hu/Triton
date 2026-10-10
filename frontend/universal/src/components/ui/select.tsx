@@ -3,7 +3,7 @@ import { NativeOnlyAnimatedView } from '@/components/ui/native-only-animated-vie
 import { TextClassContext } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 import * as SelectPrimitive from '@rn-primitives/select';
-import { Check, ChevronDown, ChevronDownIcon, ChevronUpIcon } from 'lucide-react-native';
+import { Check, ChevronDown, ChevronUp, ChevronDownIcon, ChevronUpIcon } from 'lucide-react-native';
 import * as React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
@@ -47,7 +47,7 @@ function SelectTrigger({
     children?: React.ReactNode;
     size?: 'default' | 'sm';
   }) {
-  const { onOpenChange } = SelectPrimitive.useRootContext();
+  const { open, onOpenChange } = SelectPrimitive.useRootContext();
   return (
     <SelectPrimitive.Trigger
       ref={ref}
@@ -62,13 +62,15 @@ function SelectTrigger({
         className
       )}
       {...props}
+      onPointerDown={Platform.OS === 'web' ? event => { props.onPointerDown?.(event); event.preventDefault(); } : props.onPointerDown}
+      onTouchStart={Platform.OS === 'web' ? event => { props.onTouchStart?.(event); event.preventDefault(); } : props.onTouchStart}
       onPress={Platform.OS === 'web' ? event => {
         onPress?.(event);
-        // Radix handles pointer-down; also support synthesized clicks and accessibility activation.
-        if (!props.disabled && !event.defaultPrevented) onOpenChange(true);
+        // Use one toggle for pointer, touch, and accessibility activation.
+        if (!props.disabled && !event.defaultPrevented) onOpenChange(!open);
       } : onPress}>
       <>{children}</>
-      <Icon as={ChevronDown} aria-hidden={true} className="text-muted-foreground size-4" />
+      <Icon as={open ? ChevronUp : ChevronDown} aria-hidden={true} className="text-muted-foreground size-4" />
     </SelectPrimitive.Trigger>
   );
 }

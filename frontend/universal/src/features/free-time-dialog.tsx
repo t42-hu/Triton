@@ -25,7 +25,7 @@ export function FreeTimeDialog({ profileId, close }: { profileId: number; close:
     try { setResult(await findCommonFreeTime([...selected], fromWall(start), fromWall(end), minimumMinutes)); }
     catch (reason) { setError(reason instanceof Error ? reason.message : String(reason)); } finally { setBusy(false); }
   }
-  return <Modal title="Közös szabad idő" close={close}>
+  return <Modal title="Közös szabad idő" close={close} scrollToEndKey={result}>
     <Text className="font-semibold">Résztvevők</Text>{app.profileList.map(profile => <Toggle key={profile.id} label={profile.name} checked={selected.has(profile.id)} onChange={() => toggle(profile.id)} />)}
     <DateTimeField label="Kezdés" value={start} onChange={value => { setStart(value); setResult(undefined); }} />
     <DateTimeField label="Befejezés" value={end} onChange={value => { setEnd(value); setResult(undefined); }} />

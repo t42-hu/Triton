@@ -1,16 +1,14 @@
 import { useState, type KeyboardEvent } from 'react';
 import { View } from 'react-native';
-import { CalendarDays, Check, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Clock3 } from 'lucide-react-native';
+import { CalendarDays, Check, ChevronUp, ChevronDown, Clock3 } from 'lucide-react-native';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Modal } from './controls';
-import { today, validDate } from '@/domain/time';
-import { calendarDays, shiftCalendarMonth } from '@/domain/calendar-picker';
+import { CalendarPicker } from './calendar-picker';
 
 type PickerMode = 'date' | 'time';
 type PickerProps = { value: string; onChange: (value: string) => void; close: () => void };
-const weekdays = ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'];
 
 /** Uses themed web panels for the same date and time actions offered on native platforms. */
 export function DateTimeField({ label, value, onChange, allDay = false }: { label: string; value: string; onChange: (value: string) => void; allDay?: boolean }) {
@@ -31,33 +29,7 @@ export function DateField({ label, value, onChange }: { label: string; value: st
 }
 
 function PickerButton({ mode, label, value, open }: { mode: PickerMode; label: string; value: string; open: () => void }) {
-  return <View className={`min-w-0 ${mode === 'date' ? 'flex-[3]' : 'flex-[2]'}`}><Button variant="ghost" accessibilityLabel={`${label} ${mode === 'date' ? 'dátuma' : 'időpontja'}`} onPress={open} className="h-11 justify-start gap-2 rounded-lg border-input bg-background px-3 dark:bg-input/30"><Icon as={mode === 'date' ? CalendarDays : Clock3} size={18} className="text-primary" /><Text className="min-w-0 flex-1 text-base" numberOfLines={1}>{value || (mode === 'date' ? 'Dátum' : 'Időpont')}</Text></Button></View>;
-}
-
-function CalendarPicker({ value, onChange, close }: PickerProps) {
-  const [currentDate] = useState(today);
-  const [selected, setSelected] = useState(validDate(value) ? value : currentDate);
-  const [month, setMonth] = useState(selected.slice(0, 7));
-  const monthLabel = new Intl.DateTimeFormat('hu-HU', { year: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(`${month}-01T12:00:00Z`));
-  function select(date: string) { setSelected(date); setMonth(date.slice(0, 7)); }
-  function finish() { onChange(selected); close(); }
-  function selectToday() { select(currentDate); }
-  return <Modal pickerMotion title="Dátum kiválasztása" maxWidth={440} close={close}>
-    <View className="w-full max-w-[360px] self-center gap-3">
-      <View className="flex-row items-center justify-between gap-3"><Text accessibilityRole="header" accessibilityLiveRegion="polite" className="flex-1 text-lg font-semibold">{monthLabel}</Text><Button variant="ghost" size="icon" accessibilityLabel="Előző hónap" onPress={() => setMonth(shiftCalendarMonth(month, -1))} className="border-0 bg-transparent"><Icon as={ChevronLeft} size={18} /></Button><Button variant="ghost" size="icon" accessibilityLabel="Következő hónap" onPress={() => setMonth(shiftCalendarMonth(month, 1))} className="border-0 bg-transparent"><Icon as={ChevronRight} size={18} /></Button></View>
-      <View className="flex-row">{weekdays.map(day => <View key={day} style={{ width: '14.285714%' }} className="items-center"><Text className="text-xs font-medium text-muted-foreground">{day}</Text></View>)}</View>
-      <View testID="web-calendar-grid" className="flex-row flex-wrap">{calendarDays(month).map(date => <CalendarDay key={date} date={date} month={month} selected={selected} today={currentDate} select={select} />)}</View>
-      <Button variant="link" className="h-9" onPress={selectToday} accessibilityLabel="Mai dátum kiválasztása"><Text>Ma</Text></Button>
-    </View><Button onPress={finish} accessibilityLabel="Választás kész"><Icon as={Check} size={16} className="text-primary-foreground" /><Text>Kész</Text></Button>
-  </Modal>;
-}
-
-function CalendarDay({ date, month, selected, today: currentDate, select }: { date: string; month: string; selected: string; today: string; select: (date: string) => void }) {
-  const isSelected = date === selected;
-  const isCurrentMonth = date.startsWith(month);
-  const label = new Intl.DateTimeFormat('hu-HU', { dateStyle: 'full', timeZone: 'UTC' }).format(new Date(`${date}T12:00:00Z`));
-  function press() { select(date); }
-  return <View style={{ width: '14.285714%' }} className="items-center py-0.5"><Button accessibilityLabel={label} accessibilityState={{ selected: isSelected }} aria-pressed={isSelected} variant={isSelected ? 'default' : 'ghost'} onPress={press} className={`h-10 w-10 rounded-full p-0 ${isSelected ? '' : 'border-0 bg-transparent'} ${date === currentDate && !isSelected ? 'border border-primary/50' : ''}`}><Text className={isSelected ? 'text-primary-foreground' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground/50'}>{Number(date.slice(8))}</Text></Button></View>;
+  return <View className={`min-w-0 ${mode === 'date' ? 'flex-[3]' : 'flex-[2]'}`}><Button variant="outline" accessibilityLabel={`${label} ${mode === 'date' ? 'dátuma' : 'időpontja'}`} onPress={open} className="h-11 justify-start gap-2 rounded-lg border-input bg-card px-3 hover:border-primary/50"><Icon as={mode === 'date' ? CalendarDays : Clock3} size={18} className="text-primary" /><Text className="min-w-0 flex-1 text-base" numberOfLines={1}>{value || (mode === 'date' ? 'Dátum' : 'Időpont')}</Text></Button></View>;
 }
 
 function TimePicker({ value, onChange, close }: PickerProps) {

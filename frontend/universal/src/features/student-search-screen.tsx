@@ -22,7 +22,7 @@ export function StudentSearchScreen(props: EventActions & { profileId: number })
     async function search() {
       setLoading(true); setError('');
       try { const next = await searchStudentData(query, scope === 'all' ? undefined : Number(scope)); if (!cancelled) setResults(next); }
-      catch { if (!cancelled) setError('Nem sikerült keresni a helyi adatokban.'); }
+      catch { if (!cancelled) setError('Nem sikerült keresni az órarendekben.'); }
       finally { if (!cancelled) { setLoading(false); setSettledRequest(requestKey); } }
     }
     const timer = setTimeout(search, 200);
