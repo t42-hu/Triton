@@ -60,7 +60,7 @@ const categories: { key: SettingsCategory; title: string; icon: LucideIcon }[] =
 function SettingsOptions({ category, setCategory, ...options }: SettingsOptionsProps & { category: SettingsCategory | null; setCategory: (value: SettingsCategory | null) => void }) {
   return <View className="gap-4">
     {category ? <Button variant="ghost" className="self-start justify-start px-0" accessibilityLabel="Vissza a beállításokhoz" onPress={() => setCategory(null)}><Icon as={ArrowLeft} size={17} className="text-muted-foreground" /><Text className="text-sm text-muted-foreground">Beállítások</Text></Button> : <View>
-      {categories.map(item => <Button key={item.key} variant="ghost" accessibilityLabel={`${item.title} beállításai`} className="h-14 justify-start gap-3 rounded-none border-b border-border px-1" onPress={() => setCategory(item.key)}>
+      {categories.map((item, index) => <Button key={item.key} variant="ghost" accessibilityLabel={`${item.title} beállításai`} className={`h-14 justify-start gap-3 rounded-none px-1 ${index < categories.length - 1 ? 'border-b border-border' : ''}`} onPress={() => setCategory(item.key)}>
         <Icon as={item.icon} size={20} className="text-muted-foreground" />
         <Text className="min-w-0 flex-1 text-sm font-medium">{item.title}</Text>
         <Icon as={ChevronRight} size={17} className="text-muted-foreground" />
@@ -87,10 +87,7 @@ function CalendarSettings() {
       <SettingsSwitch title="Hétvégék" checked={app.view.showWeekends} onChange={showWeekends => app.setView({ showWeekends })} />
       <SettingsSwitch title="Elrejtett alkalmak" checked={app.view.hidden} onChange={hidden => app.setView({ hidden })} />
     </View>
-    <View className="gap-3"><Text className="text-base font-semibold">Látható időszak</Text><View className="flex-row gap-3">
-      <View className="min-w-0 flex-1 gap-2"><Text className="text-sm">Kezdés</Text><Choice fullWidth label="Naptár kezdő órája" value={String(app.view.startHour)} options={hourOptions(0, app.view.endHour - 1)} onChange={value => app.setView({ startHour: Number(value) })} /></View>
-      <View className="min-w-0 flex-1 gap-2"><Text className="text-sm">Befejezés</Text><Choice fullWidth label="Naptár záró órája" value={String(app.view.endHour)} options={hourOptions(app.view.startHour + 1, 24)} onChange={value => app.setView({ endHour: Number(value) })} /></View>
-    </View></View>
+
   </View>;
 }
 function WeekSettings({ date, setDate, week, setWeek, busy, error, prepare, abort }: SettingsOptionsProps) {
@@ -105,8 +102,4 @@ function WeekSettings({ date, setDate, week, setWeek, busy, error, prepare, abor
 }
 function SettingsSwitch({ title, checked, onChange }: { title: string; checked: boolean; onChange: (value: boolean) => void }) {
   return <View className="min-h-14 flex-row items-center justify-between gap-4 border-b border-border py-3"><Text className="min-w-0 flex-1 text-sm">{title}</Text><Switch accessibilityLabel={title} checked={checked} onCheckedChange={onChange} /></View>;
-}
-function hourLabel(hour: number) { return `${String(hour).padStart(2, '0')}:00`; }
-function hourOptions(first: number, last: number) {
-  return Array.from({ length: last - first + 1 }, (_, index) => ({ value: String(first + index), label: hourLabel(first + index) }));
 }
