@@ -1,7 +1,8 @@
 import type { DisplayEvent } from '../domain/model';
 import { addDays, fromWall, wallTime } from '../domain/time';
-export const GRID_START = 7 * 60;
-export const GRID_END = 20 * 60;
+export const GRID_START = 0;
+export const GRID_END = 24 * 60;
+export const INITIAL_CALENDAR_MINUTE = 8 * 60;
 export const GRID_MINUTES = GRID_END - GRID_START;
 export type PositionedEvent = { event: DisplayEvent; top: number; height: number; lane: number; lanes: number };
 

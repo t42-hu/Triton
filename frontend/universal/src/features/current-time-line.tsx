@@ -11,7 +11,7 @@ export function CurrentTimeLine({ date, zoom, gridStart = GRID_START, gridEnd = 
   const minutes = Number(wall.slice(11, 13)) * 60 + Number(wall.slice(14, 16)) - gridStart;
   if (minutes < 0 || minutes > gridEnd - gridStart) return null;
   return <View pointerEvents="none" accessibilityLabel="Aktuális idő" style={{ position: 'absolute', left: 0, right: 0, top: minutes * zoom, height: 2, backgroundColor: '#ef4444', zIndex: 20 }}>
-    <View style={{ position: 'absolute', left: 0, top: -5, borderTopWidth: 6, borderBottomWidth: 6, borderLeftWidth: 8, borderTopColor: 'transparent', borderBottomColor: 'transparent', borderLeftColor: '#ef4444' }} />
-    <View style={{ position: 'absolute', right: 0, top: -5, borderTopWidth: 6, borderBottomWidth: 6, borderRightWidth: 8, borderTopColor: 'transparent', borderBottomColor: 'transparent', borderRightColor: '#ef4444' }} />
+    <View style={{ position: 'absolute', width: 0, height: 0, left: 0, top: -5, borderTopWidth: 6, borderBottomWidth: 6, borderLeftWidth: 8, borderTopColor: 'transparent', borderBottomColor: 'transparent', borderLeftColor: '#ef4444' }} />
+    <View style={{ position: 'absolute', width: 0, height: 0, right: 0, top: -5, borderTopWidth: 6, borderBottomWidth: 6, borderRightWidth: 8, borderTopColor: 'transparent', borderBottomColor: 'transparent', borderRightColor: '#ef4444' }} />
   </View>;
 }

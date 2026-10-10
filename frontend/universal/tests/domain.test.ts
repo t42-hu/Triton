@@ -125,7 +125,7 @@ test('calendar clips timed events to 07:00–20:00 without changing their stored
   const date = '2026-09-07';
   const make = (start: string, end: string) => display({ key: start, title: 'Window', originalTitle: 'Window', start: fromWall(`${date}T${start}`), end: fromWall(`${date}T${end}`), kind: 'timed', location: '' });
   const early = make('06:30', '07:30'); const late = make('19:30', '22:00');
-  const result = dayLayout([make('05:00', '06:00'), early, late, make('20:00', '23:00')], date);
+  const result = dayLayout([make('05:00', '06:00'), early, late, make('20:00', '23:00')], date, 7 * 60, 20 * 60);
   assert.equal(result.length, 2);
   assert.equal(result[0].top, 0); assert.equal(result[0].height, 30);
   assert.equal(result[1].top, 750); assert.equal(result[1].height, 30);
@@ -153,10 +153,10 @@ test('calendar uses the selected hours and clips events at both boundaries', () 
   assert.deepEqual(result.map(({ event, top, height }) => [event.key, top, height]), [['early', 0, 30], ['late', 450, 30]]);
 });
 
-test('calendar supports the full day and clips overnight events at midnight', () => {
+test('calendar defaults to the full day and clips overnight events at midnight', () => {
   const date = '2026-09-07';
   const event = display({ key: 'overnight', title: 'Overnight', originalTitle: 'Overnight', start: fromWall(`${date}T23:30`), end: fromWall('2026-09-08T01:00'), kind: 'timed', location: '' });
-  const [item] = dayLayout([event], date, 0, 24 * 60);
+  const [item] = dayLayout([event], date);
   assert.equal(item.top, 1410); assert.equal(item.height, 30);
   assert.equal(item.event.end, event.end);
 });

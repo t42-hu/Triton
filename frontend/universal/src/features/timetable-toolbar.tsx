@@ -7,20 +7,19 @@ import { Icon } from '@/components/ui/icon';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, SlidingTabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Text } from '@/components/ui/text';
-import { today } from '@/domain/time';
 import { useApp } from './app-state';
 
 const quietButton = 'h-[48px] rounded-lg border-0 bg-transparent px-3 shadow-none';
 const segmentList = 'h-[48px] rounded-lg border-0 bg-muted p-1';
 const segment = 'min-w-0 flex-1 rounded-lg px-2';
 
-export function TimetableToolbar() {
+export function TimetableToolbar({ onToday }: { onToday: () => void }) {
   const { width, fontScale } = useWindowDimensions();
   const compact = width / fontScale < 900;
-  return <View testID="timetable-toolbar" className="gap-2"><PeriodControls /><ComparisonControls compact={compact} /></View>;
+  return <View testID="timetable-toolbar" className="gap-2"><PeriodControls onToday={onToday} /><ComparisonControls compact={compact} /></View>;
 }
 
-function PeriodControls() {
+function PeriodControls({ onToday }: { onToday: () => void }) {
   const { view, setView } = useApp();
   const { fontScale } = useWindowDimensions();
   return <View className="flex-row items-center gap-1">
@@ -30,7 +29,7 @@ function PeriodControls() {
         <TabsTrigger className={segment} value="week"><Icon as={CalendarRange} size={14} /><Text className="text-[14px]">Hét</Text></TabsTrigger>
       </SlidingTabsList>
     </Tabs>
-    <Button variant="ghost" className={quietButton} accessibilityLabel="Ugrás a mai napra" onPress={() => setView({ leftDate: today(), rightDate: today() })}><Icon as={CalendarCheck} size={15} /><Text className="text-[14px]">Ma</Text></Button>
+    <Button variant="ghost" className={quietButton} accessibilityLabel="Ugrás a mai napra" onPress={onToday}><Icon as={CalendarCheck} size={15} /><Text className="text-[14px]">Ma</Text></Button>
   </View>;
 }
 

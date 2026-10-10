@@ -41,7 +41,7 @@ export function RoomField({ value, onChange, onOpen, allowMap = true }: { value:
   function choose(room: string) { onChange(room); setEditing(false); }
   return <View className="relative gap-1.5" style={{ zIndex: editing ? 10 : 0 }}>
     {matches.length ? <View className="absolute left-0 overflow-hidden rounded-lg border border-border bg-card" style={{ bottom: 44, right: 48, maxHeight: 200 }}>{matches.map(room => <RoomSuggestion key={room} room={room} choose={choose} />)}</View> : null}
-    <View className="flex-row items-end gap-2"><View className="min-w-0 flex-1 gap-1.5"><Label nativeID="Terem">{allowMap ? 'Terem / helyszín' : 'Helyszín (opcionális)'}</Label><Input accessibilityLabel="Terem" aria-labelledby="Terem" value={value} onFocus={() => setEditing(true)} onBlur={() => setEditing(false)} onChangeText={onChange} placeholder="Terem vagy https://…" autoCapitalize="none" /></View>
+    <View className="flex-row items-end gap-2"><View className="min-w-0 flex-1 gap-1.5"><Label nativeID="Terem">{allowMap ? 'Terem / helyszín' : 'Helyszín (opcionális)'}</Label><Input accessibilityLabel="Terem" aria-labelledby="Terem" value={value} onFocus={() => setEditing(true)} onBlur={() => setEditing(false)} onChangeText={onChange} placeholder={allowMap ? "Terem vagy https://…" : "https://…"} autoCapitalize="none" /></View>
     {isMapped ? <Button accessibilityLabel="Terem megjelenítése a térképen" variant="outline" className="h-10 w-10 rounded-md p-0" onPress={onOpen}><Icon as={MapPinned} size={18} className="text-primary" /></Button> : link ? <Button accessibilityLabel="Helyszínlink megnyitása" variant="outline" className="h-10 w-10 rounded-md p-0" onPress={() => void openLink()}><Icon as={ExternalLink} size={18} className="text-primary" /></Button> : null}</View>
     {linkError ? <Text accessibilityRole="alert" className="text-sm text-destructive">{linkError}</Text> : null}
   </View>;
@@ -53,10 +53,12 @@ function RoomMapStatus({ room }: { room: RoomLocation }) {
   return <View className="flex-row items-center gap-2"><View className="h-2.5 w-2.5 rounded-full bg-destructive" /><Text className="text-sm font-medium">{room.place.name} · {room.roomCode}</Text></View>;
 }
 
-function MapViewPicker({ view, setView }: { view: MapMode; setView: (view: MapMode) => void }) {
+function MapViewPicker({ view, setView, theme }: { view: MapMode; setView: (view: MapMode) => void; theme: 'light' | 'dark' }) {
+  const selectedColor = theme === 'dark' ? '#11203D' : '#FFFFFF';
+  const idleColor = theme === 'dark' ? '#F0F3F8' : '#1E2732';
   return <View className="flex-row gap-1 rounded-lg bg-muted p-1">
-    <Button accessibilityLabel="2D alaprajz" accessibilityState={{ selected: view === '2d' }} variant={view === '2d' ? 'default' : 'ghost'} className="h-11 gap-1.5 px-3" onPress={() => setView('2d')}><Icon as={Map} size={15} /><Text className="text-xs">2D</Text></Button>
-    <Button accessibilityLabel="Forgatható 3D térkép" accessibilityState={{ selected: view === '3d' }} variant={view === '3d' ? 'default' : 'ghost'} className="h-11 gap-1.5 px-3" onPress={() => setView('3d')}><Icon as={Box} size={15} /><Text className="text-xs">3D</Text></Button>
+    <Button key={`2d-${view === '2d'}`} accessibilityLabel="2D alaprajz" accessibilityState={{ selected: view === '2d' }} variant={view === '2d' ? 'default' : 'ghost'} className="h-11 min-w-[72px] gap-1.5 px-3" onPress={() => setView('2d')}><Icon as={Map} size={15} color={view === '2d' ? selectedColor : idleColor} /><Text className="shrink-0 text-xs font-semibold" style={{ color: view === '2d' ? selectedColor : idleColor }}>2D</Text></Button>
+    <Button key={`3d-${view === '3d'}`} accessibilityLabel="Forgatható 3D térkép" accessibilityState={{ selected: view === '3d' }} variant={view === '3d' ? 'default' : 'ghost'} className="h-11 min-w-[72px] gap-1.5 px-3" onPress={() => setView('3d')}><Icon as={Box} size={15} color={view === '3d' ? selectedColor : idleColor} /><Text className="shrink-0 text-xs font-semibold" style={{ color: view === '3d' ? selectedColor : idleColor }}>3D</Text></Button>
   </View>;
 }
 
@@ -82,7 +84,7 @@ export function RoomMapDialog({ location, close, open = true }: { location: stri
   return <Modal title="Terem térképe" description={room ? `${location} · ${room.floorName}` : '2D és 3D épülettérkép a NIK-ről'} close={close} open={open} keepMounted={Platform.OS === 'ios'} wide>
     <View className="gap-3"><View className="flex-row items-center gap-3"><View className="h-10 w-10 items-center justify-center"><Icon as={MapPinned} size={20} className="text-muted-foreground" /></View><View><Text className="text-lg font-semibold">{floorName}</Text><Text className="text-xs text-muted-foreground">NIK épülettérkép{room ? ` · ${room.roomCode}` : ''}</Text></View></View>
       {location.trim() && !room ? <Text className="text-sm text-muted-foreground">Ehhez a teremhez nincs adat a Bécsi úti NIK térképen.</Text> : null}
-      <View className="flex-row items-center justify-between gap-2"><Text className="text-sm font-medium">Térkép</Text><MapViewPicker view={view} setView={setView} /></View>
+      <View className="flex-row items-center justify-between gap-2"><Text className="text-sm font-medium">Térkép</Text><MapViewPicker view={view} setView={setView} theme={theme} /></View>
       <FloorPicker floor={selectedFloor} setFloor={setSelectedFloor} />
       <View className="overflow-hidden rounded-lg border border-border" style={{ height: mapHeight }}>{Platform.OS === 'ios' ? (['2d', '3d'] as const).map(mode => <View key={`${mode}-${theme}`} pointerEvents={view === mode ? 'auto' : 'none'} importantForAccessibility={view === mode ? 'auto' : 'no-hide-descendants'} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, opacity: view === mode ? 1 : 0 }}><RoomMap mode={mode} floor={selectedFloor} theme={theme} placeId={room?.place?.id} height={mapHeight} onFloorChange={async floor => setSelectedFloor(floor)} /></View>) : <RoomMap key={`${view}-${theme}`} mode={view} floor={selectedFloor} theme={theme} placeId={room?.place?.id} height={mapHeight} onFloorChange={async floor => setSelectedFloor(floor)} />}</View>
       {room && selectedFloor === room.floor ? <RoomMapStatus room={room} /> : <Text className="text-sm text-muted-foreground">{room ? `Aktuális szint: ${floorName} · Keresett terem: ${room.floorName}` : floorName}</Text>}

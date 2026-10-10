@@ -14,6 +14,7 @@ export type WorkspaceFrameProps = {
   create: () => void;
   openProfiles: () => void;
   openAccount: () => void;
+  openLinks: () => void;
   openSettings: () => void;
   openMap: () => void;
   showMap: boolean;
