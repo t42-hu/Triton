@@ -4,7 +4,7 @@ import { EventColorDialog } from './event-color-editor';
 import { ReminderDialog } from './reminder-dialog';
 import { NotebookPen, Palette, Bell, BellOff, Repeat2, Save, RotateCcw, Trash2, BookOpen, FileText, ListTodo, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useEventRemindersEnabled } from './reminder-bell';
-import { EVENT_CATEGORIES } from '../domain/student';
+import { EVENT_CATEGORIES, supportsCourseLink } from '../domain/student';
 import { LessonTasks } from './lesson-tasks';
 import { NotebookDialog } from './notebook-dialog';
 import { useState } from 'react';
@@ -37,7 +37,7 @@ export function EventDialog({ event, close, openMap }: { event: DisplayEvent; cl
     } catch (error) { editor.setError(String(error)); }
   }
   async function suggest() { try { const items = await futureEvents(event); editor.setCandidates(items); editor.setSelected(new Set(items.map(eventIdentity))); } catch (error) { editor.setError(String(error)); } }
-  async function remove() { try { await deleteManualSource(event.sourceId); await app.refresh(); close(); } catch (error) { editor.setError(String(error)); } }
+  async function remove() { close(); try { await deleteManualSource(event.sourceId); await app.refresh(); } catch (error) { app.setError(String(error)); } }
   if (colorsOpen) return <EventColorDialog event={event} close={() => setColorsOpen(false)} />;
   if (remindersOpen) return <ReminderDialog event={event} close={() => setRemindersOpen(false)} />;
   if (notebookOpen) return <NotebookDialog event={event} learning={notebookOpen === 'learning'} close={() => setNotebookOpen(null)} />;
@@ -53,7 +53,7 @@ export function EventDialog({ event, close, openMap }: { event: DisplayEvent; cl
     <EventEditorSections event={event} editor={editor} openMap={() => { setMapOpen(true); openMap(editor.fields.location, () => setMapOpen(false)); }} />
     <Action quiet expanded={advancedOpen} icon={advancedOpen ? ChevronUp : ChevronDown} onPress={() => setAdvancedOpen(!advancedOpen)}>További műveletek</Action>
     <AnimatedDisclosure expanded={advancedOpen} gap={20}><View className="gap-4 border-t border-border pt-4">
-      {(event.category ?? 'lesson') === 'lesson' ? <Action secondary icon={NotebookPen} onPress={() => setNotebookOpen('learning')}>Kurzuslinkek szerkesztése</Action> : null}
+      {supportsCourseLink(event) ? <Action secondary icon={NotebookPen} onPress={() => setNotebookOpen('learning')}>Kurzuslink szerkesztése</Action> : null}
       <Toggle label="Alkalom elrejtése / kihagyása" checked={editor.fields.hidden} onChange={hidden => editor.change({ hidden })} />
       <Action secondary expanded={editor.candidates.length > 0} icon={Repeat2} onPress={() => void suggest()}>Több alkalom módosítása</Action>
       <AnimatedDisclosure expanded={editor.candidates.length > 0} gap={16}><CandidateList items={editor.candidates} selected={editor.selected} setSelected={editor.setSelected} /></AnimatedDisclosure>
@@ -83,7 +83,7 @@ function EventDetails({ event, editor, openMap }: { event: DisplayEvent; editor:
   return <View className="gap-4">
     <Choice fullWidth icon={eventCategoryIcon(editor.fields.category)} label="Esemény kategóriája" value={editor.fields.category} options={EVENT_CATEGORIES} onChange={category => editor.change({ category: category as EventCategory })} />
     <Field label={`${eventCategoryName(editor.fields.category)} neve`} value={editor.fields.title} onChange={title => editor.change({ title })} />
-    <RoomField allowMap={editor.fields.category === 'lesson'} value={editor.fields.location} onChange={location => editor.change({ location })} onOpen={openMap} />
+    <RoomField allowMap={editor.fields.category === 'lesson' || editor.fields.category === 'test'} value={editor.fields.location} onChange={location => editor.change({ location })} onOpen={openMap} />
     <DateTimeField label="Kezdés" value={editor.fields.start} onChange={value => editor.changeStart(value, event.kind === 'allDay')} allDay={event.kind === 'allDay'} />
     <DateTimeField label="Befejezés" value={editor.fields.end} onChange={editor.setEnd} allDay={event.kind === 'allDay'} />
   </View>;
@@ -104,7 +104,7 @@ function CandidateList({ items, selected, setSelected }: { items: DisplayEvent[]
     setSelected(next);
   }
   return <View className="gap-2"><Text>{selected.size} kijelölt alkalom. A meglévő felülírásokat az új érték felváltja.</Text>
-    <ScrollView nestedScrollEnabled keyboardDismissMode="none" keyboardShouldPersistTaps="handled" style={{ maxHeight: 180 }} contentContainerStyle={{ gap: 12 }}>{items.map(item => <Toggle key={eventIdentity(item)} label={`${wallTime(item.start).slice(0, 16).replace('T', ' ')} ${item.patch ? '(módosítva)' : ''}`} checked={selected.has(eventIdentity(item))} onChange={() => toggle(item)} />)}</ScrollView>
+    <ScrollView className="panel-scroll" nestedScrollEnabled keyboardDismissMode="none" keyboardShouldPersistTaps="handled" style={{ maxHeight: 180 }} contentContainerStyle={{ gap: 12, paddingRight: 12 }}>{items.map(item => <Toggle key={eventIdentity(item)} label={`${wallTime(item.start).slice(0, 16).replace('T', ' ')} ${item.patch ? '(módosítva)' : ''}`} checked={selected.has(eventIdentity(item))} onChange={() => toggle(item)} />)}</ScrollView>
   </View>;
 }
 

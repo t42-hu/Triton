@@ -1,4 +1,4 @@
-import { BookOpen, CalendarClock, ClipboardCheck, FilePenLine, GraduationCap } from 'lucide-react-native';
+import { BookOpen, CalendarClock, ClipboardCheck, FilePenLine, GraduationCap, BriefcaseBusiness } from 'lucide-react-native';
 import type { EventCategory } from '../domain/model';
 import { categoryLabel } from '../domain/student';
 
@@ -8,6 +8,7 @@ export function eventCategoryName(category: EventCategory): string {
 }
 
 export function eventCategoryIcon(category: EventCategory) {
+  if (category === 'work') return BriefcaseBusiness;
   if (category === 'lesson') return BookOpen;
   if (category === 'assignment') return ClipboardCheck;
   if (category === 'test') return FilePenLine;

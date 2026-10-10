@@ -60,8 +60,8 @@ function ManualDetails({ draft, change, openMap }: { draft: Draft; change: (patc
   const app = useApp();
   return <ManualSection icon={eventCategoryIcon(draft.category)} title={`${eventCategoryName(draft.category)} adatai`}>
     <Choice fullWidth label="Célprofil" value={String(draft.profileId)} onChange={id => change({ profileId: Number(id) })} options={app.profileList.map(profile => ({ value: String(profile.id), label: profile.name }))} />
-    <Field label={`${eventCategoryName(draft.category)} neve`} value={draft.title} onChange={title => change({ title })} />
-    <RoomField allowMap={draft.category === 'lesson'} value={draft.location} onChange={location => change({ location })} onOpen={openMap} />
+    <Field label={`${eventCategoryName(draft.category)} neve`} placeholder={{ lesson: 'Pl. Fizika gyakorlat', event: 'Pl. Projektmegbeszélés', work: 'Pl. Délutáni műszak', assignment: 'Pl. Programozás beadandó', test: 'Pl. Matematika ZH', exam: 'Pl. Fizika vizsga' }[draft.category]} value={draft.title} onChange={title => change({ title })} />
+    <RoomField allowMap={draft.category === 'lesson' || draft.category === 'test'} value={draft.location} onChange={location => change({ location })} onOpen={openMap} />
     <EventNotesField value={draft.notes} onChange={notes => change({ notes })} />
   </ManualSection>;
 }
