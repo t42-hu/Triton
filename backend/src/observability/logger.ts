@@ -38,6 +38,7 @@ export function safeRequestPath(rawUrl?: string): string {
         return '/invalid-url'
     }
     return pathname
+        .replace(/(\/calendar-share\/[^/]+\/)[^/]+(?=\/calendar\.ics)/gi, '$1[redacted]')
         .replace(/(\/reset-password\/)[^/]+/gi, '$1[redacted]')
         .replace(/(\/verify-email\/)[^/]+/gi, '$1[redacted]')
 }

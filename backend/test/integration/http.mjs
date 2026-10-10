@@ -395,10 +395,14 @@ if (localServices && process.env.TEST_APP_DATABASE_URL) {
     await check('calendar backend over authenticated HTTP', async () => {
         const { Pool } = await import('pg')
         const { verifyCalendarHttp } = await import('./calendar-http.mjs')
+        const { verifyCalendarSharingHttp } = await import('./calendar-sharing-http.mjs')
+        const { verifyWorkspaceCommitHttp } = await import('./workspace-commit-http.mjs')
         const pool = new Pool({ connectionString: process.env.TEST_APP_DATABASE_URL })
         try {
             // The isolated test stack destroys its storage volume on cleanup.
             await verifyCalendarHttp(pool, origin, process.env.BETTER_AUTH_SECRET, process.env.APP_ID)
+            await verifyCalendarSharingHttp(pool, origin, process.env.BETTER_AUTH_SECRET, process.env.APP_ID)
+            await verifyWorkspaceCommitHttp(pool, origin, process.env.BETTER_AUTH_SECRET, process.env.APP_ID)
         } finally {
             await pool.end()
         }

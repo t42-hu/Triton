@@ -226,11 +226,20 @@ export class CalendarService {
         )
         return rows[0]
     }
+    async ensureSingleCourseLink(db: Query, userId: string, data: DomainRow, excludeId?: string) {
+        if (typeof data.subjectKey !== 'string' || !data.subjectKey.startsWith('lms:')) return
+        const { rows } = await db.query(
+            'SELECT id FROM user_notebook_link WHERE user_id=$1 AND profile_id IS NOT DISTINCT FROM $2 AND subject_key=$3 AND deleted_at IS NULL AND ($4::text IS NULL OR id<>$4) LIMIT 1',
+            [userId, data.profileId ?? null, data.subjectKey, excludeId ?? null],
+        )
+        if (rows.length) throw new ConflictException('This course already has a link; update or delete it first')
+    }
     async create(db: Query, userId: string, resource: CalendarResource, raw: unknown) {
         if (resources[resource].create === false)
             throw new BadRequestException('Use the invitation or meeting action endpoint')
         const data: DomainRow = parse(inputSchema(resource), raw)
         await this.references(db, userId, resource, data)
+        if (resource === 'notebook-links') await this.ensureSingleCourseLink(db, userId, data)
         if (resource === 'events') this.validateEvent({ ...data, kind: data.kind || 'timed' })
         data.id ||= randomUUID()
         const cols = columns(resource)
@@ -258,6 +267,11 @@ export class CalendarService {
         await this.authorizeWrite(db, userId, resource, rows[0])
         const full = { ...encodeRow(resource, rows[0]), ...data }
         await this.references(db, userId, resource, full)
+        if (
+            resource === 'notebook-links' &&
+            (full.subjectKey !== rows[0].subject_key || full.profileId !== rows[0].profile_id)
+        )
+            await this.ensureSingleCourseLink(db, userId, full, id)
         if (resource === 'events') this.validateEvent(full)
         const version = data.version
         delete data.version

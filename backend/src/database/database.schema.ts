@@ -340,7 +340,7 @@ export const calendarEvent = pgTable(
             .where(sql`${t.externalUid} IS NOT NULL`),
         check('calendar_event_title_check', sql`length(trim(${t.title})) > 0`),
         check('calendar_event_color_check', sql`${t.color} ~ '^#[0-9A-Fa-f]{6}$'`),
-        check('calendar_event_category_check', sql`${t.category} IN ('lesson','event','assignment','test','exam')`),
+        check('calendar_event_category_check', sql`${t.category} IN ('lesson','event','work','assignment','test','exam')`),
         check(
             'calendar_event_time_check',
             sql`(${t.kind} = 'timed' AND ${t.startsAt} IS NOT NULL AND ${t.endsAt} IS NOT NULL AND ${t.endsAt} > ${t.startsAt} AND ${t.startDate} IS NULL AND ${t.endDate} IS NULL) OR (${t.kind} = 'allDay' AND ${t.startDate} IS NOT NULL AND ${t.endDate} IS NOT NULL AND ${t.endDate} > ${t.startDate} AND ${t.startsAt} IS NULL AND ${t.endsAt} IS NULL)`,
@@ -856,3 +856,27 @@ export const twoFactor = pgTable(
     },
     (t) => [index('two_factor_user_idx').on(t.userId), index('two_factor_secret_idx').on(t.secret)],
 )
+
+/** Read-only subscription links are independent of account membership and individually revocable. */
+export const calendarShare = pgTable(
+    'calendar_share',
+    {
+        id: text('id').primaryKey(),
+        ownerUserId: userRef('owner_user_id'),
+        calendarId: calendarRef(),
+        selection: jsonb('selection').$type<{ sourceIds: string[]; includeManual: boolean; categories: string[] }>(),
+        createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+        revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    },
+    (t) => [index('calendar_share_owner_idx').on(t.ownerUserId), index('calendar_share_calendar_idx').on(t.calendarId)],
+)
+
+// Raw import content is private domain data, persisted in PostgreSQL rather than device files.
+export const calendarSourceContent = pgTable('calendar_source_content', {
+    sourceId: text('source_id')
+        .primaryKey()
+        .references(() => calendarSource.id, { onDelete: 'cascade' }),
+    content: text('content').notNull(),
+    contentHash: text('content_hash').notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})

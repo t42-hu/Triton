@@ -42,7 +42,7 @@ export const CalendarEventInputSchema = z.strictObject({
     notes: notes.optional(),
     location: z.string().max(2000).optional(),
     color: color.nullable().optional(),
-    category: z.enum(['lesson', 'event', 'assignment', 'test', 'exam']).optional(),
+    category: z.enum(['lesson', 'event', 'work', 'assignment', 'test', 'exam']).optional(),
     kind: z.enum(['timed', 'allDay']).optional(),
     startsAt: instant.nullable().optional(),
     endsAt: instant.nullable().optional(),
@@ -85,7 +85,16 @@ export const CalendarResourceSchemas = {
         coverageFrom: day.nullable().optional(),
         coverageTo: day.nullable().optional(),
     }),
-    'source-connections': create({ sourceId: id, url: url.nullable().optional(), autoSync: z.boolean().optional() }),
+    'source-connections': create({
+        sourceId: id,
+        url: url.nullable().optional(),
+        autoSync: z.boolean().optional(),
+        importedAt: instant.optional(),
+        lastAttemptAt: instant.nullable().optional(),
+        lastSuccessAt: instant.nullable().optional(),
+        lastError: z.string().max(2000).nullable().optional(),
+        lastChange: z.string().max(2000).nullable().optional(),
+    }),
     'source-revisions': create({ sourceId: id }),
     events: CalendarEventInputSchema,
     recurrences: create({
@@ -256,6 +265,20 @@ export const SyncPushSchema = z.strictObject({
     deviceId: id,
     mutations: z.array(CalendarMutationSchema).min(1).max(100),
 })
+/** A foreground save commits its domain changes and private source content together. */
+export const WorkspaceCommitSchema = z.strictObject({
+    deviceId: id,
+    mutations: z.array(CalendarMutationSchema).max(20000),
+    contents: z
+        .array(
+            z.strictObject({
+                sourceId: id,
+                version: CalendarVersionSchema.optional(),
+                content: z.string().max(1000000),
+            }),
+        )
+        .max(100),
+})
 export const SyncPullSchema = z.strictObject({
     deviceId: id,
     after: z.string().regex(/^\d{1,20}$/),
@@ -284,3 +307,13 @@ export const CalendarListResponseSchema = z.object({ items: z.array(CalendarReco
 export const SyncPushResponseSchema = z.object({
     results: z.array(z.object({ clientMutationId: id, record: CalendarRecordSchema })),
 })
+
+
+export const CalendarShareSelectionSchema = z.strictObject({
+    sourceIds: z.array(CalendarIdSchema).max(500).refine(ids => new Set(ids).size === ids.length, 'Duplicate source'),
+    includeManual: z.boolean(),
+    categories: z.array(z.enum(['lesson', 'event', 'work', 'assignment', 'test', 'exam'])).min(1).max(6)
+        .refine(categories => new Set(categories).size === categories.length, 'Duplicate category'),
+}).refine(selection => selection.includeManual || selection.sourceIds.length > 0, 'Select at least one source')
+export const CalendarShareCreateSchema = z.strictObject({ calendarId: CalendarIdSchema, selection: CalendarShareSelectionSchema })
+export type CalendarShareSelection = z.infer<typeof CalendarShareSelectionSchema>

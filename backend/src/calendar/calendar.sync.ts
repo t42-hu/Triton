@@ -6,7 +6,10 @@ import {
     SyncPullSchema,
     SyncPushSchema,
     SyncSnapshotSchema,
+    WorkspaceCommitSchema,
 } from '@fullstack-starter/shared'
+import type { z } from 'zod'
+import { requireCalendar } from './calendar.access.js'
 import { CalendarService, parse, quote } from './calendar.service.js'
 import { resourceByTable, resourceNames, tableName } from './calendar.catalog.js'
 import { calendarVisible, eventVisible, visibility, type Query } from './calendar.access.js'
@@ -247,58 +250,93 @@ export class CalendarSync {
     }
     push(userId: string, raw: unknown) {
         const body = parse(SyncPushSchema, raw)
+        return this.calendar.transaction((db) => this.applyMutations(db, userId, body))
+    }
+    commit(userId: string, raw: unknown) {
+        const body = parse(WorkspaceCommitSchema, raw)
+        if (Buffer.byteLength(JSON.stringify(body)) > 1900000)
+            throw new BadRequestException('Workspace save exceeds 1.9 MB')
         return this.calendar.transaction(async (db) => {
-            await this.device(db, userId, body.deviceId)
-            const results = []
-            for (const mutation of body.mutations) {
-                const hash = createHash('sha256').update(stable(mutation)).digest('hex')
-                const prior = (
-                    await db.query(
-                        'SELECT request_hash,result FROM sync_mutation WHERE user_id=$1 AND device_id=$2 AND client_mutation_id=$3',
-                        [userId, body.deviceId, mutation.clientMutationId],
-                    )
+            const result = await this.applyMutations(db, userId, body)
+            for (const item of body.contents) {
+                const source = await this.calendar.get(db, userId, 'sources', item.sourceId)
+                await requireCalendar(db, userId, source?.calendarId, 'owner')
+                const hash = createHash('sha256').update(item.content).digest('hex')
+                const previous = (
+                    await db.query('SELECT content_hash FROM calendar_source_content WHERE source_id=$1', [
+                        item.sourceId,
+                    ])
                 ).rows[0]
-                if (prior) {
-                    if (prior.request_hash !== hash)
-                        throw new ConflictException('Mutation ID reused with different content')
-                    const current = await this.calendar.get(
-                        db,
-                        userId,
-                        mutation.resource,
-                        String(prior.result.id),
-                        false,
-                    )
-                    if (!current && !prior.result.deletedAt)
-                        throw new NotFoundException('Previously mutated record is no longer accessible')
-                    const replay = current
-                        ? Object.fromEntries(Object.entries(prior.result).filter(([key]) => key in current))
-                        : { id: prior.result.id, version: prior.result.version, deletedAt: prior.result.deletedAt }
-                    results.push({ clientMutationId: mutation.clientMutationId, record: replay })
-                    continue
-                }
-                if (mutation.operation !== 'create' && (!mutation.id || !mutation.version))
-                    throw new BadRequestException('Updates and deletes require id and version')
-                const record =
-                    mutation.operation === 'create'
-                        ? await this.calendar.create(db, userId, mutation.resource, {
-                              ...mutation.data,
-                              ...(mutation.id ? { id: mutation.id } : {}),
-                          })
-                        : mutation.operation === 'update'
-                          ? await this.calendar.update(db, userId, mutation.resource, mutation.id!, {
-                                ...mutation.data,
-                                version: mutation.version,
-                            })
-                          : await this.calendar.remove(db, userId, mutation.resource, mutation.id!, {
-                                version: mutation.version,
-                            })
-                await db.query(
-                    'INSERT INTO sync_mutation(user_id,device_id,client_mutation_id,request_hash,result) VALUES($1,$2,$3,$4,$5)',
-                    [userId, body.deviceId, mutation.clientMutationId, hash, JSON.stringify(record)],
+                if (previous?.content_hash === hash) continue
+                const sourceMutation = body.mutations.find(
+                    (row) => row.resource === 'sources' && row.id === item.sourceId,
                 )
-                results.push({ clientMutationId: mutation.clientMutationId, record })
+                const mutation = result.results.find((row) => row.clientMutationId === sourceMutation?.clientMutationId)
+                const expected = mutation?.record.version ?? item.version
+                if (source?.version !== expected) throw new ConflictException('Source content version conflict')
+                await db.query(
+                    `INSERT INTO calendar_source_content(source_id,content,content_hash) VALUES($1,$2,$3)
+                    ON CONFLICT(source_id) DO UPDATE SET content=excluded.content,content_hash=excluded.content_hash,updated_at=now()`,
+                    [item.sourceId, item.content, hash],
+                )
+                const updated = await this.calendar.update(db, userId, 'sources', item.sourceId, {
+                    version: expected,
+                    name: source!.name,
+                })
+                if (mutation) mutation.record = updated
             }
-            return { results }
+            return result
         })
+    }
+    async applyMutations(
+        db: Query,
+        userId: string,
+        body: { deviceId: string; mutations: z.infer<typeof SyncPushSchema>['mutations'] },
+    ) {
+        await this.device(db, userId, body.deviceId)
+        const results = []
+        for (const mutation of body.mutations) {
+            const hash = createHash('sha256').update(stable(mutation)).digest('hex')
+            const prior = (
+                await db.query(
+                    'SELECT request_hash,result FROM sync_mutation WHERE user_id=$1 AND device_id=$2 AND client_mutation_id=$3',
+                    [userId, body.deviceId, mutation.clientMutationId],
+                )
+            ).rows[0]
+            if (prior) {
+                if (prior.request_hash !== hash)
+                    throw new ConflictException('Mutation ID reused with different content')
+                const current = await this.calendar.get(db, userId, mutation.resource, String(prior.result.id), false)
+                if (!current && !prior.result.deletedAt)
+                    throw new NotFoundException('Previously mutated record is no longer accessible')
+                const replay = current
+                    ? Object.fromEntries(Object.entries(prior.result).filter(([key]) => key in current))
+                    : { id: prior.result.id, version: prior.result.version, deletedAt: prior.result.deletedAt }
+                results.push({ clientMutationId: mutation.clientMutationId, record: replay })
+                continue
+            }
+            if (mutation.operation !== 'create' && (!mutation.id || !mutation.version))
+                throw new BadRequestException('Updates and deletes require id and version')
+            const record =
+                mutation.operation === 'create'
+                    ? await this.calendar.create(db, userId, mutation.resource, {
+                          ...mutation.data,
+                          ...(mutation.id ? { id: mutation.id } : {}),
+                      })
+                    : mutation.operation === 'update'
+                      ? await this.calendar.update(db, userId, mutation.resource, mutation.id!, {
+                            ...mutation.data,
+                            version: mutation.version,
+                        })
+                      : await this.calendar.remove(db, userId, mutation.resource, mutation.id!, {
+                            version: mutation.version,
+                        })
+            await db.query(
+                'INSERT INTO sync_mutation(user_id,device_id,client_mutation_id,request_hash,result) VALUES($1,$2,$3,$4,$5)',
+                [userId, body.deviceId, mutation.clientMutationId, hash, JSON.stringify(record)],
+            )
+            results.push({ clientMutationId: mutation.clientMutationId, record })
+        }
+        return { results }
     }
 }

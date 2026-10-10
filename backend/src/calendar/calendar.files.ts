@@ -68,16 +68,38 @@ export class CalendarFiles {
         const revision = await this.calendar.transaction(async (db) => {
             const source = await this.calendar.get(db, userId, 'sources', sourceId)
             await requireCalendar(db, userId, source?.calendarId, 'owner')
+            const stored = (
+                await db.query('SELECT content FROM calendar_source_content WHERE source_id=$1', [sourceId])
+            ).rows[0]
+            if (stored) return stored
             return (
                 await db.query(
-                    'SELECT storage_key FROM calendar_source_revision WHERE source_id=$1 AND is_current=true AND deleted_at IS NULL',
+                    'SELECT id,storage_key FROM calendar_source_revision WHERE source_id=$1 AND is_current=true AND deleted_at IS NULL',
                     [sourceId],
                 )
             ).rows[0]
         }, false)
         if (!revision) return { content: null }
+        if ('content' in revision) return { content: revision.content }
         const object = await this.storage.getObject(revision.storage_key)
-        return { content: (await object.Body?.transformToString()) ?? null }
+        const content = (await object.Body?.transformToString()) ?? null
+        if (content !== null)
+            await this.calendar.transaction(async (db) => {
+                const source = await this.calendar.get(db, userId, 'sources', sourceId)
+                await requireCalendar(db, userId, source?.calendarId, 'owner')
+                const latest = (
+                    await db.query(
+                        'SELECT id FROM calendar_source_revision WHERE source_id=$1 AND is_current=true AND deleted_at IS NULL',
+                        [sourceId],
+                    )
+                ).rows[0]
+                if (latest?.id !== revision.id) return
+                await db.query(
+                    'INSERT INTO calendar_source_content(source_id,content,content_hash) VALUES($1,$2,$3) ON CONFLICT(source_id) DO NOTHING',
+                    [sourceId, content, createHash('sha256').update(content).digest('hex')],
+                )
+            })
+        return { content }
     }
     async publish(userId: string, sourceId: string, raw: unknown) {
         const body = parse(ImportPublishSchema, raw)
@@ -147,6 +169,10 @@ export class CalendarFiles {
                         storageKey: key,
                         isCurrent: true,
                     }),
+                )
+                await db.query(
+                    'INSERT INTO calendar_source_content(source_id,content,content_hash) VALUES($1,$2,$3) ON CONFLICT(source_id) DO UPDATE SET content=excluded.content,content_hash=excluded.content_hash,updated_at=now()',
+                    [sourceId, body.content, createHash('sha256').update(body.content).digest('hex')],
                 )
                 const updated = await this.calendar.update(db, userId, 'sources', sourceId, {
                     version: body.version,

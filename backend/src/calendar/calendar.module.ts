@@ -12,9 +12,11 @@ import { CalendarService } from './calendar.service.js'
 import { CalendarActions } from './calendar.actions.js'
 import { CalendarFiles } from './calendar.files.js'
 import { CalendarSync } from './calendar.sync.js'
+import { CalendarSharing } from './calendar-sharing.js'
+import { CalendarSharingController } from './calendar-sharing.controller.js'
 @Module({
     imports: [DatabaseModule, StorageModule, VirusScannerModule],
-    controllers: [CalendarController, CalendarActionsController, CalendarFilesController, CalendarSyncController],
-    providers: [CalendarService, CalendarActions, CalendarFiles, CalendarSync],
+    controllers: [CalendarSharingController, CalendarController, CalendarActionsController, CalendarFilesController, CalendarSyncController],
+    providers: [CalendarSharing, CalendarService, CalendarActions, CalendarFiles, CalendarSync],
 })
 export class CalendarModule {}

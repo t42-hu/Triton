@@ -157,6 +157,9 @@ export class CalendarSyncController {
     @Post('push') push(@Session() s: UserSession, @Body() body: unknown) {
         return this.sync.push(s.user.id, body)
     }
+    @Post('commit') commit(@Session() s: UserSession, @Body() body: unknown) {
+        return this.sync.commit(s.user.id, body)
+    }
     @Post('ack') ack(@Session() s: UserSession, @Body() body: unknown) {
         return this.sync.ack(s.user.id, body)
     }
