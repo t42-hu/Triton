@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
-import { CalendarDays, Copy, Link2, Plus, RefreshCw, Share2, ShieldOff, Trash2 } from 'lucide-react-native';
+import { Copy, Link2, Plus, RefreshCw, Share2, ShieldOff } from 'lucide-react-native';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
@@ -9,12 +9,14 @@ import { ShareSelectionForm, defaultShareSelection } from './share-selection-for
 import { useApp } from './app-state';
 import { calendarShareOptions, calendarShares, createCalendarShare, importedCalendars, removeImportedCalendar, revokeCalendarShare, type CalendarShare, type ImportedCalendar, type ShareOptions, type ShareSelection } from '@/data/calendar-links';
 import { shareCalendarLink } from './share-calendar-link';
+import { ImportedCalendarRow } from './imported-calendar-row';
 import { useOptimisticRemoval } from './use-optimistic-removal';
 
 type Removal = { kind: 'share'; item: CalendarShare } | { kind: 'import'; item: ImportedCalendar };
 /** Keeps outgoing access and incoming subscriptions in one place, without hiding destructive actions in settings. */
 export function LinksDialog({ close }: { close: () => void }) {
-  const { shares, imports, loading, busy, error, notice, creating, setCreating, options, selection, setSelection, removal, setRemoval, run, create, remove, share, setShares, setImports, setOptions } = useLinksModel();
+  const { app, shares, imports, loading, busy, error, notice, creating, setCreating, options, selection, setSelection, removal, setRemoval, run, create, remove, share, setShares, setImports, setOptions } = useLinksModel();
+  async function refreshImports() { await app.refresh(); setImports(await importedCalendars()); setOptions(await calendarShareOptions()); }
   function shareItem(item: CalendarShare) { void run(() => share(item)); }
   return <Modal title="Linkek" close={close}>
     <View className="gap-4">
@@ -23,14 +25,13 @@ export function LinksDialog({ close }: { close: () => void }) {
       {!loading && !options.length ? <Text className="text-sm text-muted-foreground">Megosztani a saját profilod órarendjét tudod.</Text> : null}
       {loading ? <Text className="text-sm text-muted-foreground">Betöltés…</Text> : !shares.length ? <Text className="text-sm text-muted-foreground">Még nincs megosztási linked.</Text> : shares.map(item => <ShareRow key={item.id} item={item} busy={busy} onShare={shareItem.bind(null, item)} onRevoke={() => setRemoval({ kind: 'share', item })} />)}
     </View>
-    <View className="gap-4 border-t border-border pt-5"><Text accessibilityRole="header" className="text-lg font-semibold">Importált naptárak</Text>{!imports.length && !loading ? <Text className="text-sm text-muted-foreground">Nincs importált naptárlink.</Text> : imports.map((item, index) => <View key={item.sourceId} className={`flex-row items-start gap-3 ${index < imports.length - 1 || notice || error ? 'border-b border-border pb-4' : ''}`}><Icon as={CalendarDays} size={19} className="mt-1 text-primary" /><View className="min-w-0 flex-1 gap-1"><Text className="font-medium" numberOfLines={2}>{item.name || item.profileName}</Text><Text className="text-xs text-muted-foreground" numberOfLines={1}>{item.profileName} · {item.eventCount} esemény</Text><Text className="text-xs text-muted-foreground" numberOfLines={1}>{host(item.url)}</Text></View><Button variant="outline" size="icon" disabled={busy} accessibilityLabel={`${item.name || item.profileName} naptárlink és eseményei törlése`} onPress={() => setRemoval({ kind: 'import', item })}><Icon as={Trash2} size={17} className="text-destructive" /></Button></View>)}</View>
+    <View className="gap-4 border-t border-border pt-5"><Text accessibilityRole="header" className="text-lg font-semibold">Importált naptárak</Text>{!imports.length && !loading ? <Text className="text-sm text-muted-foreground">Nincs importált naptárlink.</Text> : imports.map((item, index) => <ImportedCalendarRow key={item.sourceId} item={item} busy={busy} divider={Boolean(index < imports.length - 1 || notice || error)} onRemove={() => setRemoval({ kind: 'import', item })} onRenamed={refreshImports} />)}</View>
     {notice ? <Text accessibilityLiveRegion="polite" className="text-sm text-primary">{notice}</Text> : null}
     {error ? <View className="gap-2"><Text accessibilityRole="alert" className="text-sm text-destructive">{error}</Text><Action secondary icon={RefreshCw} disabled={busy} onPress={() => void run(async () => { setShares(await calendarShares()); setImports(await importedCalendars()); setOptions(await calendarShareOptions()); })}>Újrapróbálás</Action></View> : null}
     {removal ? <Confirm title={removal.kind === 'share' ? 'Hozzáférés visszavonása' : 'Naptárlink törlése'} description={removal.kind === 'share' ? `A(z) ${removal.item.name} linkje többé nem tölthető le és nem frissíthető. A már letöltött másolatok megmaradnak.` : `A(z) ${removal.item.name || removal.item.profileName} naptárlink és a hozzá tartozó ${removal.item.eventCount} esemény törlődik.`} busy={busy} accept={() => void run(remove)} cancel={() => { if (!busy) setRemoval(undefined); }} /> : null}
   </Modal>;
 }
 function message(reason: unknown) { return reason instanceof Error ? reason.message : String(reason); }
-function host(url: string) { try { return new URL(url).hostname; } catch { return 'Naptárlink'; } }
 
 function useLinksModel() {
   const app = useApp();

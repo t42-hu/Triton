@@ -16,7 +16,6 @@ export function ImportDialog({ profileId, close, required = false, open = true, 
   const { profileList } = useApp();
   const state = useImport(profileId, close);
   const { draft, update, stage, busy, count, error } = state;
-  const own = profileList.find(profile => profile.id === profileId)?.isOwn;
   const options = [{ value: 'url', label: 'Naptárlink' }, { value: 'file', label: 'ICS / JSON fájl' }];
   const compact = useWindowDimensions().width < 600;
   function finish() { if (required) return; if (busy) { state.cancel(); return; } close(); }
@@ -27,7 +26,7 @@ export function ImportDialog({ profileId, close, required = false, open = true, 
 
         <View className={compact ? 'min-w-0 gap-2' : 'min-w-0 flex-1 gap-2'}><View className="flex-row items-center gap-2"><Icon as={draft.mode === 'url' ? Link2 : FileUp} size={17} className="text-primary" /><Text className="text-sm font-semibold">Forrás</Text></View><Choice fullWidth label="Import forrása" value={draft.mode} options={options} onChange={mode => update({ mode: mode === 'url' ? 'url' : 'file' })} /></View>
       </View>
-      <ImportSourceFields own={Boolean(own)} draft={draft} update={update} pick={state.pick} />
+      <ImportSourceFields draft={draft} update={update} pick={state.pick} />
       <ImportRange draft={draft} update={update} compact={compact} />
     </View>
     {error ? <Text accessibilityRole="alert" className="text-destructive">{error}</Text> : null}
@@ -37,8 +36,8 @@ export function ImportDialog({ profileId, close, required = false, open = true, 
     {stage ? <Confirm title="Import jóváhagyása" description={`${stage.count} alkalom. Új: ${stage.added}, módosult: ${stage.changed}, eltűnik: ${stage.removed}, törlődő felülírás: ${stage.lostOverrides}. A kézi órák megmaradnak.`} accept={() => void state.accept()} cancel={() => { if (!busy) void state.cancelStage(); }} /> : null}
   </Modal>;
 }
-function ImportSourceFields({ own, draft, update, pick }: { own: boolean; draft: ImportDraft; update: (patch: Partial<ImportDraft>) => void; pick: () => Promise<void> }) {
-  if (draft.mode === 'url') return <View className="gap-3 border-t border-border pt-4"><View className="flex-row items-center gap-2"><Icon as={Link2} size={18} className="text-primary" /><Text className="font-semibold">Naptárlink</Text></View><Field label="Naptár HTTPS / webcal link" value={draft.url} onChange={url => update({ url })} placeholder="https://…" /><Text className="text-xs text-muted-foreground">{Platform.OS === 'web' ? 'Egyszeri letöltés. Weben nincs automatikus frissítés.' : own ? 'Használat közben 15 percenként ellenőrizzük a linket. A háttérfrissítést a rendszer ütemezi.' : 'A link betölthető. Az automatikus frissítéshez jelöld sajátként ezt a profilt.'}</Text></View>;
+function ImportSourceFields({ draft, update, pick }: { draft: ImportDraft; update: (patch: Partial<ImportDraft>) => void; pick: () => Promise<void> }) {
+  if (draft.mode === 'url') return <View className="gap-3 border-t border-border pt-4"><View className="flex-row items-center gap-2"><Icon as={Link2} size={18} className="text-primary" /><Text className="font-semibold">Naptárlink</Text></View><Field label="Naptár HTTPS / webcal link" value={draft.url} onChange={url => update({ url })} placeholder="https://…" /><Text className="text-xs text-muted-foreground">A szerver 15 percenként ellenőrzi a linket, bezárt alkalmazás mellett is.</Text></View>;
   return <View className="gap-3 border-t border-border pt-4">
     <View className="flex-row items-center gap-2"><Icon as={FileUp} size={18} className="text-primary" /><Text className="font-semibold">ICS vagy JSON fájl</Text></View>
     <Text className="text-xs text-muted-foreground">Válassz fájlt, vagy illeszd be a tartalmát.</Text>

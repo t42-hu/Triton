@@ -19,13 +19,9 @@ import { useOptimisticRemoval } from './use-optimistic-removal';
 export function ProfilesDialog({ close, onCreated, onImport, required = false, setupProfile, open = true, onAccount }: { open?: boolean; onAccount?: () => void; setupProfile?: Profile; required?: boolean; close: () => void; onCreated: (id: number) => void | Promise<void>; onImport: (id: number) => void }) {
   const app = useApp(); const removal = useOptimisticRemoval<number>();
   const [name, setName] = useState(setupProfile?.name ?? ''); const [editing, setEditing] = useState<number | undefined>(setupProfile?.id);
+  const [renameScrollKey, setRenameScrollKey] = useState<number>();
   const [deleting, setDeleting] = useState<Profile>(); const [error, setError] = useState(''); const [isSaving, setIsSaving] = useState(false);
-  async function perform(operation: Promise<void>, closeAfter = true) {
-    setError(''); setIsSaving(true);
-    try { await operation; await app.refresh(); if (closeAfter) close(); }
-    catch (error) { setError(error instanceof Error ? error.message : String(error)); }
-    finally { setIsSaving(false); }
-  }
+  const perform = (operation: Promise<void>, closeAfter = true) => performProfileOperation(operation, () => app.refresh(), close, setError, setIsSaving, closeAfter);
   async function save() {
     if (isSaving) return;
     setError(''); setIsSaving(true);
@@ -42,9 +38,9 @@ export function ProfilesDialog({ close, onCreated, onImport, required = false, s
     catch (reason) { setError(reason instanceof Error ? reason.message : String(reason)); }
   }
   const submit = <Button disabled={isSaving || (required && !name.trim())} className={required ? 'h-12 w-full rounded-xl' : 'self-start'} onPress={() => void save()}>{!required ? <Icon as={editing ? Check : Plus} size={18} className="text-primary-foreground" /> : null}<Text>{isSaving ? 'Mentés…' : required && setupProfile ? 'Tovább az importáláshoz' : editing ? 'Átnevezés mentése' : 'Profil létrehozása'}</Text>{required ? <Icon as={ArrowRight} size={18} className="text-primary-foreground" /> : null}</Button>;
-  return <Modal open={open} keepMounted={required} footer={required ? submit : undefined} backwards={required && Boolean(setupProfile)} setup={required} header={required ? <SetupHeader step={1} disabled={isSaving} canContinue={Boolean(name.trim())} onStepChange={step => { if (step === 0) onAccount?.(); else if (step === 2) void save(); }} /> : undefined} dismissible={!required} hideHeading={required} title={required ? "Profil létrehozása" : "Órarend profilok"} description={required ? undefined : "Az órarendjeid a fiókodhoz tartoznak, és az eszközeid között szinkronizálódnak."} close={close}>
-    {!required ? <View className="gap-3">
-      {app.profileList.filter(profile => !removal.removed.has(profile.id)).map(profile => <ProfileRow key={profile.id} profile={profile} exportCalendar={() => void exportIcs(profile, setError)} importCalendar={() => onImport(profile.id)} rename={() => { setEditing(profile.id); setName(profile.name); }} makeOwn={() => void perform(ownProfile(profile.id))} remove={() => setDeleting(profile)} />)}
+  return <Modal open={open} keepMounted={required} footer={required ? submit : undefined} backwards={required && Boolean(setupProfile)} setup={required} scrollToEndKey={required ? undefined : renameScrollKey} header={required ? <SetupHeader step={1} disabled={isSaving} canContinue={Boolean(name.trim())} onStepChange={step => { if (step === 0) onAccount?.(); else if (step === 2) void save(); }} /> : undefined} dismissible={!required} hideHeading={required} title={required ? "Profil létrehozása" : "Órarend profilok"} description={required ? undefined : "Az órarendjeid a fiókodhoz tartoznak, és az eszközeid között szinkronizálódnak."} close={close}>
+    {!required ? <View className="gap-0">
+      {app.profileList.filter(profile => !removal.removed.has(profile.id)).map(profile => <ProfileRow key={profile.id} profile={profile} exportCalendar={() => void exportIcs(profile, setError)} importCalendar={() => onImport(profile.id)} rename={() => { setEditing(profile.id); setName(profile.name); setRenameScrollKey(key => (key ?? 0) + 1); }} makeOwn={() => void perform(ownProfile(profile.id))} remove={() => setDeleting(profile)} />)}
     </View> : null}
     <View className={required ? 'gap-4 pt-1' : 'gap-3 pt-2'}>
       {required ? <Label nativeID="first-profile-name">Profil neve</Label> : <View className="flex-row items-center justify-between gap-2"><View className="flex-row items-center gap-2"><Icon as={editing ? Pencil : Plus} size={18} className="text-primary" /><Text className="font-semibold">{editing ? 'Profil átnevezése' : 'Új profil'}</Text></View>{editing ? <Button accessibilityLabel="Átnevezés megszakítása" variant="ghost" className="h-9 w-9 border-0 bg-transparent p-0" onPress={() => { setEditing(undefined); setName(''); }}><Icon as={X} size={17} /></Button> : null}</View>}
@@ -56,24 +52,30 @@ export function ProfilesDialog({ close, onCreated, onImport, required = false, s
     {deleting ? <Confirm title="Profil törlése" description={`A(z) ${deleting.name} összes órája, forrása és módosítása végleg törlődik.`} accept={() => void remove(deleting)} cancel={() => setDeleting(undefined)} /> : null}
   </Modal>;
 }
-/** Keeps profile identity and ownership above a single row of calendar actions on every platform. */
+async function performProfileOperation(operation: Promise<void>, refresh: () => Promise<void>, close: () => void, setError: (error: string) => void, setIsSaving: (saving: boolean) => void, closeAfter: boolean) {
+  setError(''); setIsSaving(true);
+  try { await operation; await refresh(); if (closeAfter) close(); }
+  catch (error) { setError(error instanceof Error ? error.message : String(error)); }
+  finally { setIsSaving(false); }
+}
+/** Keeps each profile compact while preserving clear, screen-reader-labeled actions. */
 function ProfileRow({ profile, importCalendar, exportCalendar, rename, makeOwn, remove }: { profile: Profile; importCalendar: () => void; exportCalendar: () => void; rename: () => void; makeOwn: () => void; remove: () => void }) {
-  return <View className={`gap-3 rounded-xl overflow-hidden p-3 ${profile.isOwn ? 'bg-primary/20' : 'bg-primary/10'}`}>
-    <View className="flex-row items-center gap-3">
-      <View className="h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-transparent"><Icon as={CalendarDays} size={19} className="text-primary" /></View>
-      <View className="min-w-0 flex-1 flex-row items-center gap-2"><Text className="shrink font-semibold" numberOfLines={1}>{profile.name}</Text></View>
-      <View className="flex-row items-center gap-1 self-start">{profile.isOwn ? <Badge variant="secondary"><Text>Saját</Text></Badge> : null}<Button accessibilityLabel={profile.isOwn ? `${profile.name} a saját profil` : `${profile.name} sajátként jelölése`} accessibilityState={{ selected: Boolean(profile.isOwn) }} variant="ghost" className="h-10 w-10 self-start border-0 bg-transparent p-0" onPress={makeOwn}><Icon as={Star} size={19} className={profile.isOwn ? 'fill-primary text-primary' : 'text-muted-foreground'} /></Button></View>
+  return <View className="flex-row flex-wrap items-center justify-between gap-2 border-b border-border py-2.5">
+    <View className="min-w-[190px] flex-1 flex-row items-center gap-3">
+      <View className="h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent"><Icon as={CalendarDays} size={18} className="text-primary" /></View>
+      <Text className="min-w-0 flex-1 font-semibold" numberOfLines={1}>{profile.name}</Text>
+      {profile.isOwn ? <Badge variant="secondary" className="px-2.5"><Text>Saját</Text></Badge> : <Button accessibilityLabel={`${profile.name} sajátként jelölése`} accessibilityHint="Ezt állítja be saját órarendként." variant="ghost" className="h-11 w-11 border-0 bg-transparent p-0" onPress={makeOwn}><Icon as={Star} size={18} className="text-muted-foreground" /></Button>}
     </View>
-    <View className="flex-row items-center gap-1 border-t border-primary/20 pt-3">
-      <ProfileAction icon={Pencil} label={`${profile.name} átnevezése`} text="Átnevezés" onPress={rename} />
-      <ProfileAction icon={Upload} label={`${profile.name} órarend importálása`} text="Import" onPress={importCalendar} />
-      {profile.isOwn ? <ProfileAction icon={Download} label={`${profile.name} ICS exportálása`} text="Export" onPress={exportCalendar} /> : null}
-      <ProfileAction icon={Trash2} label={`${profile.name} törlése`} text="Törlés" destructive onPress={remove} />
+    <View className="ml-auto flex-row shrink-0 items-center gap-1">
+      <ProfileAction icon={Pencil} label={`${profile.name} átnevezése`} hint="Megnyitja a profil átnevezését." onPress={rename} />
+      <ProfileAction icon={Upload} label={`${profile.name} órarend importálása`} hint="Órarendet importál ebbe a profilba." onPress={importCalendar} />
+      {profile.isOwn ? <ProfileAction icon={Download} label={`${profile.name} ICS exportálása`} hint="ICS fájlként exportálja ezt az órarendet." onPress={exportCalendar} /> : null}
+      <ProfileAction icon={Trash2} label={`${profile.name} törlése`} hint="Megerősítés után törli ezt a profilt." destructive onPress={remove} />
     </View>
   </View>;
 }
-function ProfileAction({ icon, label, text, destructive = false, onPress }: { icon: typeof Pencil; label: string; text: string; destructive?: boolean; onPress: () => void }) {
-  return <Button accessibilityLabel={label} variant="ghost" style={{ paddingHorizontal: 0 }} className="h-12 min-w-0 flex-1 flex-col gap-1 rounded-lg border-0 bg-transparent px-0" onPress={onPress}><Icon as={icon} size={17} className={destructive ? 'text-destructive' : 'text-muted-foreground'} /><Text numberOfLines={1} style={{ fontSize: 12, lineHeight: 16 }} className={`text-center ${destructive ? 'text-destructive' : ''}`}>{text}</Text></Button>;
+function ProfileAction({ icon, label, hint, destructive = false, onPress }: { icon: typeof Pencil; label: string; hint: string; destructive?: boolean; onPress: () => void }) {
+  return <Button accessibilityLabel={label} accessibilityHint={hint} variant="ghost" className="h-11 w-11 rounded-lg border-0 bg-transparent p-0" onPress={onPress}><Icon as={icon} size={17} className={destructive ? 'text-destructive' : 'text-muted-foreground'} /></Button>;
 }
 
 async function exportIcs(profile: Profile, setError: (message: string) => void) {

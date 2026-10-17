@@ -2,7 +2,7 @@ import { AccountSettings } from './account-settings';
 import { GlobalColorEditor } from './event-color-editor';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
-import { ArrowLeft, CalendarRange, ChevronRight, Palette, RefreshCw, Repeat2, type LucideIcon } from 'lucide-react-native';
+import { ArrowLeft, CalendarRange, ChevronRight, Monitor, Moon, Palette, RefreshCw, Repeat2, Sun, type LucideIcon } from 'lucide-react-native';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Switch } from '@/components/ui/switch';
@@ -14,10 +14,12 @@ import { discardStages, publishStages, stageSource, type StagedSource } from '..
 import { useApp } from './app-state';
 import { DateField } from './date-time-field';
 import { Action, Choice, Confirm, Modal } from './controls';
+import { Tabs, SlidingTabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export function SettingsDialog({ close }: { close: () => void }) {
   const app = useApp();
   const [category, setCategory] = useState<SettingsCategory | null>(null);
+  const [backwards, setBackwards] = useState(false);
   const [date, setDate] = useState(app.anchor.date);
   const [week, setWeek] = useState(app.anchor.week);
   const [stages, setStages] = useState<StagedSource[]>([]);
@@ -43,8 +45,10 @@ export function SettingsDialog({ close }: { close: () => void }) {
   }
   function cancel() { controller.current.abort(); void discardStages(stages); close(); }
   const summary = stages.reduce((sum, stage) => ({ added: sum.added + stage.added, removed: sum.removed + stage.removed, lost: sum.lost + stage.lostOverrides }), { added: 0, removed: 0, lost: 0 });
-  return <Modal title={categories.find(item => item.key === category)?.title ?? "Beállítások"} close={cancel}>
-    <SettingsOptions category={category} setCategory={setCategory} date={date} setDate={setDate} week={week} setWeek={setWeek} busy={busy} error={error} prepare={() => void prepare()} abort={() => controller.current.abort()} />
+  const backToSettings = () => { setBackwards(true); setCategory(null); };
+  const openCategory = (next: SettingsCategory) => { setBackwards(false); setCategory(next); };
+  return <Modal backwards={backwards} title={categories.find(item => item.key === category)?.title ?? "Beállítások"} titleLeading={category ? <Button variant="ghost" className="h-9 shrink-0 justify-start gap-1 px-0" accessibilityLabel="Vissza a beállításokhoz" onPress={backToSettings}><Icon as={ArrowLeft} size={17} className="text-muted-foreground" /><Text className="text-sm text-muted-foreground">Beállítások</Text></Button> : undefined} close={cancel}>
+    <SettingsOptions category={category} setCategory={openCategory} date={date} setDate={setDate} week={week} setWeek={setWeek} busy={busy} error={error} prepare={() => void prepare()} abort={() => controller.current.abort()} />
     {prepared ? <Confirm title="A/B rend módosítása" description={`Létrejön: ${summary.added}, eltűnik: ${summary.removed} alkalom. Törlődő felülírás: ${summary.lost}.`} accept={() => void accept()} cancel={() => { setPrepared(false); void discardStages(stages); }} /> : null}
   </Modal>;
 }
@@ -57,15 +61,9 @@ const categories: { key: SettingsCategory; title: string; icon: LucideIcon }[] =
   { key: 'colors', title: 'Eseményszínek', icon: Palette },
   { key: 'sync', title: 'Szinkronizálás', icon: RefreshCw },
 ];
-function SettingsOptions({ category, setCategory, ...options }: SettingsOptionsProps & { category: SettingsCategory | null; setCategory: (value: SettingsCategory | null) => void }) {
+function SettingsOptions({ category, setCategory, ...options }: SettingsOptionsProps & { category: SettingsCategory | null; setCategory: (value: SettingsCategory) => void }) {
   return <View className="gap-4">
-    {category ? <Button variant="ghost" className="self-start justify-start px-0" accessibilityLabel="Vissza a beállításokhoz" onPress={() => setCategory(null)}><Icon as={ArrowLeft} size={17} className="text-muted-foreground" /><Text className="text-sm text-muted-foreground">Beállítások</Text></Button> : <View>
-      {categories.map((item, index) => <Button key={item.key} variant="ghost" accessibilityLabel={`${item.title} beállításai`} className={`h-14 justify-start gap-3 rounded-none px-1 ${index < categories.length - 1 ? 'border-b border-border' : ''}`} onPress={() => setCategory(item.key)}>
-        <Icon as={item.icon} size={20} className="text-muted-foreground" />
-        <Text className="min-w-0 flex-1 text-sm font-medium">{item.title}</Text>
-        <Icon as={ChevronRight} size={17} className="text-muted-foreground" />
-      </Button>)}
-    </View>}
+    <View style={{ display: category === null ? 'flex' : 'none' }}><SettingsCategoryList open={setCategory} /></View>
     <View style={{ display: category === 'appearance' ? 'flex' : 'none' }}><AppearanceSettings /></View>
     <View style={{ display: category === 'calendar' ? 'flex' : 'none' }}><CalendarSettings /></View>
     <View style={{ display: category === 'weeks' ? 'flex' : 'none' }}><WeekSettings {...options} /></View>
@@ -74,10 +72,24 @@ function SettingsOptions({ category, setCategory, ...options }: SettingsOptionsP
   </View>;
 }
 
+function SettingsCategoryList({ open }: { open: (category: SettingsCategory) => void }) {
+  return <View>{categories.map((item, index) => <Button key={item.key} variant="ghost" accessibilityLabel={`${item.title} beállításai`} className={`h-14 justify-start gap-3 rounded-none px-1 ${index < categories.length - 1 ? 'border-b border-border' : ''}`} onPress={() => open(item.key)}>
+    <Icon as={item.icon} size={20} className="text-muted-foreground" />
+    <Text className="min-w-0 flex-1 text-sm font-medium">{item.title}</Text>
+    <Icon as={ChevronRight} size={17} className="text-muted-foreground" />
+  </Button>)}</View>;
+}
+
 function AppearanceSettings() {
   const app = useApp();
   return <View className="gap-2"><Text className="text-sm font-medium">Téma</Text>
-    <Choice fullWidth label="Téma" value={app.view.theme} onChange={theme => app.setView({ theme: theme as 'system' | 'light' | 'dark' })} options={[{ value: 'system', label: 'Rendszer' }, { value: 'light', label: 'Világos' }, { value: 'dark', label: 'Sötét' }]} />
+    <Tabs value={app.view.theme} onValueChange={theme => app.setView({ theme: theme as 'system' | 'light' | 'dark' })}>
+      <SlidingTabsList values={['system', 'light', 'dark']} square className="h-12 w-full rounded-none border-border bg-card p-1" style={{ width: '100%' }}>
+        <TabsTrigger value="system" accessibilityLabel="Rendszer témája" className="min-w-0 flex-1 rounded-none px-1"><Icon as={Monitor} size={14} /><Text className="text-[13px]">Rendszer</Text></TabsTrigger>
+        <TabsTrigger value="light" accessibilityLabel="Világos téma" className="min-w-0 flex-1 rounded-none px-1"><Icon as={Sun} size={14} /><Text className="text-[13px]">Világos</Text></TabsTrigger>
+        <TabsTrigger value="dark" accessibilityLabel="Sötét téma" className="min-w-0 flex-1 rounded-none px-1"><Icon as={Moon} size={14} /><Text className="text-[13px]">Sötét</Text></TabsTrigger>
+      </SlidingTabsList>
+    </Tabs>
   </View>;
 }
 function CalendarSettings() {

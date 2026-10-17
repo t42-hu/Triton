@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { Check, RotateCcw } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
+import { Label } from '@/components/ui/label';
 import { Action, Choice, Field, Modal, Toggle } from './controls';
 import { ColorField } from './color-picker';
 import { useApp } from './app-state';
@@ -58,20 +59,32 @@ function UrgencyEditor({ initial, deadline, save }: { initial: UrgencyRules; dea
   const [rules, setRules] = useState(initial);
   function change(patch: Partial<UrgencyRules>) { setRules(current => ({ ...current, ...patch })); }
   return <View className="gap-4">
-    <UrgencyGroup title="Távolabbi" color={rules.green} setColor={green => change({ green })} minutes={deadline ? rules.greenMinutes ?? 0 : undefined} setMinutes={greenMinutes => change({ greenMinutes })} />
-    <UrgencyGroup title="Közelgő" color={rules.yellow} setColor={yellow => change({ yellow })} minutes={rules.yellowMinutes} setMinutes={yellowMinutes => change({ yellowMinutes })} />
-    <UrgencyGroup title="Sürgős" color={rules.red} setColor={red => change({ red })} minutes={rules.redMinutes} setMinutes={redMinutes => change({ redMinutes })} />
+    <UrgencyGroup hours={deadline} title="Távolabbi" color={rules.green} setColor={green => change({ green })} minutes={deadline ? rules.greenMinutes ?? 0 : undefined} setMinutes={greenMinutes => change({ greenMinutes })} />
+    <UrgencyGroup hours={deadline} title="Közelgő" color={rules.yellow} setColor={yellow => change({ yellow })} minutes={rules.yellowMinutes} setMinutes={yellowMinutes => change({ yellowMinutes })} />
+    <UrgencyGroup hours={deadline} title="Sürgős" color={rules.red} setColor={red => change({ red })} minutes={rules.redMinutes} setMinutes={redMinutes => change({ redMinutes })} />
     <Action icon={Check} onPress={() => save(rules)}>Mentés</Action>
     <Action quiet icon={RotateCcw} onPress={() => setRules(deadline ? DEFAULT_EVENT_COLORS.deadline : DEFAULT_EVENT_COLORS.lesson)}>Alapértékek visszaállítása</Action>
   </View>;
 }
-function UrgencyGroup({ title, color, setColor, minutes, setMinutes }: { title: string; color: string; setColor: (value: string) => void; minutes?: number; setMinutes: (value: number) => void }) {
+function UrgencyGroup({ title, color, setColor, minutes, setMinutes, hours }: { hours: boolean; title: string; color: string; setColor: (value: string) => void; minutes?: number; setMinutes: (value: number) => void }) {
   return <View className="gap-3 border-t border-border pt-4">
     <Text className="text-sm font-semibold">{title}</Text>
     <View className="flex-row items-end gap-3">
       <View className="min-w-0 flex-1"><ColorField hideLabel label={`${title} színe`} value={color} onChange={setColor} /></View>
-      {minutes !== undefined ? <View className="w-28"><Field label="Határ (perc)" value={String(minutes)} onChange={value => setMinutes(Number(value))} /></View> : null}
+      {minutes !== undefined ? <View className="w-28"><ThresholdField minutes={minutes} onChange={setMinutes} hours={hours} /></View> : <View aria-hidden pointerEvents="none" className="w-28 gap-2 opacity-0"><Label>Határ (perc)</Label><View className="h-11 android:h-12" /></View>}
     </View>
-    {minutes === undefined ? <Text className="text-xs text-muted-foreground">A közelgő határon túl.</Text> : null}
   </View>;
+}
+
+/** Display deadlines in hours while preserving the shared minute-based rules. */
+function ThresholdField({ minutes, onChange, hours }: { minutes: number; onChange: (value: number) => void; hours: boolean }) {
+  const factor = hours ? 60 : 1;
+  const [input, setInput] = useState({ minutes, draft: String(minutes / factor) });
+  const draft = Object.is(input.minutes, minutes) ? input.draft : String(minutes / factor);
+  function change(value: string) {
+    const next = hours ? Math.round(Number(value.replace(',', '.')) * factor) : Number(value);
+    setInput({ minutes: next, draft: value });
+    onChange(next);
+  }
+  return <Field label={hours ? 'Határ (óra)' : 'Határ (perc)'} value={draft} onChange={change} />;
 }

@@ -56,8 +56,10 @@ function ColorPickerDialog({ label, value, onChange, close }: ColorFieldProps & 
       </View>
     </View>
     <Action secondary icon={SlidersHorizontal} expanded={isCustomOpen} revealOnExpand={false} onPress={() => setIsCustomOpen(!isCustomOpen)}>Egyéni szín</Action>
-    <AnimatedDisclosure expanded={isCustomOpen} gap={20}><GradientColorPicker color={draftColor} onChange={setDraftColor} />
+    <AnimatedDisclosure expanded={isCustomOpen} gap={20}><View className="gap-2">
+      <GradientColorPicker color={draftColor} onChange={setDraftColor} />
       <Action secondary disabled={app.savedColors.includes(draftColor.toLowerCase())} onPress={() => { void app.savePaletteColor(draftColor).catch(error => setError(String(error))); }}>{app.savedColors.includes(draftColor.toLowerCase()) ? 'Elmentve' : 'Mentés a palettára'}</Action>
+    </View>
     </AnimatedDisclosure>
     {error ? <Text accessibilityRole="alert" className="text-destructive">{error}</Text> : null}
   </Modal>;

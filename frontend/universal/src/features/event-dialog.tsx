@@ -68,11 +68,12 @@ export function EventDialog({ event, close, openMap }: { event: DisplayEvent; cl
 /** Keeps editing focused on one group while retaining the full draft between tabs. */
 function EventEditorSections({ event, editor, openMap }: { event: DisplayEvent; editor: ReturnType<typeof useEventEditor>; openMap: () => void }) {
   const [section, setSection] = useState('details');
+  const [compactTabs, setCompactTabs] = useState(false);
   return <View className="gap-4">
-    <Tabs value={section} onValueChange={setSection}><SlidingTabsList values={['details', 'notes', 'tasks']} className="w-full border-0 bg-muted">
-      <TabsTrigger value="details" className="flex-1 px-1"><Icon as={BookOpen} size={15} /><Text>Adatok</Text></TabsTrigger>
-      <TabsTrigger value="notes" className="flex-1 px-1"><Icon as={FileText} size={15} /><Text>Megjegyzések</Text></TabsTrigger>
-      <TabsTrigger value="tasks" className="flex-1 px-1"><Icon as={ListTodo} size={15} /><Text>Feladatok</Text></TabsTrigger>
+    <Tabs value={section} onValueChange={setSection}><SlidingTabsList values={['details', 'notes', 'tasks']} onLayout={event => setCompactTabs(event.nativeEvent.layout.width < 440)} className="w-full border-0 bg-muted">
+      <TabsTrigger value="details" accessibilityLabel="Adatok" className="flex-1 px-1"><Icon as={BookOpen} size={15} />{compactTabs ? null : <Text>Adatok</Text>}</TabsTrigger>
+      <TabsTrigger value="notes" accessibilityLabel="Megjegyzések" className="flex-1 px-1"><Icon as={FileText} size={15} />{compactTabs ? null : <Text>Megjegyzések</Text>}</TabsTrigger>
+      <TabsTrigger value="tasks" accessibilityLabel="Feladatok" className="flex-1 px-1"><Icon as={ListTodo} size={15} />{compactTabs ? null : <Text>Feladatok</Text>}</TabsTrigger>
     </SlidingTabsList></Tabs>
     {section === 'details' ? <EventDetails event={event} editor={editor} openMap={openMap} /> : null}
     {section === 'notes' ? <EventNotesField value={editor.fields.notes} onChange={notes => editor.change({ notes })} /> : null}

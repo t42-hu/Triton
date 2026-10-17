@@ -1,7 +1,6 @@
 import { useId, useState } from 'react';
 import { View, type GestureResponderEvent } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
-import { Text } from '@/components/ui/text';
 import { colorHsv, hsvColor } from '../domain/color-contrast';
 
 const clamp = (value: number) => Math.max(0, Math.min(1, value));
@@ -15,7 +14,6 @@ export function GradientColorPicker({ color, onChange }: { color: string; onChan
   function plane(event: GestureResponderEvent) { onChange(hsvColor(hsv.hue, clamp(event.nativeEvent.locationX / width), 1 - clamp(event.nativeEvent.locationY / 160))); }
   function hue(event: GestureResponderEvent) { const next = clamp(event.nativeEvent.locationX / width) * 359.9; setSelectedHue(next); onChange(hsvColor(next, hsv.saturation, hsv.value)); }
   return <View className="gap-3">
-    <Text className="text-sm">Húzd a jelölőt a kívánt árnyalatra.</Text>
     <View accessibilityLabel="Telítettség és fényerő" onLayout={event => setWidth(event.nativeEvent.layout.width)} onStartShouldSetResponder={() => true} onMoveShouldSetResponder={() => true} onResponderGrant={plane} onResponderMove={plane} onResponderTerminationRequest={() => false} style={{ height: 160, borderRadius: 12, overflow: 'hidden' }}>
       <View pointerEvents="none" style={{ flex: 1 }}><Svg width="100%" height="100%"><Defs>
         <LinearGradient id={`${id}white`} x1="0%" x2="100%"><Stop offset="0" stopColor="white" /><Stop offset="1" stopColor="white" stopOpacity={0} /></LinearGradient>
