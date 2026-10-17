@@ -1,15 +1,18 @@
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
 
-const namedDatabases = new Map<string, DatabaseSync>();
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+const directory = mkdtempSync(join(tmpdir(), 'triton-sqlite-test-'));
+process.on('exit', () => rmSync(directory, { recursive: true, force: true }));
 
-/** Runs production SQL against SQLite in memory; UI/browser tests cover the Expo adapter. */
+/** Uses real temporary SQLite files so account reopen tests exercise durable storage. */
 export async function openDatabaseAsync(name?: string, options?: { useNewConnection?: boolean }) {
   if (name === ':memory:' || options?.useNewConnection) name = undefined;
-  const database = name ? namedDatabases.get(name) ?? new DatabaseSync(':memory:') : new DatabaseSync(':memory:');
-  if (name) namedDatabases.set(name, database);
+  const database = new DatabaseSync(name ? join(directory, name) : ':memory:');
   const adapter = {
     _database: database,
-    closeAsync: async () => undefined,
+    closeAsync: async () => { database.close(); },
     execAsync: async (sql: string) => { database.exec(sql); },
     runAsync: async (sql: string, ...values: SQLInputValue[]) => {
       const result = database.prepare(sql).run(...values);
@@ -49,6 +52,5 @@ export async function backupDatabaseAsync({sourceDatabase, destDatabase}: {sourc
 }
 
 export async function deleteDatabaseAsync(name: string) {
-  namedDatabases.get(name)?.close();
-  namedDatabases.delete(name);
+  rmSync(join(directory, name), { force: true });
 }

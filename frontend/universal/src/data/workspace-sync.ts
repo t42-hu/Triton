@@ -1,14 +1,17 @@
 import type { RemoteRow } from './workspace-types';
+import { createWorkspaceSnapshotReader } from './workspace-snapshot';
 import { Platform } from 'react-native';
 import type { SQLiteDatabase } from 'expo-sqlite';
 import { backend } from './backend';
-import { completeAccountMigration, configureServerCommit, write } from './database';
+import { write } from './database';
 import { hydrateWorkspace, type RemoteRecord } from './workspace-hydration';
 import { projectWorkspace, stable, type CloudRecord, type IdentityMap, type LocalWorkspace } from './workspace-projection';
-import { mutationsFor, reconcileDeletions, repairRejectedUpdates, type Baseline, type Mutation } from './workspace-mutations';
-type State = { installation: string; deviceId: string; identities: IdentityMap; baseline: Baseline[]; pending: Mutation[]; sources: Record<string, string>; initialized: boolean };
+import { mutationsFor, reconcileDeletions, reconcileUpdates, repairRejectedUpdates, type Baseline, type Mutation } from './workspace-mutations';
+type Content = { sourceId: string; version?: number; content: string; localId: string; fingerprint: string };
+type State = { installation: string; deviceId: string; identities: IdentityMap; baseline: Baseline[]; pending: Mutation[]; pendingContents?: Content[]; sources: Record<string, string>; initialized: boolean };
 const tables = ['profiles', 'sources', 'events', 'overrides', 'source_sync', 'event_reminders', 'lesson_tasks', 'notebook_links', 'settings'] as const;
 let applying = false;
+let synchronization: Promise<void> | undefined;
 export function isCloudWrite() { return applying; }
 const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
 export async function localWorkspace(db: SQLiteDatabase): Promise<LocalWorkspace> {
@@ -19,23 +22,9 @@ async function setting(db: SQLiteDatabase, key: string, value: unknown) { await 
 async function state(db: SQLiteDatabase): Promise<State> {
   const row = await db.getFirstAsync<{ value: string }>("SELECT value FROM settings WHERE key='cloudSync'");
   if (row) return JSON.parse(row.value);
-  const owner = await db.getFirstAsync<{ value: string }>("SELECT value FROM settings WHERE key='accountOwner'");
-  return { installation: owner ? `account-${JSON.parse(owner.value)}-${Platform.OS}` : uid(), deviceId: '', identities: {}, baseline: [], pending: [], sources: {}, initialized: false };
+  return { installation: uid(), deviceId: '', identities: {}, baseline: [], pending: [], sources: {}, initialized: false };
 }
-async function snapshot(deviceId: string): Promise<RemoteRecord[]> {
-  const records: RemoteRecord[] = [];
-  let token: string | undefined; let offset = 0; let sequence = '0';
-  do {
-    const query = new URLSearchParams({ deviceId, limit: '200', ...(token ? { snapshotToken: token, offset: String(offset) } : {}) });
-    const page = await backend<{ items: { resource: string; record: RemoteRow }[]; snapshotToken: string; highSequence: string; nextOffset: number | null }>(`/sync/snapshot?${query}`);
-    token = page.snapshotToken; sequence = page.highSequence;
-    records.push(...page.items.map(item => ({ resource: item.resource, id: item.record.id, version: item.record.version, data: item.record })));
-    if (page.nextOffset === null) break;
-    offset = page.nextOffset;
-  } while (true);
-  await backend('/sync/ack', 'POST', { deviceId, sequence, snapshotToken: token });
-  return records;
-}
+const snapshot = createWorkspaceSnapshotReader(backend);
 async function sourceContents(remote: RemoteRecord[], local: LocalWorkspace, sync: State) {
   const calendars = new Set(remote.filter(row => row.resource === 'calendars' && row.data.ownerUserId).map(row => row.id));
   for (const source of remote.filter(row => row.resource === 'sources' && calendars.has(String(row.data.calendarId)))) {
@@ -50,9 +39,6 @@ async function sourceContent(source: RemoteRecord, local: LocalWorkspace, sync: 
     catch (error) { if ((error as { status?: number }).status !== 403) throw error; }
 }
 
-async function replaceCache(db: SQLiteDatabase, local: LocalWorkspace) {
-  await db.withTransactionAsync(() => insertCache(db, local));
-}
 async function insertCache(db: SQLiteDatabase, local: LocalWorkspace) {
     for (const table of [...tables].reverse()) if (table !== 'settings') await db.runAsync(`DELETE FROM ${table}`);
     for (const table of tables) {
@@ -75,20 +61,17 @@ function baselineFrom(desired: CloudRecord[], remote: RemoteRecord[]): Baseline[
   }
   return baseline;
 }
-export async function synchronizeWorkspace(resolution?: 'local' | 'server'): Promise<void> {
-  await write(async db => {
+export function synchronizeWorkspace(resolution?: 'local' | 'server'): Promise<void> {
+  if (synchronization) return resolution ? synchronization.then(() => synchronizeWorkspace(resolution), () => synchronizeWorkspace(resolution)) : synchronization;
+  const result = write(async db => {
     applying = true;
     try { await new WorkspaceSynchronization(db, await state(db)).run(resolution); }
-    finally { setTimeout(finishCloudWrite, 0); }
+    finally { applying = false; }
   }, false);
+  synchronization = result;
+  void result.then(finishSynchronization, finishSynchronization);
+  return result;
 }
-async function commitWorkspace(db: SQLiteDatabase) {
-  if (!await unsyncedChanges(db)) return;
-  applying = true;
-  try { await new WorkspaceSynchronization(db, await state(db)).run(); await completeAccountMigration(); }
-  finally { applying = false; }
-}
-configureServerCommit(commitWorkspace);
 class WorkspaceSynchronization {
   local!: LocalWorkspace;
   remote: RemoteRecord[] = [];
@@ -103,16 +86,17 @@ class WorkspaceSynchronization {
     this.desired = projectWorkspace(this.local, this.sync.identities, this.sync.installation, this.sync.deviceId);
     this.validateSources();
     this.sync.pending = repairRejectedUpdates(this.sync.pending, this.sync.baseline);
+    if (!this.sync.pendingContents?.length) this.sync.pending = reconcileUpdates(this.sync.pending, this.sync.baseline, this.remote);
     if (!this.sync.pending.length) this.sync.pending = mutationsFor(this.desired, this.sync.baseline);
     await this.persist(); await this.push();
     // Complete any pre-migration upload before committing the latest state.
     this.sync.pending = mutationsFor(this.desired, this.sync.baseline);
     await this.persist(); await this.push(); await this.restore();
-    await completeAccountMigration();
   }
   persist() { return setting(this.db, 'cloudSync', this.sync); }
   async register() {
     if (this.sync.deviceId) return;
+    await this.persist();
     const device = await backend<{ id: string }>('/sync/devices', 'POST', { installationId: this.sync.installation, platform: Platform.OS, name: `Triton42 ${Platform.OS}` });
     this.sync.deviceId = device.id; await this.persist();
   }
@@ -120,10 +104,10 @@ class WorkspaceSynchronization {
     if (resolution === 'server') await setting(this.db, 'cloudConflictBackup', this.local);
     await sourceContents(this.remote, this.local, this.sync);
     this.local = hydrateWorkspace(this.remote, this.local, this.sync.identities, this.sync.deviceId, !this.sync.initialized);
-    await replaceCache(this.db, this.local);
     this.rememberSources(this.local);
     this.sync.baseline = baselineFrom(projectWorkspace(this.local, this.sync.identities, this.sync.installation, this.sync.deviceId), this.remote);
-    this.sync.initialized = true; this.sync.pending = []; await this.persist();
+    this.sync.initialized = true; this.sync.pending = []; this.sync.pendingContents = undefined;
+    await this.db.withTransactionAsync(async () => { await insertCache(this.db, this.local); await this.persist(); });
   }
   rememberSources(local: LocalWorkspace) {
     for (const source of local.sources) {
@@ -132,7 +116,7 @@ class WorkspaceSynchronization {
     }
   }
   keepLocal() {
-    this.sync.pending = []; this.sync.sources = {};
+    this.sync.pending = []; this.sync.pendingContents = undefined; this.sync.sources = {};
     for (const row of this.sync.baseline) row.version = this.remote.find(item => item.id === row.id && item.resource === row.resource)?.version ?? row.version;
   }
   validateSources() {
@@ -144,17 +128,19 @@ class WorkspaceSynchronization {
   async push() {
     this.sync.pending = reconcileDeletions(this.sync.pending, this.remote);
     const versions = new Map(this.sync.baseline.filter(row => row.resource === 'sources').map(row => [row.id, row.version]));
-    const contents = this.local.sources.filter(source => this.sync.sources[source.id] !== stable([source.content, source.fromDate, source.toDate])).map(source => {
+    const contents = this.sync.pendingContents ?? this.local.sources.filter(source => this.sync.sources[source.id] !== stable([source.content, source.fromDate, source.toDate])).map(source => {
       const sourceId = this.sync.identities[`sources:${source.id}`];
       const version = versions.get(sourceId);
-      return { sourceId, ...(version ? { version } : {}), content: source.content };
+      return { sourceId, ...(version ? { version } : {}), content: source.content, localId: source.id, fingerprint: stable([source.content, source.fromDate, source.toDate]) };
     });
     if (!this.sync.pending.length && !contents.length) return;
-    const response = await backend<{ results: { clientMutationId: string; record: RemoteRow }[] }>('/sync/commit', 'POST', { deviceId: this.sync.deviceId, mutations: this.sync.pending, contents });
+    this.sync.pendingContents = contents; await this.persist();
+    const response = await backend<{ results: { clientMutationId: string; record: RemoteRow }[] }>('/sync/commit', 'POST', { deviceId: this.sync.deviceId, mutations: this.sync.pending, contents: contents.map(({ sourceId, version, content }) => ({ sourceId, ...(version ? { version } : {}), content })) });
     const results = new Map(response.results.map(row => [row.clientMutationId, row.record]));
     for (const mutation of this.sync.pending) this.acceptMutation(mutation, results.get(mutation.clientMutationId));
     this.sync.pending = [];
-    for (const source of this.local.sources) this.sync.sources[source.id] = stable([source.content, source.fromDate, source.toDate]);
+    for (const content of contents) this.sync.sources[content.localId] = content.fingerprint;
+    this.sync.pendingContents = undefined;
     await this.persist();
   }
   acceptMutation(mutation: Mutation, result?: RemoteRow) {
@@ -166,10 +152,9 @@ class WorkspaceSynchronization {
     this.remote = await snapshot(this.sync.deviceId);
     await sourceContents(this.remote, this.local, this.sync);
     const restored = hydrateWorkspace(this.remote, this.local, this.sync.identities, this.sync.deviceId);
-    await replaceCache(this.db, restored);
     this.rememberSources(restored);
     this.sync.baseline = baselineFrom(projectWorkspace(restored, this.sync.identities, this.sync.installation, this.sync.deviceId), this.remote);
-    await this.persist();
+    await this.db.withTransactionAsync(async () => { await insertCache(this.db, restored); await this.persist(); });
   }
 }
 export async function hasUnsyncedChanges(): Promise<boolean> {
@@ -184,4 +169,4 @@ async function unsyncedChanges(db: SQLiteDatabase) {
   return mutationsFor(desired, sync.baseline).length > 0 || local.sources.some(source => sync.sources[source.id] !== stable([source.content, source.fromDate, source.toDate]));
 }
 
-function finishCloudWrite() { applying = false; }
+function finishSynchronization() { synchronization = undefined; }

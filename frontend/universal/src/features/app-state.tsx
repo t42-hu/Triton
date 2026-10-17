@@ -1,3 +1,4 @@
+import { refreshServerCalendars } from '../data/calendar-server-sync';
 import { useWorkspaceSync } from './use-workspace-sync';
 import { DEFAULT_EVENT_COLORS, type EventColors } from '../domain/event-colors';
 import { useCurrentTime } from '@/hooks/use-current-time';
@@ -32,13 +33,11 @@ type AppState = {
 };
 const Context = createContext<AppState | null>(null);
 
-/** Opens the workspace only after the server has returned the account data. */
+/** Open the durable workspace immediately; sync runs in the background when reachable. */
 export function AppProvider({ children }: { children: ReactNode }) {
   const now = useCurrentTime();
   const { savedColors, setSavedColors, savePaletteColor, removePaletteColor } = useSavedPalette();
-  const [eventColors, setEventColors] = useState(DEFAULT_EVENT_COLORS);
-  const [view, updateView] = useState(initialView);
-  const [anchor, setAnchor] = useState(initialAnchor);
+  const [eventColors, setEventColors] = useState(DEFAULT_EVENT_COLORS); const [view, updateView] = useState(initialView); const [anchor, setAnchor] = useState(initialAnchor);
   const [profileList, setProfiles] = useState<Profile[]>([]);
   const [remindersEnabled, setRemindersEnabled] = useState(false);
   const [version, setVersion] = useState(0);
@@ -59,9 +58,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   function reportError(error: unknown) { setError(String(error)); }
   useEffect(() => {
     async function restore() {
-      setSavedColors(await readSetting<string[]>('savedColors', []));
-      await synchronize();
-      await refresh(); updateView(resolveProfiles({ ...initialView, ...await readSetting('view', initialView), leftDate: today(), rightDate: today() }, await profiles())); setReady(true);
+      const cached = await readSetting<{ initialized?: boolean } | null>('cloudSync', null);
+      if (!cached?.initialized) await synchronize();
+      await refresh();
+      updateView(resolveProfiles({ ...initialView, ...await readSetting('view', initialView), leftDate: today(), rightDate: today() }, await profiles()));
+      setReady(true);
+      if (cached?.initialized) void synchronize().catch(ignoreSyncError);
+      void refreshOpeningLinks(setError);
     }
     void restore().catch(reportError);
   }, [synchronize, attempt, refresh, setSavedColors]);
@@ -71,6 +74,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return <Context.Provider value={{ cloud, savedColors, savePaletteColor, removePaletteColor, calendarImport, presentCalendarImport, view, setView, anchor, profileList, remindersEnabled, eventColors, now, saveEventColors, version, refresh, error, setError }}>{children}</Context.Provider>;
 }
 function incrementVersion(value: number) { return value + 1; }
+function ignoreSyncError() { /* The sync state reports background errors. */ }
 function useSavedPalette() {
   const [savedColors, setSavedColors] = useState<string[]>([]);
   const removal = useOptimisticRemoval<string>();
@@ -116,4 +120,11 @@ function useServerView(view: ViewState, ready: boolean, setError: (error: string
     const timer = setTimeout(save, 250);
     return () => clearTimeout(timer);
   }, [view, ready, setError]);
+}
+
+async function refreshOpeningLinks(setError: (message: string) => void) {
+  try {
+    const result = await refreshServerCalendars();
+    if (result.status === 'failed') setError('Nem sikerült minden naptárlinket frissíteni. A tárolt órarend megmaradt.');
+  } catch { setError('Nem sikerült ellenőrizni a naptárlinkeket. A tárolt órarend megmaradt.'); }
 }

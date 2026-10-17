@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { clearAccountMemory, configureServerCommit, getDatabase, readSetting, selectAccountDatabase } from '../src/data/database';
+import { clearAccountMemory, getDatabase, readSetting, selectAccountDatabase } from '../src/data/database';
 import { finishLegacyChoice, legacyProfileCount } from '../src/data/legacy-workspace';
 import { backupDatabaseAsync, openDatabaseAsync } from './sqlite-adapter';
 test('accounts stay isolated and legacy transfer removes the original after saving without carrying another session’s sync state', async () => {
@@ -27,7 +27,7 @@ test('accounts stay isolated and legacy transfer removes the original after savi
   assert.equal(await legacyProfileCount('third'), 0);
   assert.deepEqual(await (await getDatabase()).getAllAsync('SELECT * FROM profiles'), []);
   await selectAccountDatabase('second');
-  assert.equal(await (await getDatabase()).getFirstAsync('SELECT name FROM profiles'), null);
+  assert.equal((await (await getDatabase()).getFirstAsync<{ name: string }>('SELECT name FROM profiles'))?.name, 'Korábbi profil');
 });
 
 test('legacy transfer merges into an existing account without overwriting colliding profiles, sources, tasks or links', async () => {
@@ -45,34 +45,25 @@ test('legacy transfer merges into an existing account without overwriting collid
   await target.runAsync('INSERT INTO sources VALUES (?,?,?,?,?,?,?,?,?)', 'same-source', 1, 'json', '{"version":1,"events":[]}', 'Server calendar', 'new', '2026-10-01', '2026-10-31', 0);
   await target.runAsync('INSERT INTO lesson_tasks VALUES (?,?,?,?,?,?,?,?,?)', 'same-task', 1, 'same-source', 'new-event', 'Server task', 0, 'New event', 0, 'new');
   await target.runAsync('INSERT INTO notebook_links VALUES (?,?,?,?,?,?,?)', 'same-link', 1, 'event:["same-source","new-event"]', 'New subject', 'Server notebook', 'https://example.test/new', 'new');
-  let acknowledged = false;
-  configureServerCommit(async db => {
-    assert.equal((await db.getAllAsync('SELECT * FROM profiles')).length, 2);
-    assert.equal((await original.getAllAsync('SELECT * FROM profiles')).length, 1);
-    acknowledged = true;
-  });
   await finishLegacyChoice('merge', true);
-  assert.equal(acknowledged, true);
   assert.equal((await target.getFirstAsync<{ name: string }>('SELECT name FROM sources WHERE id=?', 'same-source'))?.name, 'Server calendar');
   assert.equal((await target.getFirstAsync<{ name: string }>('SELECT name FROM sources WHERE id=?', 'legacy-same-source'))?.name, 'Old calendar');
   const task = await target.getFirstAsync<{ profileId: number; sourceId: string }>('SELECT profileId,sourceId FROM lesson_tasks WHERE id=?', 'legacy-same-task');
   assert.equal(task?.profileId, 2); assert.equal(task?.sourceId, 'legacy-same-source');
   assert.equal((await target.getFirstAsync<{ notebookKey: string }>('SELECT notebookKey FROM notebook_links WHERE id=?', 'legacy-same-link'))?.notebookKey, 'event:["legacy-same-source","old-event"]');
   assert.equal(await readSetting('legacyDecision', false), true);
-  configureServerCommit(async () => undefined);
 });
 
-test('failed legacy upload retains the original and rolls back imported records and the decision', async () => {
+test('failed local legacy copy retains the original and rolls back imported records and the decision', async () => {
   await clearAccountMemory();
   const seed = await getDatabase();
   await seed.runAsync('INSERT INTO profiles VALUES (?,?,?)', 1, 'Unsent', 1);
   const original = await openDatabaseAsync('orarend.db');
   await backupDatabaseAsync({ sourceDatabase: seed as never, destDatabase: original });
   await selectAccountDatabase('failed-transfer');
-  configureServerCommit(async () => { throw new Error('Server unavailable'); });
-  await assert.rejects(finishLegacyChoice('failed-transfer', true), /Server unavailable/);
+  await original.execAsync("PRAGMA foreign_keys=OFF; INSERT INTO sources VALUES ('broken',999,'json','{}','Broken','old','2026-01-01','2026-12-31',0)");
+  await assert.rejects(finishLegacyChoice('failed-transfer', true));
   assert.equal((await original.getFirstAsync('SELECT name FROM profiles'))?.name, 'Unsent');
   assert.deepEqual(await (await getDatabase()).getAllAsync('SELECT * FROM profiles'), []);
   assert.equal(await readSetting('legacyDecision', false), false);
-  configureServerCommit(async () => undefined);
 });

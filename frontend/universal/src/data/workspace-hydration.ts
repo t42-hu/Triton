@@ -139,6 +139,8 @@ class WorkspaceHydration {
   if (preferences) {
     bind('preferences', 'main', preferences.id);
     Object.assign(view, { theme: preferences.theme, mode: preferences.calendarView, showWeekends: preferences.showWeekends, startHour: preferences.startHour, endHour: preferences.endHour });
+    // Migrate the old device-scoped value once; the next projection removes that copy.
+    if (!entries.some(([key]) => key === 'changeNotifications') && typeof preferences.changeNotifications === 'boolean') set('changeNotifications', preferences.changeNotifications);
     if (preferences.anchorDate) set('anchor', { date: preferences.anchorDate, week: preferences.anchorWeek });
   }
   if (device) { if (device.deviceId === deviceId) bind('device-preferences', 'main', device.id); set('setupProfileId', profileIds.get(String(device.viewState?.setupProfileId ?? '')) ?? null); if (device.batteryPromptShownAt) set('batteryOptimizationPromptSeen', true); }

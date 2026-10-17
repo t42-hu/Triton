@@ -1,70 +1,51 @@
-import { backupDatabaseAsync, deleteDatabaseAsync, openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite';
+import { deleteDatabaseAsync, openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite';
+import { stable } from './stable-json';
 import { initializeStudentStorage } from './student-migration';
 let database: Promise<SQLiteDatabase> | undefined;
 let accountOwner: string | null = null;
 let accountLoaded = false;
-let migrationFile: string | null = null;
-let serverCommit: ((db: SQLiteDatabase) => Promise<void>) | undefined;
-export function configureServerCommit(commit: (db: SQLiteDatabase) => Promise<void>) { serverCommit = commit; }
 const observers = new Set<() => void>();
 const previews = new Set<() => void>();
-/** Refreshes visible data while a deletion is being confirmed by the server, and after rollback. */
+/** Refreshes visible data immediately after a durable local deletion. */
 export function onDatabasePreview(callback: () => void) { previews.add(callback); return () => { previews.delete(callback); }; }
 function notifyPreviews() { previews.forEach(callback => callback()); }
 export function onDatabaseWrite(callback: () => void) { observers.add(callback); return () => { observers.delete(callback); }; }
-/** Account data has no on-disk cache. Old files are read only to migrate existing data. */
+/** A separate durable cache per authenticated account keeps offline edits across restarts. */
 export async function selectAccountDatabase(userId: string) {
   await pending;
   if (accountOwner === userId && accountLoaded) return;
   if (database) await (await database).closeAsync();
   database = undefined; accountOwner = userId; accountLoaded = false;
-  const memory = await getDatabase();
-  const name = `account-${userId.replace(/[^a-zA-Z0-9_-]/g, '_')}.db`;
-  const legacy = await openDatabaseAsync(name);
-  try {
-    const exists = await legacy.getFirstAsync("SELECT name FROM sqlite_master WHERE type='table' AND name='settings'");
-    if (exists) { await backupDatabaseAsync({ sourceDatabase: legacy, destDatabase: memory }); await prepareDatabase(memory); }
-    migrationFile = name;
-  } finally { await legacy.closeAsync(); }
-  const sync = await memory.getFirstAsync<{value:string}>("SELECT value FROM settings WHERE key='cloudSync'");
-  if (sync) await memory.runAsync('UPDATE settings SET value=? WHERE key=?', JSON.stringify({ ...JSON.parse(sync.value), sources: {} }), 'cloudSync');
-  await memory.runAsync('INSERT OR REPLACE INTO settings VALUES (?,?)', 'accountOwner', JSON.stringify(userId));
-  if (serverCommit) await serverCommit(memory);
+  const db = await getDatabase();
+  const owner = await db.getFirstAsync<{ value: string }>("SELECT value FROM settings WHERE key='accountOwner'");
+  if (owner && JSON.parse(owner.value) !== userId) throw new Error('A helyi adatbázis másik fiókhoz tartozik.');
+  await db.runAsync('INSERT OR REPLACE INTO settings VALUES (?,?)', 'accountOwner', JSON.stringify(userId));
   accountLoaded = true;
 }
-/** Delete the old cache only after all of its data was acknowledged by the server. */
-export async function completeAccountMigration() {
-  if (!migrationFile) return;
-  const name = migrationFile;
-  await deleteDatabaseAsync(name); migrationFile = null;
-}
+function accountFile(userId: string) { return `account-${userId.replace(/[^a-zA-Z0-9_-]/g, '_')}.db`; }
 export async function clearAccountMemory() {
   await pending;
   if (database) await (await database).closeAsync();
-  database = undefined; accountOwner = null; accountLoaded = false; migrationFile = null;
+  database = undefined; accountOwner = null; accountLoaded = false;
 }
 let pending: Promise<unknown> = Promise.resolve();
 
-/** Serializes writers so asynchronous native/web transactions cannot interleave. */
+/** Local commits finish before notifying sync; network failures never roll back saved edits. */
 export function write<T>(operation: (db: SQLiteDatabase) => Promise<T>, persist = true, preview = false): Promise<T> {
+  let changed = false;
   const result = pending.then(async () => {
     const db = await getDatabase();
-    if (!persist || !serverCommit || !accountOwner) return operation(db);
-    const backup = await openDatabaseAsync(':memory:', { useNewConnection: true });
-    try {
-      await backupDatabaseAsync({ sourceDatabase: db, destDatabase: backup });
-      const value = await operation(db);
-      if (preview) notifyPreviews();
-      await serverCommit(db);
-      return value;
-    } catch (error) {
-      await backupDatabaseAsync({ sourceDatabase: backup, destDatabase: db });
-      if (preview) notifyPreviews();
-      throw error;
-    } finally { await backup.closeAsync(); }
+    if (!persist) return operation(db);
+    const before = await db.getFirstAsync<{ total: number }>('SELECT total_changes() AS total');
+    let value: T;
+    async function commit() { value = await operation(db); }
+    await db.withTransactionAsync(commit);
+    const after = await db.getFirstAsync<{ total: number }>('SELECT total_changes() AS total');
+    changed = before?.total !== after?.total;
+    return value!;
   });
   pending = result.catch(() => undefined);
-  void result.then(notifyObservers, () => undefined);
+  if (persist) void result.then(() => { if (!changed) return; if (preview) notifyPreviews(); notifyObservers(); }, () => undefined);
   return result;
 }
 function notifyObservers() { observers.forEach(callback => callback()); }
@@ -73,12 +54,12 @@ export function getDatabase(): Promise<SQLiteDatabase> {
   return database;
 }
 async function initialize(): Promise<SQLiteDatabase> {
-  const db = await openDatabaseAsync(':memory:', { useNewConnection: true });
+  const db = accountOwner ? await openDatabaseAsync(accountFile(accountOwner)) : await openDatabaseAsync(':memory:', { useNewConnection: true });
   await prepareDatabase(db);
   return db;
 }
 async function prepareDatabase(db: SQLiteDatabase) {
-  await db.execAsync(`PRAGMA journal_mode=MEMORY; PRAGMA temp_store=MEMORY; PRAGMA foreign_keys=ON;
+  await db.execAsync(`PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL; PRAGMA temp_store=MEMORY; PRAGMA foreign_keys=ON;
     CREATE TABLE IF NOT EXISTS profiles(id INTEGER PRIMARY KEY, name TEXT NOT NULL, isOwn INTEGER NOT NULL DEFAULT 0);
     CREATE UNIQUE INDEX IF NOT EXISTS own_profile ON profiles(isOwn) WHERE isOwn=1;
     CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -111,21 +92,19 @@ export async function readSetting<T>(key: string, fallback: T): Promise<T> {
   try { return JSON.parse(row.value) as T; } catch { return fallback; }
 }
 export async function saveSetting(key: string, value: unknown): Promise<void> {
-  await write(async db => { await db.runAsync('INSERT OR REPLACE INTO settings VALUES (?,?)', key, JSON.stringify(value)); });
+  await write(async db => {
+    const previous = await db.getFirstAsync<{ value: string }>('SELECT value FROM settings WHERE key=?', key);
+    try { if (previous && stable(JSON.parse(previous.value)) === stable(value)) return; } catch { /* Replace invalid legacy JSON. */ }
+    await db.runAsync('INSERT INTO settings VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value WHERE settings.value<>excluded.value', key, JSON.stringify(value)); });
 }
 
 /** Runs a serialized transaction on the same API supported by native and web SQLite. */
 export async function transaction<T>(operation: (db: SQLiteDatabase) => Promise<T>, preview = false): Promise<T> {
-  return write(async db => {
-    let result: T;
-    async function commit() { result = await operation(db); }
-    await db.withTransactionAsync(commit);
-    return result!;
-  }, true, preview);
+  return write(operation, true, preview);
 }
 
-/** Account deletion removes any pre-migration file as well as transient memory. */
+/** Explicit account deletion also removes its durable offline workspace. */
 export async function eraseAccountDatabase(userId: string) {
   if (accountOwner === userId) await clearAccountMemory();
-  await deleteDatabaseAsync(`account-${userId.replace(/[^a-zA-Z0-9_-]/g, '_')}.db`);
+  await deleteDatabaseAsync(accountFile(userId));
 }

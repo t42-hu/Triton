@@ -15,3 +15,14 @@ export async function removeImportedCalendar(sourceId: string): Promise<void> {
     await db.runAsync('DELETE FROM sources WHERE id=?', sourceId);
   }, true);
 }
+
+/** Renames the subscription without rebuilding its events or changing its connection. */
+export async function renameImportedCalendar(sourceId: string, value: string): Promise<void> {
+  const name = value.trim();
+  if (!name) throw new Error('Adj meg egy nevet a naptárnak.');
+  if (name.length > 120) throw new Error('A naptár neve legfeljebb 120 karakter lehet.');
+  await transaction(async db => {
+    const result = await db.runAsync(`UPDATE sources SET name=? WHERE id=? AND isManual=0 AND EXISTS(SELECT 1 FROM source_sync c WHERE c.sourceId=sources.id AND c.url IS NOT NULL)`, name, sourceId);
+    if (!result.changes) throw new Error('Az importált naptárlink már nem található.');
+  });
+}

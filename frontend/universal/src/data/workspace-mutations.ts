@@ -17,7 +17,8 @@ export function mutationsFor(desired: CloudRecord[], baseline: Baseline[]): Muta
   const mutations: Mutation[] = [];
   for (const record of desired) {
     const old = baseline.find(row => row.resource === record.resource && row.id === record.id);
-    if (!old || stable(old.data) !== stable(record.data)) mutations.push({ clientMutationId: uid(), resource: record.resource, operation: old ? 'update' : 'create', id: record.id, ...(old ? { version: old.version } : {}), data: old ? changedFields(record.data, old.data) : record.data });
+    const data = old ? changedFields(record.data, old.data) : record.data;
+    if (!old || Object.keys(data).length) mutations.push({ clientMutationId: uid(), resource: record.resource, operation: old ? 'update' : 'create', id: record.id, ...(old ? { version: old.version } : {}), data });
   }
   for (const old of [...baseline].reverse()) if (!desired.some(row => row.id === old.id && row.resource === old.resource)) mutations.push({ clientMutationId: uid(), resource: old.resource, operation: 'delete', id: old.id, version: old.version });
   // Release the previous own-profile uniqueness constraint before selecting another.
@@ -33,7 +34,15 @@ const immutable: Record<string, string[]> = {
 };
 /** Old rejected full-row updates cannot have receipts; rebuild those as valid partial updates. */
 export function repairRejectedUpdates(pending: Mutation[], baseline: Baseline[]): Mutation[] {
-  return pending.map(mutation => repairUpdate(mutation, baseline));
+  return pending.map(mutation => repairUpdate(mutation, baseline)).flatMap(stripServerConnectionStatus);
+}
+const serverConnectionFields = new Set(['lastAttemptAt', 'lastSuccessAt', 'lastError', 'lastChange']);
+/** Discard obsolete status-only uploads while retaining user configuration and optimistic versions. */
+function stripServerConnectionStatus(mutation: Mutation): Mutation[] {
+  if (mutation.resource !== 'source-connections' || mutation.operation === 'delete') return [mutation];
+  const data = Object.fromEntries(Object.entries(mutation.data ?? {}).filter(([key]) => !serverConnectionFields.has(key)));
+  if (mutation.operation === 'update' && !Object.keys(data).length) return [];
+  return [stable(data) === stable(mutation.data) ? mutation : { ...mutation, clientMutationId: uid(), data }];
 }
 function repairUpdate(mutation: Mutation, baseline: Baseline[]): Mutation {
   const old = baseline.find(row => row.resource === mutation.resource && row.id === mutation.id);
@@ -42,3 +51,24 @@ function repairUpdate(mutation: Mutation, baseline: Baseline[]): Mutation {
 }
 
 function deletionOrder(resource: string) { return ['profiles', 'calendars', 'profile-calendars', 'sources', 'source-connections', 'events', 'overrides', 'event-reminder-settings', 'reminder-rules', 'tasks', 'notebook-links', 'preferences', 'device-preferences', 'palettes', 'palette-colors', 'color-rules', 'reminder-settings'].indexOf(resource); }
+
+/** A retry may already be present remotely; unrelated remote edits can be rebased without overwriting them. */
+export function reconcileUpdates(pending: Mutation[], baseline: Baseline[], remote: Baseline[]): Mutation[] {
+  return pending.flatMap(mutation => reconcileUpdate(mutation, baseline, remote));
+}
+function reconcileUpdate(mutation: Mutation, baseline: Baseline[], remote: Baseline[]): Mutation[] {
+    if (mutation.operation !== 'update') return [mutation];
+    const current = remote.find(row => row.resource === mutation.resource && row.id === mutation.id);
+    const old = baseline.find(row => row.resource === mutation.resource && row.id === mutation.id);
+    if (!current || !old || current.version === mutation.version) return [mutation];
+    const entries = Object.entries(mutation.data ?? {});
+    if (entries.every(([key, value]) => stable(current.data[key]) === stable(value))) {
+      Object.assign(old.data, mutation.data); old.version = current.version;
+      return [];
+    }
+    if (entries.every(([key]) => stable(current.data[key]) === stable(old.data[key]))) {
+      old.version = current.version;
+      return [{ ...mutation, version: current.version, clientMutationId: uid() }];
+    }
+    return [mutation];
+}

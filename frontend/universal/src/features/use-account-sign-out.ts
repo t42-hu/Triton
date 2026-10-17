@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { useApp } from './app-state';
 import { useAuth } from './auth-state';
 
-/** All edits are already acknowledged by the server before sign-out. */
+/** Pending edits remain in the account cache; signing out never discards its outbox. */
 export function useAccountSignOut() {
   const auth = useAuth();
   const { cloud } = useApp();

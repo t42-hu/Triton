@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { Platform } from 'react-native';
 import { File } from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
 import { calendarUrl, fetchCalendar } from '../data/calendar-fetch';
@@ -60,7 +59,7 @@ async function prepareImport(profileId: number, draft: ImportDraft, anchor: Anch
     fromDate: previous && previous.fromDate < draft.from ? previous.fromDate : draft.from,
     toDate: previous && previous.toDate > draft.to ? previous.toDate : draft.to }, anchor, control);
   result.previousRevision = previous?.revision ?? null;
-  if (isUrl) result.connection = { url, autoSync: Number(Platform.OS !== 'web'), fetchedAt };
+  if (isUrl) result.connection = { url, autoSync: 1, fetchedAt };
   else if (draft.content || !previous) result.connection = null;
   return result;
 }

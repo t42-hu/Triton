@@ -6,11 +6,7 @@ import type { ViewState } from '@/features/app-state';
 import type { Anchor, Occurrence } from '@/domain/model';
 import type { CloudRecord, LocalWorkspace, IdentityMap } from './workspace-types';
 export type { CloudRecord, LocalWorkspace, IdentityMap } from './workspace-types';
-export function stable(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`;
-  if (value && typeof value === 'object') return `{${Object.entries(value).filter(([, value]) => value !== undefined).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => `${JSON.stringify(key)}:${stable(item)}`).join(',')}}`;
-  return JSON.stringify(value);
-}
+export { stable } from './stable-json';
 /** Stable identifiers are persisted before sending, so interrupted uploads can be retried. */
 export function projectWorkspace(local: LocalWorkspace, identities: IdentityMap, installation: string, deviceId: string): CloudRecord[] {
   const projector = new WorkspaceProjector(local, identities, installation, deviceId);
@@ -45,7 +41,8 @@ class WorkspaceProjector {
     if (!calendarId) return;
     const sourceId = this.add('sources', source.id, { calendarId, name: source.name, format: source.isManual ? 'manual' : source.format, coverageFrom: source.fromDate, coverageTo: source.toDate });
     const connection = this.local.source_sync.find(row => row.sourceId === source.id);
-    if (connection) this.add('source-connections', source.id, { sourceId, url: connection.url, autoSync: Boolean(connection.autoSync), importedAt: new Date(connection.importedAt).toISOString(), lastAttemptAt: connection.lastAttempt ? new Date(connection.lastAttempt).toISOString() : null, lastSuccessAt: connection.lastSuccess ? new Date(connection.lastSuccess).toISOString() : null, lastError: connection.lastError, lastChange: connection.lastChange });
+    // Refresh status belongs to the server worker; uploading cached status creates stale-version conflicts.
+    if (connection) this.add('source-connections', source.id, { sourceId, url: connection.url, autoSync: Boolean(connection.autoSync), importedAt: new Date(connection.importedAt).toISOString() });
     for (const event of this.local.events.filter(row => row.sourceId === source.id)) this.event(source.id, sourceId, calendarId, event);
   }
   event(localSource: string, sourceId: string, calendarId: string, event: LocalWorkspace['events'][number]) {
@@ -73,9 +70,9 @@ class WorkspaceProjector {
   preferences() {
   const view = (this.settings.view ?? {}) as Partial<ViewState>;
   const anchor = this.settings.anchor as Anchor | undefined;
-  this.add('preferences', 'main', { theme: view.theme ?? 'system', calendarView: view.mode ?? 'week', showWeekends: view.showWeekends ?? true, startHour: view.startHour ?? 7, endHour: view.endHour ?? 20, ...(anchor ? { anchorDate: anchor.date, anchorWeek: anchor.week } : {}) });
+  this.add('preferences', 'main', { theme: view.theme ?? 'system', calendarView: view.mode ?? 'week', showWeekends: view.showWeekends ?? true, startHour: view.startHour ?? 7, endHour: view.endHour ?? 20, ...(typeof this.settings.changeNotifications === 'boolean' ? { changeNotifications: this.settings.changeNotifications } : {}), ...(anchor ? { anchorDate: anchor.date, anchorWeek: anchor.week } : {}) });
   // Device state holds navigation/setup state, never account credentials or calendar content.
-  this.add('device-preferences', 'main', { deviceId: this.deviceId, arrangement: view.arrangement ?? 'column', zoomPercent: Math.round((view.zoom ?? 1) * 100), batteryPromptShownAt: this.settings.batteryOptimizationPromptSeen ? new Date(0).toISOString() : null, viewState: { ...view, accountSettings: Object.fromEntries(Object.entries(this.settings).filter(([key]) => !/^(cloud|accountOwner|view$|anchor$|eventColors$|savedColors$|classReminders$|setupProfileId$)/.test(key))), left: this.profileIds.get(view.left ?? 0) ?? null, right: this.profileIds.get(view.right ?? 0) ?? null, openProfiles: (view.openProfiles ?? []).map(id => this.profileIds.get(id)).filter(Boolean), setupProfileId: this.settings.setupProfileId ? this.profileIds.get(Number(this.settings.setupProfileId)) : null } });
+  this.add('device-preferences', 'main', { deviceId: this.deviceId, arrangement: view.arrangement ?? 'column', zoomPercent: Math.round((view.zoom ?? 1) * 100), batteryPromptShownAt: this.settings.batteryOptimizationPromptSeen ? new Date(0).toISOString() : null, viewState: { ...view, accountSettings: Object.fromEntries(Object.entries(this.settings).filter(([key]) => !/^(cloud|accountOwner|view$|anchor$|eventColors$|savedColors$|classReminders$|setupProfileId$|changeNotifications$)/.test(key))), left: this.profileIds.get(view.left ?? 0) ?? null, right: this.profileIds.get(view.right ?? 0) ?? null, openProfiles: (view.openProfiles ?? []).map(id => this.profileIds.get(id)).filter(Boolean), setupProfileId: this.settings.setupProfileId ? this.profileIds.get(Number(this.settings.setupProfileId)) : null } });
   }
   palette() {
   const reminders: GlobalReminders = (this.settings.classReminders as GlobalReminders | undefined) ?? DEFAULT_REMINDERS;

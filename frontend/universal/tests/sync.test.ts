@@ -5,7 +5,7 @@ import { createManualEvent } from '../src/data/manual-event';
 import { getDatabase } from '../src/data/database';
 import { addLessonTask, lessonTasks } from '../src/data/student-repository';
 import { calendarUrl, fetchCalendar, MAX_CALENDAR_BYTES } from '../src/data/calendar-fetch';
-import { disconnectCalendar, SYNC_INTERVAL, syncOwnCalendar, syncStatus } from '../src/data/calendar-sync';
+import { disconnectCalendar, refreshDueLinkedCalendars, refreshLinkedCalendars, SYNC_INTERVAL, syncOwnCalendar, syncStatus } from '../src/data/calendar-sync';
 import { discardStages, publishStages, sourceById, stageSource } from '../src/data/importer';
 import { deleteProfile, ownProfile, profiles, saveProfile, updateEvents, visibleEvents } from '../src/data/repository';
 
@@ -168,4 +168,50 @@ test('removing an imported link deletes its events and linked tasks but preserve
   assert.deepEqual((await lessonTasks(profile.id)).map(task => task.title), ['Keep manual task']);
   assert.equal((await (await getDatabase()).getAllAsync('SELECT * FROM events WHERE sourceId=?', input.id)).length, 0);
   await assert.rejects(publishStages([stale]), /időközben megváltozott/);
+});
+
+test('opening refreshes legacy web links and peer links despite cooldown, coalesces callers and retains unchanged revisions', async t => {
+  const { profile, input } = await subscribe();
+  const peerId = await saveProfile('Web peer');
+  t.after(async () => { await deleteProfile(profile.id); await deleteProfile(peerId); });
+  const peer = await stageSource({ ...input, id: `${peerId}:import`, profileId: peerId }, anchor, control());
+  peer.connection = { url: 'https://calendar.example.test/peer.ics', autoSync: 0, fetchedAt: Date.now() };
+  await publishStages([peer]);
+  const request = t.mock.method(globalThis, 'fetch', async (target: string) => new Response(target.includes('peer') ? calendar(course('Peer updated')) : input.content));
+  const before = await sourceById(input.id);
+  const opening = refreshLinkedCalendars();
+  assert.equal(refreshLinkedCalendars(), opening);
+  assert.deepEqual((await opening).map(result => result.status), ['success', 'success']);
+  assert.equal(request.mock.callCount(), 2);
+  assert.equal((await sourceById(input.id))?.revision, before?.revision);
+  assert.equal((await visibleEvents(peerId, '2026-09-07', 1, false))[0].title, 'Peer updated');
+  assert.equal((await syncStatus(`${peerId}:import`))?.autoSync, 0);
+  await refreshLinkedCalendars();
+  assert.equal(request.mock.callCount(), 4);
+});
+
+
+test('scheduled refresh checks every own and peer link, honors individual cooldowns and continues after errors', async t => {
+  const { profile, input } = await subscribe();
+  const peerId = await saveProfile('Scheduled peer');
+  t.after(async () => { await deleteProfile(profile.id); await deleteProfile(peerId); });
+  for (const [id, profileId] of [['second', profile.id], ['peer', peerId]] as const) {
+    const stage = await stageSource({ ...input, id, profileId }, anchor, control());
+    stage.connection = { url: `https://calendar.example.test/${id}.ics`, autoSync: 0, fetchedAt: 1 };
+    await publishStages([stage]);
+  }
+  const request = t.mock.method(globalThis, 'fetch', async (target: string) => target.includes('second')
+    ? new Response('Unavailable', { status: 503 })
+    : new Response(calendar(course(target.includes('peer') ? 'Peer updated' : 'Own updated'))));
+  const now = Date.now();
+  const results = await Promise.all([refreshDueLinkedCalendars(now), refreshDueLinkedCalendars(now)]);
+  assert.equal(request.mock.callCount(), 3);
+  assert.ok(results.some(result => result.status === 'failed'));
+  assert.equal((await visibleEvents(peerId, '2026-09-07', 1, false))[0].title, 'Peer updated');
+  assert.equal((await visibleEvents(profile.id, '2026-09-07', 1, false)).find(event => event.sourceId === input.id)?.title, 'Own updated');
+  assert.equal((await syncStatus('second'))?.lastSuccess, 1);
+  assert.equal((await refreshDueLinkedCalendars(now + SYNC_INTERVAL - 1)).status, 'skipped');
+  assert.equal(request.mock.callCount(), 3);
+  await refreshDueLinkedCalendars(now + SYNC_INTERVAL);
+  assert.equal(request.mock.callCount(), 6);
 });

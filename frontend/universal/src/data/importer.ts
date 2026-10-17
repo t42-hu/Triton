@@ -8,7 +8,7 @@ import { searchableText } from '../domain/student';
 
 export type SourceInput = Omit<Source, 'revision'>;
 export type Connection = { url: string; autoSync: number; fetchedAt: number };
-export type StagedSource = { input: SourceInput; revision: string; previousRevision: string | null; count: number; removed: number; added: number; changed: number; lostOverrides: number; connection?: Connection | null; syncAttempt?: number };
+export type StagedSource = { input: SourceInput; revision: string; previousRevision: string | null; count: number; removed: number; added: number; changed: number; lostOverrides: number; connection?: Connection | null; syncAttempt?: number; syncOwnOnly?: boolean };
 const insertSql = 'INSERT INTO events(sourceId,revision,key,title,originalTitle,start,end,location,kind,hidden,base,notes,category,searchText) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
 export function uniqueId(): string { return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`; }
 
@@ -56,7 +56,8 @@ export async function publishStages(stages: StagedSource[], anchor?: Anchor): Pr
 async function publishOne(db: SQLiteDatabase, stage: StagedSource): Promise<void> {
   const { input, revision } = stage;
   await validatePublication(db, stage);
-  await db.runAsync(`INSERT INTO sources VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET content=excluded.content,format=excluded.format,name=excluded.name,revision=excluded.revision,fromDate=excluded.fromDate,toDate=excluded.toDate`, input.id, input.profileId, input.format, input.content, input.name, revision, input.fromDate, input.toDate, input.isManual);
+  const existing = stage.connection ? await db.getFirstAsync<{ name: string }>('SELECT name FROM sources WHERE id=?', input.id) : null;
+  await db.runAsync(`INSERT INTO sources VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET content=excluded.content,format=excluded.format,name=excluded.name,revision=excluded.revision,fromDate=excluded.fromDate,toDate=excluded.toDate`, input.id, input.profileId, input.format, input.content, existing?.name || input.name, revision, input.fromDate, input.toDate, input.isManual);
   await db.runAsync('DELETE FROM overrides WHERE sourceId=? AND key NOT IN (SELECT key FROM events WHERE sourceId=? AND revision=?)', input.id, input.id, revision);
   await db.runAsync('DELETE FROM event_reminders WHERE sourceId=? AND key NOT IN (SELECT key FROM events WHERE sourceId=? AND revision=?)', input.id, input.id, revision);
   const patches = await db.getAllAsync<{ key: string; patch: string }>('SELECT key,patch FROM overrides WHERE sourceId=?', input.id);
@@ -71,7 +72,7 @@ async function validatePublication(db: SQLiteDatabase, stage: StagedSource): Pro
   if ((current?.revision ?? null) !== stage.previousRevision) throw new Error('A forrás időközben megváltozott. Készíts új előnézetet.');
   if (!stage.connection || stage.syncAttempt === undefined) return;
   const own = await db.getFirstAsync<{ isOwn: number }>('SELECT isOwn FROM profiles WHERE id=?', stage.input.profileId);
-  if (!own?.isOwn) throw new Error('A profil már nem saját; a frissítést megszakítottuk.');
+  if (stage.syncOwnOnly !== false && !own?.isOwn) throw new Error('A profil már nem saját; a frissítést megszakítottuk.');
   const active = await db.getFirstAsync<{ url: string; lastAttempt: number }>('SELECT url,lastAttempt FROM source_sync WHERE sourceId=?', stage.input.id);
   if (active?.url !== stage.connection.url || active.lastAttempt !== stage.syncAttempt) throw new Error('A kapcsolat időközben megváltozott.');
 }

@@ -5,11 +5,12 @@ import * as BackgroundTask from 'expo-background-task';
 import { isDevice } from 'expo-device';
 import { getDatabase, readSetting, saveSetting, selectAccountDatabase } from './database';
 import { backend } from './backend';
-import { synchronizeWorkspace } from './workspace-sync';
-import { syncOwnCalendar, type SyncResult } from './calendar-sync';
+import type { SyncResult } from './calendar-sync';
+import { refreshServerCalendars } from './calendar-server-sync';
 
 import { hasReminders } from './reminders';
 import { reconcileReminders } from './reminder-runtime';
+import { reconcileWidgets, clearWidgets } from './widget-runtime';
 
 const taskName = 'triton-calendar-sync';
 const channelId = 'timetable-changes';
@@ -18,8 +19,9 @@ if (!TaskManager.isTaskDefined(taskName)) TaskManager.defineTask(taskName, runBa
 
 /** Local notifications contain only counts, never the private feed URL or class details. */
 export async function refreshCalendar(): Promise<SyncResult> {
-  const result = await syncOwnCalendar();
+  const result = await refreshServerCalendars();
   await reconcileReminders();
+  await reconcileWidgets();
   if (!result.summary || !await readSetting('changeNotifications', false)) return result;
   try {
     const permission = await Notifications.getPermissionsAsync();
@@ -32,9 +34,10 @@ export async function refreshCalendar(): Promise<SyncResult> {
 async function runBackground(): Promise<BackgroundTask.BackgroundTaskResult> {
   try {
     const session = await backend<{ user: { id: string } } | null>('/auth/get-session');
-    if (!session) return BackgroundTask.BackgroundTaskResult.Failed;
-    await selectAccountDatabase(session.user.id); await synchronizeWorkspace();
-    return (await refreshCalendar()).status === 'failed' ? BackgroundTask.BackgroundTaskResult.Failed : BackgroundTask.BackgroundTaskResult.Success; }
+    if (!session) { await clearWidgets(); return BackgroundTask.BackgroundTaskResult.Failed; }
+    await selectAccountDatabase(session.user.id);
+    const result = await refreshCalendar();
+    return result.status === 'failed' ? BackgroundTask.BackgroundTaskResult.Failed : BackgroundTask.BackgroundTaskResult.Success; }
   catch { return BackgroundTask.BackgroundTaskResult.Failed; }
 }
 async function createChannel(): Promise<void> {
@@ -51,9 +54,9 @@ export async function enableNotifications(enabled: boolean): Promise<void> {
 }
 /** OS scheduling is optional: foreground sync remains available when background work is restricted. */
 export async function configureBackground(): Promise<string> {
-  if (Platform.OS === 'ios' && !isDevice) return 'Szimulátoron a háttérfrissítés nem támogatott.';
-  if (!await TaskManager.isAvailableAsync()) return 'Háttérfrissítéshez saját natív build szükséges.';
-  const subscription = await (await getDatabase()).getFirstAsync(`SELECT c.sourceId FROM source_sync c JOIN sources s ON s.id=c.sourceId JOIN profiles p ON p.id=s.profileId WHERE p.isOwn=1 AND c.autoSync=1 AND c.url IS NOT NULL`);
+  if (Platform.OS === 'ios' && !isDevice) return 'A szerver bezárt alkalmazás mellett is frissít. Szimulátoron a háttérértesítés nem támogatott.';
+  if (!await TaskManager.isAvailableAsync()) return 'A szerver bezárt alkalmazás mellett is frissít. Háttérértesítéshez saját natív build szükséges.';
+  const subscription = await (await getDatabase()).getFirstAsync(`SELECT c.sourceId FROM source_sync c JOIN sources s ON s.id=c.sourceId WHERE s.isManual=0 AND c.url IS NOT NULL`);
   const registered = await TaskManager.isTaskRegisteredAsync(taskName);
   if (!subscription && !await hasReminders()) {
     if (registered) await BackgroundTask.unregisterTaskAsync(taskName);
@@ -61,5 +64,5 @@ export async function configureBackground(): Promise<string> {
   }
   if (await BackgroundTask.getStatusAsync() === BackgroundTask.BackgroundTaskStatus.Restricted) return 'A rendszer korlátozza a háttérfrissítést.';
   if (!registered) await BackgroundTask.registerTaskAsync(taskName, { minimumInterval: 15 });
-  return 'Háttérben a rendszer ütemezése szerint frissül.';
+  return 'A szerver 15 percenként frissít; a készülék a rendszer ütemezése szerint veszi át.';
 }

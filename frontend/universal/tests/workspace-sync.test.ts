@@ -75,11 +75,12 @@ test('dependent records are deleted before their parents regardless of prior upd
   assert.ok(order.indexOf('calendars') < order.indexOf('profiles'));
 });
 
-test('connection timestamps and remaining app settings round-trip through server records', () => {
+test('server connection timestamps and remaining app settings are restored into the local cache', () => {
   const local = fixture();
   local.source_sync.push({sourceId:local.sources[0].id,url:'https://example.test/calendar.ics',autoSync:1,importedAt:1000,lastAttempt:2000,lastSuccess:1500,lastError:'Retry',lastChange:'Updated'});
   local.settings.push({key:'changeNotifications',value:'true'},{key:'reminderStatus',value:'{"count":3}'},{key:'legacyDecision',value:'true'});
   const remote: RemoteRecord[] = projectWorkspace(local, {}, 'installation', 'device').map(row => ({...row,version:1}));
+  Object.assign(remote.find(row => row.resource === 'source-connections')!.data, { lastAttemptAt: new Date(2000).toISOString(), lastSuccessAt: new Date(1500).toISOString(), lastError: 'Retry', lastChange: 'Updated' });
   const hydrated = hydrateWorkspace(remote, empty(), {}, 'device');
   const settings = Object.fromEntries(hydrated.settings.map(row => [row.key,JSON.parse(row.value)]));
   assert.equal(settings.changeNotifications,true);
@@ -125,4 +126,34 @@ test('deletion reconciles remote absence and newer versions without relaxing upd
   assert.notEqual(deletion.clientMutationId, mutations.find(row => row.resource === 'profiles' && row.id === 'renamed')!.clientMutationId);
   assert.equal(reconciled.find(row => row.id === 'unchanged')!.clientMutationId, mutations.find(row => row.id === 'unchanged')!.clientMutationId);
   assert.equal(reconciled.find(row => row.operation === 'update'), update);
+});
+
+test('account notification preference crosses web, Android and iOS without copying OS delivery status', () => {
+  const local = fixture();
+  local.settings.push({ key: 'changeNotifications', value: 'true' }, { key: 'reminderStatus', value: '{"count":7}' });
+  const remote: RemoteRecord[] = projectWorkspace(local, {}, 'installation', 'web-device').map(row => ({ ...row, version: 1 }));
+  remote.push({ resource: 'devices', id: 'web-device', version: 1, data: { platform: 'web' } });
+  for (const platform of ['web', 'android', 'ios']) {
+    const deviceId = `${platform}-new-device`;
+    const restored = hydrateWorkspace([...remote, { resource: 'devices', id: deviceId, version: 1, data: { platform } }], empty(), {}, deviceId);
+    assert.equal(JSON.parse(restored.settings.find(row => row.key === 'changeNotifications')!.value), true, platform);
+    if (platform !== 'web') assert.equal(restored.settings.some(row => row.key === 'reminderStatus'), false);
+    const projected = projectWorkspace(restored, {}, deviceId, deviceId);
+    assert.equal(projected.find(row => row.resource === 'preferences')!.data.changeNotifications, true);
+    assert.equal(JSON.stringify(projected.find(row => row.resource === 'device-preferences')!.data).includes('changeNotifications'), false);
+  }
+});
+
+test('legacy notification choice migrates once and subsequent account changes remain authoritative', () => {
+  const remote: RemoteRecord[] = projectWorkspace(fixture(), {}, 'installation', 'device').map(row => ({ ...row, version: 1 }));
+  const preference = remote.find(row => row.resource === 'preferences')!;
+  preference.data.changeNotifications = false;
+  const device = remote.find(row => row.resource === 'device-preferences')!;
+  (device.data.viewState as Record<string, unknown>).accountSettings = { changeNotifications: true };
+  const migrated = hydrateWorkspace(remote, empty(), {}, 'device');
+  assert.equal(JSON.parse(migrated.settings.find(row => row.key === 'changeNotifications')!.value), true);
+  const nextRemote: RemoteRecord[] = projectWorkspace(migrated, {}, 'next', 'device').map(row => ({ ...row, version: 2 }));
+  nextRemote.find(row => row.resource === 'preferences')!.data.changeNotifications = false;
+  const restored = hydrateWorkspace(nextRemote, migrated, {}, 'device');
+  assert.equal(JSON.parse(restored.settings.find(row => row.key === 'changeNotifications')!.value), false);
 });

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AppState, Platform } from 'react-native';
+import { AppState } from 'react-native';
 import { refreshCalendar, configureBackground } from '../data/calendar-runtime';
 import { reconcileReminders } from '../data/reminder-runtime';
 import { SYNC_INTERVAL } from '../data/calendar-sync';
@@ -13,7 +13,6 @@ export function useCalendarSync() {
   const [busy, setBusy] = useState(false);
   const [background, setBackground] = useState('');
   async function sync() {
-    if (Platform.OS === 'web') return;
     setBusy(true);
     try { await refreshCalendar(); await refresh.current(); }
     catch { app.setError('Nem sikerült ellenőrizni a frissítést. A tárolt órarend megmaradt.'); }
@@ -22,9 +21,7 @@ export function useCalendarSync() {
   const syncRef = useRef(sync);
   useEffect(() => { syncRef.current = sync; });
   useEffect(() => {
-    if (Platform.OS === 'web') return;
     function activated() { if (AppState.currentState === 'active') void syncRef.current(); }
-    activated();
     const subscription = AppState.addEventListener('change', activated);
     const timer = setInterval(activated, SYNC_INTERVAL);
     return () => { subscription.remove(); clearInterval(timer); };

@@ -5,7 +5,7 @@ export async function calendarRequest(url: string, signal: AbortSignal): Promise
   const isTritonShare = parsed.origin === 'https://mobile.triton42.hu' && /^\/api\/calendar-share\/[a-f0-9-]{36}\/[A-Za-z0-9_-]{43}\/calendar\.ics$/.test(parsed.pathname) && !parsed.search;
   const target = useServer ? '/api/calendar-import' : isTritonShare ? parsed.pathname : url;
   const response = await fetch(target, {
-    signal, credentials: useServer ? 'same-origin' : 'omit', referrerPolicy: 'no-referrer',
+    cache: 'no-store', signal, credentials: useServer ? 'same-origin' : 'omit', referrerPolicy: 'no-referrer',
     ...(useServer ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) } : {}),
   });
   if (useServer && !response.ok) {
