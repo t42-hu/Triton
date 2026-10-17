@@ -1,0 +1,10 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+group = 'hu.t42.widget'
+version = '1.0.0'
+android {
+  namespace 'hu.t42.widget'
+  defaultConfig { versionCode 1; versionName '1.0.0' }
+}

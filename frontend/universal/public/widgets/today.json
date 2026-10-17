@@ -1,0 +1,17 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    { "type": "TextBlock", "text": "${label}", "weight": "Bolder", "size": "Medium", "color": "Accent" },
+    { "type": "TextBlock", "text": "${clock}", "weight": "Bolder", "spacing": "Small" },
+    { "type": "Container", "$data": "${events}", "separator": true, "items": [
+      { "type": "TextBlock", "text": "${time}", "color": "Accent", "size": "Small" },
+      { "type": "TextBlock", "text": "${title}", "weight": "Bolder", "wrap": true, "spacing": "None" },
+      { "type": "TextBlock", "text": "${location}", "isSubtle": true, "size": "Small", "spacing": "None" }
+    ] },
+    { "type": "TextBlock", "text": "${message}", "wrap": true },
+    { "type": "TextBlock", "text": "${more}", "isSubtle": true, "size": "Small" }
+  ],
+  "actions": [ { "type": "Action.OpenUrl", "title": "Triton42 megnyitása", "url": "${url}" }, { "type": "Action.Execute", "title": "Frissítés", "verb": "refresh" } ]
+}

@@ -1,0 +1,8 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <receiver android:name="hu.t42.widget.TodayWidget" android:exported="false" android:label="Triton42 · Mai nap">
+      <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/triton_today" />
+    </receiver>
+  </application>
+</manifest>

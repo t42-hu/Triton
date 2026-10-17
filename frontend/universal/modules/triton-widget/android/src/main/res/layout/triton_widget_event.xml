@@ -1,0 +1,5 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingTop="9dp">
+  <TextView android:id="@+id/triton_event_time" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FF8585" android:textSize="11sp" android:maxLines="1" />
+  <TextView android:id="@+id/triton_event_title" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFFFF" android:textSize="14sp" android:textStyle="bold" android:maxLines="2" android:ellipsize="end" />
+  <TextView android:id="@+id/triton_event_location" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#A9B6CB" android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+</LinearLayout>

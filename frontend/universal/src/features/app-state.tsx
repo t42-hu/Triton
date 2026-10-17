@@ -1,4 +1,5 @@
 import { refreshServerCalendars } from '../data/calendar-server-sync';
+import { useWidgets } from './use-widgets';
 import { useWorkspaceSync } from './use-workspace-sync';
 import { DEFAULT_EVENT_COLORS, type EventColors } from '../domain/event-colors';
 import { useCurrentTime } from '@/hooks/use-current-time';
@@ -69,6 +70,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     void restore().catch(reportError);
   }, [synchronize, attempt, refresh, setSavedColors]);
   useServerView(view, ready, setError);
+  useWidgets(ready, now, setError);
   if (!ready) return <View className="flex-1 items-center justify-center gap-3 bg-background p-6"><Image source={require('@/assets/images/triton-v15.png')} contentFit="contain" style={{ width: 88, height: 88 }} />{!error ? <ActivityIndicator /> : null}<Text className="text-center">{error ? error : 'Órarend megnyitása…'}</Text>{error ? <Button onPress={() => { setError(''); setAttempt(value => value + 1); }}><Text>Újrapróbálás</Text></Button> : null}</View>;
   const setView = (patch: Partial<ViewState> | ((current: ViewState) => Partial<ViewState>)) => updateView(current => ({ ...current, ...(typeof patch === 'function' ? patch(current) : patch) }));
   return <Context.Provider value={{ cloud, savedColors, savePaletteColor, removePaletteColor, calendarImport, presentCalendarImport, view, setView, anchor, profileList, remindersEnabled, eventColors, now, saveEventColors, version, refresh, error, setError }}>{children}</Context.Provider>;

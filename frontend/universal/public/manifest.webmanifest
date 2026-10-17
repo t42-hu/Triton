@@ -1,0 +1,23 @@
+{
+  "id": "/",
+  "name": "Triton42",
+  "short_name": "Triton42",
+  "lang": "hu",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#192438",
+  "theme_color": "#192438",
+  "icons": [{ "src": "/triton/widget-icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }],
+  "widgets": [{
+    "name": "Triton42 · Mai nap",
+    "description": "A mai órarended az aktuális időponttól.",
+    "tag": "triton-today",
+    "template": "triton-today",
+    "ms_ac_template": "/triton/widgets/today.json",
+    "screenshots": [{ "src": "/triton/widgets/today-preview.png", "sizes": "600x400", "label": "Mai nap" }],
+    "auth": true,
+    "update": 900,
+    "multiple": true
+  }]
+}

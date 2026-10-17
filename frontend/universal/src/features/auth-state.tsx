@@ -3,6 +3,7 @@ import { backend, BackendError, clearChallenge, onSessionExpired } from '@/data/
 import { setSessionToken } from '@/data/session-token';
 import { clearAccountMemory, selectAccountDatabase } from '@/data/database';
 import { legacyProfileCount, finishLegacyChoice } from '@/data/legacy-workspace';
+import { clearWidgets } from '@/data/widget-runtime';
 import { offlineAccount, rememberOfflineAccount, type OfflineAccount } from '@/data/offline-account';
 import { restoreAccountSession } from '@/data/account-session';
 import { isConnectionFailure } from '@/data/offline-account-model';
@@ -53,7 +54,7 @@ function useAuthSession(setTwoFactorPending: (value: boolean) => void) {
     void restore();
     return () => { cancelled = true; };
   }, [attempt, setTwoFactorPending]);
-  function expire() { void rememberOfflineAccount(null); setUser(null); setError('A munkamenet lejárt. Jelentkezz be újra.'); }
+  function expire() { void rememberOfflineAccount(null); void clearWidgets(); setUser(null); setError('A munkamenet lejárt. Jelentkezz be újra.'); }
   useEffect(() => onSessionExpired(expire), []);
   return { user, setUser, legacyCount, setLegacyCount, checking, error, setError, setChecking, setAttempt };
 }
@@ -88,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await openAccount(session.user); setLegacyCount(await legacyProfileCount(session.user.id)); setUser(session.user); setTwoFactorPending(false); setError('');
     return true;
   }
-  async function clearAccount() { setUser(null); await clearChallenge(); setTwoFactorPending(false); setLegacyCount(0); await setSessionToken(null); await rememberOfflineAccount(null); await clearAccountMemory(); }
+  async function clearAccount() { setUser(null); await clearWidgets(); await clearChallenge(); setTwoFactorPending(false); setLegacyCount(0); await setSessionToken(null); await rememberOfflineAccount(null); await clearAccountMemory(); }
   async function signOut() {
     await backend('/auth/sign-out', 'POST', {});
     await clearAccount();

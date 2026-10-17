@@ -60,7 +60,27 @@
         }
       ],
       "expo-sharing",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-widgets",
+        {
+          "widgets": [
+            {
+              "name": "TritonToday",
+              "displayName": "Mai nap",
+              "description": "A mai órarended az aktuális időponttól.",
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall",
+                  "systemMedium",
+                  "systemLarge",
+                  "systemExtraLarge"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

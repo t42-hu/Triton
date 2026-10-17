@@ -1,4 +1,4 @@
-import { cp, mkdir, readdir, rm } from 'node:fs/promises'
+import { cp, mkdir, readdir, rm, readFile, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -12,6 +12,9 @@ export async function publishWebExport(source = exportedApp, destination = publi
         (await readdir(destination)).map((name) => rm(join(destination, name), { recursive: true, force: true })),
     )
     await cp(source, destination, { recursive: true })
+    const index = join(destination, 'index.html')
+    const html = await readFile(index, 'utf8')
+    await writeFile(index, html.replace('</head>', '<link rel="manifest" href="/triton/manifest.webmanifest"></head>'))
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
