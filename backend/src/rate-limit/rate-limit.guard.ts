@@ -22,7 +22,7 @@ export class RateLimitGuard implements CanActivate {
             request.method,
             this.sanitizeKeyPart(routePath || request.url),
         ].join(':')
-        const result = await this.rateLimitService.consume(key)
+        const result = await this.rateLimitService.consume(key, request.method === 'GET' && /^\/api\/calendar-share\/[a-f0-9-]{36}\/[A-Za-z0-9_-]{43}\/calendar\.ics$/.test(request.path))
         const remaining = Math.max(result.limit - result.count, 0)
 
         response.setHeader('X-RateLimit-Limit', result.limit.toString())

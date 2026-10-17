@@ -1,4 +1,9 @@
 x-security-defaults: &a1
+    logging:
+        driver: json-file
+        options:
+            max-size: 10m
+            max-file: "3"
     security_opt:
         - no-new-privileges:true
 services:
@@ -144,6 +149,7 @@ services:
             OTEL_TRACES_SAMPLER_ARG: ${OTEL_TRACES_SAMPLER_ARG:-}
             CHOKIDAR_USEPOLLING: 'true'
             DATABASE_URL: ${COMPOSE_DATABASE_URL:?Use pnpm dev:up or pnpm prod:up}
+            CALENDAR_SUBSCRIPTIONS_ENABLED: ${CALENDAR_SUBSCRIPTIONS_ENABLED:-true}
             RUN_DATABASE_MIGRATIONS: 'false'
             CACHE_URL: redis://cache:6379
             RATE_LIMIT_WINDOW_SECONDS: ${RATE_LIMIT_WINDOW_SECONDS:-60}
@@ -261,9 +267,8 @@ services:
             - starter
         healthcheck:
             test:
-                - CMD
-                - redis-cli
-                - ping
+                - CMD-SHELL
+                - 'test "$$(redis-cli ping)" = PONG && redis-cli INFO persistence | grep -q "aof_last_write_status:ok" && redis-cli INFO persistence | grep -q "rdb_last_bgsave_status:ok"'
             interval: 10s
             timeout: 5s
             retries: 10

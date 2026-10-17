@@ -25,6 +25,7 @@ export class CacheService implements OnModuleDestroy {
     }
 
     async consumeRollingWindow(key: string, windowSeconds: number, limit: number) {
+        if (this.client.status !== 'ready') throw new Error('Redis rate limiter is disconnected')
         const result = (await this.client.eval(
             `
       local time = redis.call('TIME')
@@ -68,6 +69,11 @@ export class CacheService implements OnModuleDestroy {
             count: result[1],
             resetSeconds: result[2],
         }
+    }
+
+    async health() {
+        const [pong,info] = await Promise.all([this.client.ping(),this.client.info('persistence')])
+        if(pong !== 'PONG' || /(?:aof_last_write_status|rdb_last_bgsave_status):err/.test(info)) throw new Error('Redis persistence is unavailable')
     }
 
     async onModuleDestroy() {

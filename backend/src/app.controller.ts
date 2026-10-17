@@ -23,7 +23,7 @@ export class AppController {
             await this.withTimeout(
                 Promise.all([
                     this.databaseService.pool.query('select 1'),
-                    this.cacheService.client.ping(),
+                    this.cacheService.health(),
                     ...(process.env.SEARCH_ENABLED === 'true' ? [this.searchService.health()] : []),
                     ...(process.env.VIRUS_SCAN_ENABLED === 'true' ? [this.virusScannerService.ping()] : []),
                 ]),
