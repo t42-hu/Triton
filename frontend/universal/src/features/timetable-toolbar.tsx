@@ -13,16 +13,16 @@ const quietButton = 'h-[48px] rounded-lg border-0 bg-transparent px-3 shadow-non
 const segmentList = 'h-[48px] rounded-lg border-0 bg-muted p-1';
 const segment = 'min-w-0 flex-1 rounded-lg px-2';
 
-export function TimetableToolbar({ onToday }: { onToday: () => void }) {
+export function TimetableToolbar({ onToday, comparison = false }: { onToday: () => void; comparison?: boolean }) {
   const { width, fontScale } = useWindowDimensions();
   const compact = width / fontScale < 900;
-  return <View testID="timetable-toolbar" className="gap-2"><PeriodControls onToday={onToday} /><ComparisonControls compact={compact} /></View>;
+  return <View testID="timetable-toolbar" className="gap-3"><PeriodControls onToday={onToday} />{comparison ? <ComparisonControls compact={compact} /> : null}</View>;
 }
 
 function PeriodControls({ onToday }: { onToday: () => void }) {
   const { view, setView } = useApp();
   const { fontScale } = useWindowDimensions();
-  return <View className="flex-row items-center gap-1">
+  return <View className="flex-row items-center gap-2">
     <Tabs value={view.mode} onValueChange={mode => setView({ mode: mode === 'day' ? 'day' : 'week' })}>
       <SlidingTabsList values={['day', 'week']} className={segmentList} style={{ width: 156 * fontScale }}>
         <TabsTrigger className={segment} value="day"><Icon as={CalendarDays} size={14} /><Text className="text-[14px]">Nap</Text></TabsTrigger>
@@ -36,7 +36,7 @@ function PeriodControls({ onToday }: { onToday: () => void }) {
 export function ZoomControls() {
   const { view, setView } = useApp();
   function step(amount: number) { setView(current => ({ zoom: Math.min(2.5, Math.max(0.5, Math.round((current.zoom + amount) * 100) / 100)) })); }
-  return <View className={Platform.OS === 'web' ? 'h-9 flex-row items-center self-start rounded-lg bg-muted/50' : 'h-12 flex-row items-center self-start rounded-lg bg-muted/50'}>
+  return <View className={Platform.OS === 'web' ? 'h-9 shrink-0 flex-row items-center rounded-lg bg-muted/50' : 'h-12 shrink-0 flex-row items-center rounded-lg bg-muted/50'}>
     <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg border-0 bg-transparent p-0" hitSlop={6} accessibilityLabel="Kicsinyítés" disabled={view.zoom <= 0.5} onPress={() => step(-0.25)}><Icon as={Minus} size={14} /></Button>
     <Button variant="ghost" className="h-9 min-w-[56px] gap-1 rounded-none border-0 bg-transparent px-1" accessibilityLabel="Nagyítás visszaállítása 100 százalékra" accessibilityHint={`Jelenlegi nagyítás: ${Math.round(view.zoom * 100)} százalék`} onPress={() => setView({ zoom: 1 })}><Icon as={RotateCcw} size={11} /><Text className="text-center text-xs font-medium text-muted-foreground" style={{ fontVariant: ['tabular-nums'] }}>{Math.round(view.zoom * 100)}%</Text></Button>
     <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg border-0 bg-transparent p-0" hitSlop={6} accessibilityLabel="Nagyítás" disabled={view.zoom >= 2.5} onPress={() => step(0.25)}><Icon as={Plus} size={14} /></Button>

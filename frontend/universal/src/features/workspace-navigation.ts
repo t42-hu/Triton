@@ -7,7 +7,7 @@ import type { WorkspaceScreen } from './student-workspace';
 /** Updates the current route without replacing the shared shell or its hover state. */
 export function useWorkspaceNavigation() {
   const { workspace } = useLocalSearchParams<{ workspace?: string }>();
-  const screen: WorkspaceScreen = workspace === 'calendar' || workspace === 'tasks' || workspace === 'search' ? workspace : 'today';
+  const screen: WorkspaceScreen = workspace === 'calendar' || workspace === 'compare' || workspace === 'tasks' || workspace === 'search' ? workspace : 'today';
   const history = useRef<WorkspaceScreen[]>([]);
   const isPanelOpen = usePanelLock();
   useEffect(() => {

@@ -1,3 +1,4 @@
+import { BrandWordmark } from '@/components/brand-wordmark';
 import { Image } from 'expo-image';
 import { View } from 'react-native';
 import { ChevronLeft, ChevronRight, UserRound, CalendarArrowDown, LogIn } from 'lucide-react-native';
@@ -13,7 +14,7 @@ export function SetupHeader(props: SetupHeaderProps) {
     <View className="flex-row items-center justify-between gap-4">
       <View className="flex-row items-center gap-2.5">
         <Image source={require('@/assets/images/triton-v15.png')} contentFit="contain" style={{ width: 40, height: 40 }} accessibilityLabel="Triton42 logó" />
-        <Text className="text-xl font-semibold tracking-tight">Triton42</Text>
+        <BrandWordmark className="text-xl font-semibold tracking-tight" />
       </View>
     </View>
     <SetupStepper {...props} />

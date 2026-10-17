@@ -9,10 +9,10 @@ export function ImportReveal({ revision, delay = 0, children, width, zIndex }: {
   useEffect(() => {
     if (!revision || shown.current === revision) return;
     shown.current = revision;
-    if (reducedMotion) { progress.set(1); return; }
-    progress.set(0);
-    progress.set(withDelay(delay, withTiming(1, { duration: 280, easing: Easing.bezier(0.23, 1, 0.32, 1), reduceMotion: ReduceMotion.System }), ReduceMotion.System));
+    if (reducedMotion) { progress.value = 1; return; }
+    progress.value = 0;
+    progress.value = withDelay(delay, withTiming(1, { duration: 280, easing: Easing.bezier(0.23, 1, 0.32, 1), reduceMotion: ReduceMotion.System }), ReduceMotion.System);
   }, [revision, delay, progress, reducedMotion]);
-  const style = useAnimatedStyle(() => ({ opacity: progress.get(), transform: [{ translateY: (1 - progress.get()) * 16 }, { scale: 0.985 + progress.get() * 0.015 }] }));
+  const style = useAnimatedStyle(() => ({ opacity: progress.value, transform: [{ translateY: (1 - progress.value) * 16 }, { scale: 0.985 + progress.value * 0.015 }] }));
   return <Animated.View style={[{ width, zIndex }, style]}>{children}</Animated.View>;
 }

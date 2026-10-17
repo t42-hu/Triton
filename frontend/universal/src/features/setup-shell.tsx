@@ -39,11 +39,11 @@ export function SetupStep({ header, footer, title, open, backwards, children }: 
   useEffect(() => {
     if (previousTitle.current !== title) {
       previousTitle.current = title;
-      progress.set(reducedMotion ? 1 : 0);
+      progress.value = reducedMotion ? 1 : 0;
     }
-    if (!open) { progress.set(reducedMotion ? 1 : 0); return; }
-    progress.set(withTiming(1, { duration: 240, easing: Easing.bezier(0.23, 1, 0.32, 1), reduceMotion: ReduceMotion.System }));
+    if (!open) { progress.value = reducedMotion ? 1 : 0; return; }
+    progress.value = withTiming(1, { duration: 240, easing: Easing.bezier(0.23, 1, 0.32, 1), reduceMotion: ReduceMotion.System });
   }, [open, title, progress, reducedMotion]);
-  const style = useAnimatedStyle(() => ({ opacity: progress.get(), transform: [{ translateX: reducedMotion ? 0 : (backwards ? -24 : 24) * (1 - progress.get()) }] }));
+  const style = useAnimatedStyle(() => ({ opacity: progress.value, transform: [{ translateX: reducedMotion ? 0 : (backwards ? -24 : 24) * (1 - progress.value) }] }));
   return <Animated.View pointerEvents={open ? 'auto' : 'none'} accessibilityElementsHidden={!open} importantForAccessibility={open ? 'auto' : 'no-hide-descendants'} aria-hidden={!open} style={[{ flex: 1, minHeight: 0, display: open ? 'flex' : 'none' }, style]}>{children}</Animated.View>;
 }

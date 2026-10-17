@@ -24,10 +24,14 @@ import { lessonType } from '../domain/lesson-type';
 import { categoryLabel, supportsStudyLinks } from '../domain/student';
 import { dailyAnalysis } from '../domain/schedule-analysis';
 import { useApp, type ViewState } from './app-state';
+import { WorkspaceStickyHeader } from './workspace-scroll';
 import { ZoomControls } from './timetable-toolbar';
 import { SourceStamp, useFirstImportedWeek } from './source-status';
 
-type Props = { todayRequest?: number; outerScrollRef?: RefObject<ScrollView | null>; active?: boolean; importReady?: boolean; side: 'left' | 'right'; date: string; profileId: number; profileName: string; panelWidth: number; outerHorizontalScroll?: boolean; events: DisplayEvent[]; common: Set<string>; selectEvent: (event: DisplayEvent) => void; selectNotebook: (event: DisplayEvent) => void; onClose?: () => void };
+// Overlay scroll indicators need real empty space beside the last day column.
+const CALENDAR_SCROLLBAR_GUTTER = 16;
+
+type Props = { todayRequest?: number; outerScrollRef?: RefObject<ScrollView | null>; active?: boolean; importReady?: boolean; comparison?: boolean; side: 'left' | 'right'; date: string; profileId: number; profileName: string; panelWidth: number; outerHorizontalScroll?: boolean; events: DisplayEvent[]; common: Set<string>; selectEvent: (event: DisplayEvent) => void; selectNotebook: (event: DisplayEvent) => void; onClose?: () => void };
 export function CalendarPanel(props: Props) {
   const { view, setView, anchor, calendarImport } = useApp();
   const revision = props.importReady && calendarImport?.profileId === props.profileId ? calendarImport.revision : 0;
@@ -35,7 +39,7 @@ export function CalendarPanel(props: Props) {
   const gridStart = GRID_START; const gridEnd = GRID_END; const gridMinutes = gridEnd - gridStart;
   const days = view.mode === 'day' ? 1 : view.showWeekends ? 7 : 5;
   const dates = Array.from({ length: days }, (_, index) => addDays(props.date, index));
-  const commonOnly = view.common && view.openProfiles.length > 0;
+  const commonOnly = Boolean(props.comparison && view.common && view.openProfiles.length > 0);
   const visible = commonOnly ? props.events.filter(event => props.common.has(eventIdentity(event))) : props.events;
   const { scroll, scrollToMorning, onScroll, onContentSizeChange } = usePanelScroll(props.side, view.zoom, gridStart, props.active ?? true, setView);
   const panelViewport = usePanelHeight(560);
@@ -44,12 +48,12 @@ export function CalendarPanel(props: Props) {
   const horizontalScroll = Gesture.Native();
   if (workspaceSwipe) horizontalScroll.blocksExternalGesture(workspaceSwipe);
   const pinch = Gesture.Pinch().simultaneousWithExternalGesture(verticalScroll, horizontalScroll).runOnJS(true).onChange(event => setView(changeZoom(event.scaleChange)));
-  const panelWidth = props.panelWidth;
-  const dayWidth = Math.max(days === 1 ? panelWidth - 56 : 148, (panelWidth - 56) / days);
+  const panelWidth = props.panelWidth;   const [panelHeight, setPanelHeight] = useState(0); const [headerHeight, setHeaderHeight] = useState(0);
+  const dayWidth = Math.max(days === 1 ? panelWidth - 56 - CALENDAR_SCROLLBAR_GUTTER : 148, (panelWidth - 56 - CALENDAR_SCROLLBAR_GUTTER) / days);
   const horizontalRef = useRef<ScrollView>(null);
   useTodayScroll(props.todayRequest ?? 0, props.date, dayWidth, scrollToMorning, props.outerHorizontalScroll ? (props.side === 'left' ? props.outerScrollRef : undefined) : horizontalRef);
-  const grid = <CalendarDragProvider grid={{ firstDate: props.date, days, dayWidth, zoom: view.zoom, startMinute: gridStart, endMinute: gridEnd }} blockers={[verticalScroll, horizontalScroll]}><Animated.View style={[{ width: dayWidth * days + 56, flex: 1 }, periodStyle]}>
-    <View className="flex-row border-b border-border bg-muted/40" style={{ paddingLeft: 56 }}>{dates.map(date => <DayHeading key={date} date={date} width={dayWidth} events={visible} common={props.common} selectEvent={props.selectEvent} selectNotebook={props.selectNotebook} />)}</View>
+  const grid = <CalendarDragProvider grid={{ firstDate: props.date, days, dayWidth, zoom: view.zoom, startMinute: gridStart, endMinute: gridEnd }} blockers={[verticalScroll, horizontalScroll]}><Animated.View style={[{ width: dayWidth * days + 56 + CALENDAR_SCROLLBAR_GUTTER }, periodStyle]}>
+    <View className="flex-row border-b border-border bg-muted/40" style={{ paddingLeft: 56 }}>{dates.map((date, index) => <DayHeading key={date} date={date} width={dayWidth + (index === dates.length - 1 ? CALENDAR_SCROLLBAR_GUTTER : 0)} events={visible} common={props.common} selectEvent={props.selectEvent} selectNotebook={props.selectNotebook} />)}</View>
     <GestureDetector gesture={verticalScroll} touchAction="manipulation"><ScrollView ref={scroll} accessibilityLabel="Órarend időrács" nestedScrollEnabled directionalLockEnabled className="bg-card" style={{ height: panelViewport, ...(Platform.OS === 'web' ? { overscrollBehaviorY: 'contain' as const, overscrollBehaviorX: 'auto' as const } : {}) }} scrollEventThrottle={100} onScroll={onScroll} onContentSizeChange={onContentSizeChange}>
       <View style={{ height: gridMinutes * view.zoom, flexDirection: 'row' }}><TimeAxis zoom={view.zoom} gridStart={gridStart} gridMinutes={gridMinutes} />{dates.map((date, index) => <CalendarDayReveal key={index} date={date} revision={revision} delay={70 + index * 35} width={dayWidth}><DayColumn date={date} width={dayWidth} zoom={view.zoom} gridStart={gridStart} gridEnd={gridEnd} events={visible} common={props.common} selectEvent={props.selectEvent} selectNotebook={props.selectNotebook} /></CalendarDayReveal>)}</View>
     </ScrollView></GestureDetector>
@@ -59,9 +63,10 @@ export function CalendarPanel(props: Props) {
     if (view.sync) { setView({ leftDate: date, rightDate: date }); return; }
     setView(props.side === 'left' ? { leftDate: date } : { rightDate: date });
   }
-  return <ImportReveal revision={revision}><View className="overflow-hidden rounded-lg border border-border bg-card" style={{ width: panelWidth }}>
+  return <ImportReveal revision={revision}><View onLayout={event => setPanelHeight(event.nativeEvent.layout.height)} className="overflow-hidden rounded-xl border border-border bg-card" style={{ width: panelWidth }}>
+    <WorkspaceStickyHeader maximumOffset={Math.max(0, panelHeight - headerHeight)}><View onLayout={event => setHeaderHeight(event.nativeEvent.layout.height)}>
     <CalendarHeader profileId={props.profileId} profileName={props.profileName} own={props.side === 'left'} date={props.date} week={weekAt(props.date, anchor)} panelWidth={panelWidth} outerHorizontalScroll={props.outerHorizontalScroll} move={move} onClose={props.onClose} />
-    <SourceStamp profileId={props.profileId} />
+    <SourceStamp profileId={props.profileId} /></View></WorkspaceStickyHeader>
     {!visible.length ? <View className="border-b border-border bg-muted px-5 py-3"><Text className="text-sm text-muted-foreground">{commonOnly && props.events.length ? 'Nincs közös óra ebben az időszakban. Kapcsold ki a szűrőt az összes óra megjelenítéséhez.' : 'Ebben az időszakban nincs megjeleníthető óra.'}</Text></View> : null}
     <GestureDetector gesture={pinch} touchAction="manipulation"><View collapsable={false}>{props.outerHorizontalScroll ? grid : <GestureDetector gesture={horizontalScroll} touchAction="manipulation"><ScrollView ref={horizontalRef} horizontal nestedScrollEnabled directionalLockEnabled contentContainerStyle={{ minWidth: '100%' }}>{grid}</ScrollView></GestureDetector>}</View></GestureDetector>
     <CalendarInsights dates={dates} events={visible} />
@@ -126,17 +131,17 @@ function CalendarHeader({ profileId, profileName, own, date, week, panelWidth, o
   const compact = width < 600 || panelWidth < (Platform.OS === 'web' ? 900 : 680);
   const hasViewportBoundHeader = width < 600 && (Platform.OS !== 'web' || outerHorizontalScroll);
   const visibleWidth = hasViewportBoundHeader ? Math.min(panelWidth - 32, width - 64) : panelWidth - 32;
-  const identity = <View className="min-w-0 flex-row items-center gap-3"><View className="h-10 w-10 shrink-0 items-center justify-center"><Icon as={CalendarDays} size={20} className="text-muted-foreground" /></View><View className="min-w-0 flex-row items-center gap-2"><Text className="shrink text-[18px] font-semibold" numberOfLines={1}>{profileName}</Text>{own ? <Badge variant="secondary"><Text>Saját</Text></Badge> : null}</View></View>;
+  const identity = <View className="min-w-0 flex-1 flex-row items-center gap-3"><View className="h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent"><Icon as={CalendarDays} size={19} className="text-primary" /></View><View className="min-w-0 flex-1 flex-row flex-wrap items-center gap-2"><Text className="shrink text-[18px] font-semibold" numberOfLines={1}>{profileName}</Text>{own ? <Badge variant="secondary"><Text>Saját</Text></Badge> : null}</View></View>;
   const period = <PeriodNavigator date={date} week={week} weekNumber={weekNumber} compact={compact} move={move} />;
   const close = onClose ? <Button accessibilityLabel={`${profileName} naptár bezárása`} variant="ghost" className="h-[44px] w-[44px] rounded-lg border-0 bg-transparent p-0" onPress={onClose}><Icon as={X} size={18} /></Button> : null;
-  if (Platform.OS === 'web' && !compact) return <View className="px-4 pb-3 pt-4"><View className="relative min-h-12 flex-row items-center justify-between" style={{ width: visibleWidth }}>{identity}<View style={{ position: 'absolute', left: '50%', top: 0, width: 340, transform: [{ translateX: -170 }] }}>{period}</View><View className="flex-row items-center gap-2"><ZoomControls />{close}</View></View></View>;
+  if (Platform.OS === 'web' && !compact) return <View className="px-4 pb-3 pt-4"><View className="relative min-h-12 flex-row items-center justify-between" style={{ width: visibleWidth }}>{identity}<View style={{ position: 'absolute', left: '50%', top: 0, width: 340, transform: [{ translateX: -170 }] }}>{period}</View><View className="shrink-0 flex-row items-center gap-2"><ZoomControls />{close}</View></View></View>;
   return <View className="px-4 pb-2 pt-4"><View className="gap-3" style={{ width: visibleWidth }}>
-    {compact ? <><View className="min-h-[44px] flex-row items-center justify-between gap-3">{identity}<View className="flex-row items-center gap-1"><ZoomControls />{close}</View></View>{period}</> : <View className="flex-row items-center justify-between gap-4">{identity}<View className="flex-row items-center gap-2">{period}<ZoomControls />{close}</View></View>}
+    {compact ? <><View className="min-h-[44px] flex-row items-center justify-between gap-3">{identity}<View className="shrink-0 flex-row items-center gap-1"><ZoomControls />{close}</View></View>{period}</> : <View className="flex-row items-center justify-between gap-4">{identity}<View className="flex-row items-center gap-2">{period}<ZoomControls />{close}</View></View>}
   </View></View>;
 }
 function PeriodNavigator({ date, week, weekNumber, compact, move }: { date: string; week: 'A' | 'B'; weekNumber: number | null; compact: boolean; move: (amount: number) => void }) {
   const periodStyle = usePeriodTransition(date);
-  return <View className="min-h-[48px] flex-row items-center rounded-lg bg-muted/40" style={{ width: compact ? '100%' : Platform.OS === 'web' ? 340 : 304 }}>
+  return <View className="min-h-[48px] flex-row items-center rounded-xl border border-border bg-background" style={{ width: compact ? '100%' : Platform.OS === 'web' ? 340 : 304 }}>
     <PeriodArrow next={false} onPress={() => move(-1)} />
     <Animated.View style={[periodStyle, Platform.OS === 'web' ? { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, flex: 1, minWidth: 0 } : undefined]} className="min-w-0 flex-1 flex-row items-center justify-center gap-2"><Text className="shrink text-center text-[14px] font-medium" numberOfLines={1}>{dateLabel(date)}</Text><Badge variant="secondary"><Text>{weekNumber === null ? `${week} hét` : `${week} · ${weekNumber}. hét`}</Text></Badge></Animated.View>
     <PeriodArrow next onPress={() => move(1)} />
@@ -155,7 +160,7 @@ function DayHeading({ date, width, events, common, selectEvent, selectNotebook }
   const isSunday = new Date(`${date}T12:00:00Z`).getUTCDay() === 0;
   const weekday = new Intl.DateTimeFormat('hu-HU', { weekday: 'short', timeZone: 'Europe/Budapest' }).format(new Date(fromWall(`${date}T12:00`)));
   const month = new Intl.DateTimeFormat('hu-HU', { month: 'short', timeZone: 'Europe/Budapest' }).format(new Date(fromWall(`${date}T12:00`)));
-  return <View className={`gap-1 border-l border-border px-3 py-2 ${isToday ? 'bg-primary/10' : ''}`} style={{ width, zIndex: drag?.activeColumn === date ? 20 : 0 }}><View className="flex-row items-center gap-2"><Text className={`text-2xl ${isToday ? 'font-bold' : 'font-semibold'} ${isSunday ? 'text-destructive' : isToday ? 'text-primary' : 'text-foreground'}`}>{Number(date.slice(8))}</Text><View><Text className={`text-xs font-semibold ${isSunday ? 'text-destructive' : 'text-muted-foreground'}`}>{weekday}</Text><Text className={`text-xs ${isSunday ? 'text-destructive' : 'text-muted-foreground'}`}>{month}</Text></View></View>
+  return <View className={`gap-1 border-l border-border px-3 py-2 ${isToday ? 'bg-primary/10' : ''}`} style={{ width, zIndex: drag?.activeColumn === date ? 20 : 0 }}><View className="flex-row items-center gap-2"><Text className={`text-2xl ${isToday ? 'font-bold' : 'font-semibold'} ${isSunday ? 'text-destructive' : isToday ? 'text-primary' : 'text-foreground'}`} style={{ fontVariant: ['tabular-nums'] }}>{Number(date.slice(8))}</Text><View><Text className={`text-xs font-semibold ${isSunday ? 'text-destructive' : 'text-muted-foreground'}`}>{weekday}</Text><Text className={`text-xs ${isSunday ? 'text-destructive' : 'text-muted-foreground'}`}>{month}</Text></View></View>
     {allDay.map(event => <AllDayBlock key={eventIdentity(event)} date={date} event={event} shared={common.has(eventIdentity(event))} selectEvent={selectEvent} selectNotebook={selectNotebook} />)}
   </View>;
 }

@@ -29,9 +29,12 @@ export function StudentSearchScreen(props: EventActions & { profileId: number })
     return () => { cancelled = true; clearTimeout(timer); };
   }, [query, scope, app.version, requestKey]);
   const count = results.events.length + results.links.length + results.tasks.length;
-  return <View className="gap-4">
+  return <View className="gap-6">
     <WorkspaceHeading icon={Search} title="Keresés" />
-    <SearchControls query={query} setQuery={setQuery} scope={scope} setScope={setScope} options={[{ value: 'all', label: 'Minden profil' }, ...app.profileList.map(profile => ({ value: String(profile.id), label: profile.name }))]} />
+    <View className="gap-4 rounded-2xl border border-border bg-card p-4 sm:p-5">
+      <View className="gap-1"><Text className="text-base font-semibold">Keress az órarendekben</Text><Text className="text-sm leading-5 text-muted-foreground">Tantárgy, terem, beadandó vagy jegyzet alapján.</Text></View>
+      <SearchControls query={query} setQuery={setQuery} scope={scope} setScope={setScope} options={[{ value: 'all', label: 'Minden profil' }, ...app.profileList.map(profile => ({ value: String(profile.id), label: profile.name }))]} />
+    </View>
     {query.trim() ? <Text accessibilityLiveRegion="polite" className="text-sm text-muted-foreground">{pending ? 'Keresés…' : `${count} találat`}</Text> : null}
     {pending && !count && query.trim() ? <ListSkeleton label="Találatok betöltése…" /> : null}
     {!pending && !error && query.trim() && !count ? <ContentMessage title="Nincs találat" detail="Próbálj másik keresőkifejezést, vagy válaszd a Minden profil lehetőséget." /> : null}
