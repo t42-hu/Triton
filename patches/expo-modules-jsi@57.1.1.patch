@@ -1,0 +1,22 @@
+diff --git a/apple/scripts/build-xcframework.sh b/apple/scripts/build-xcframework.sh
+index 4c506533866d411b18799e5441f02c2b3e9a0c44..0af96b8733961a74e3b00f7e8f5f5b1044f96477 100755
+--- a/apple/scripts/build-xcframework.sh
++++ b/apple/scripts/build-xcframework.sh
+@@ -107,6 +107,8 @@ compute_hash() {
+     # source problems. swiftc --version reports the swiftlang/clang tags and the
+     # target triple, so any toolchain change forces a clean rebuild.
+     echo "TOOLCHAIN_VERSION=$(xcrun swiftc --version 2>/dev/null || true)"
++    # SDKs can change between Xcode builds that ship the same Swift compiler.
++    echo "XCODE_VERSION=$(xcodebuild -version 2>/dev/null || true)"
+     echo "$all_files" | LC_ALL=C sort | while IFS= read -r file; do
+       echo "$file"
+       cat "$file"
+@@ -309,7 +311,7 @@ build_slice() {
+   # filename, failing with "can't read …: No such file or directory".
+   while IFS= read -r swiftinterface; do
+     local stripped_swiftinterface="${swiftinterface}.stripped"
+-    sed '/^extension __ObjC\./,/^}/d;/^@usableFromInline$/{N;/_ConstraintThatIsNotPartOfTheAPIOfThisLibrary/d;};/_ConstraintThatIsNotPartOfTheAPIOfThisLibrary/d' "$swiftinterface" > "$stripped_swiftinterface"
++    sed '/^extension __ObjC[.:]/,/^}/d;/^@usableFromInline$/{N;/_ConstraintThatIsNotPartOfTheAPIOfThisLibrary/d;};/_ConstraintThatIsNotPartOfTheAPIOfThisLibrary/d' "$swiftinterface" > "$stripped_swiftinterface"
+     mv "$stripped_swiftinterface" "$swiftinterface"
+   done < <(find "${modules_dir}/${PACKAGE_NAME}.swiftmodule" -name '*.swiftinterface')
+ 

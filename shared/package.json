@@ -7,6 +7,11 @@
         ".": {
             "types": "./dist/index.d.ts",
             "import": "./dist/index.js"
+        },
+        "./calendar-import": {
+            "types": "./dist/calendar-import.d.ts",
+            "import": "./dist/calendar-import.js",
+            "default": "./dist/calendar-import.js"
         }
     },
     "scripts": {
@@ -15,7 +20,8 @@
         "typecheck": "tsc -p tsconfig.json --noEmit"
     },
     "dependencies": {
-        "zod": "^4.4.3"
+        "zod": "^4.4.3",
+        "ical.js": "2.2.1"
     },
     "devDependencies": {
         "typescript": "^6.0.3"

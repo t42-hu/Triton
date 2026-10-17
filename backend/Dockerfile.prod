@@ -12,6 +12,7 @@ COPY backend/package.json backend/package.json
 COPY frontend/package.json frontend/package.json
 COPY frontend/universal/package.json frontend/universal/package.json
 COPY shared/package.json shared/package.json
+COPY patches patches
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 FROM deps AS builder

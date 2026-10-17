@@ -6,7 +6,6 @@ import { AuthScreen, SessionLoading } from '@/features/auth-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BatteryOptimizationPrompt } from '@/features/battery-optimization-prompt';
 import { usePanelLock } from '@/features/panel-lock';
-import '@/data/calendar-runtime';
 import { Stack, ThemeProvider } from 'expo-router';
 import { PortalHost } from '@rn-primitives/portal';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';

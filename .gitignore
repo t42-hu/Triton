@@ -115,3 +115,6 @@ frontend/public/triton/
 !frontend/universal/modules/*/ios/
 
 frontend/output/
+
+# Local Gradle state inside native Expo modules.
+**/.gradle/

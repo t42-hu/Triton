@@ -23,6 +23,7 @@ const excludedNames = new Set([
 /** Copies build inputs without secrets, dependencies, or generated native projects. */
 function isBuildInput(source) {
     const name = basename(source)
+    if (source === join(repository, 'frontend/public/triton')) return false
     if (['ios', 'android'].includes(name) && source === join(repository, 'frontend/universal', name)) return false
     return !excludedNames.has(name) && !name.startsWith('.env.')
 }
@@ -48,6 +49,12 @@ function stageWorkspace() {
 const [platform = 'stage', ...args] = process.argv.slice(2)
 if (!['stage', 'ios', 'android'].includes(platform)) throw new Error('Use stage, ios, or android')
 const workspace = stageWorkspace()
+runCommand('pnpm', ['--filter', '@fullstack-starter/shared', 'build'], workspace)
 const application = resolve(workspace, 'frontend/universal')
 if (platform === 'stage') console.log(application)
-else runCommand('pnpm', ['exec', 'expo', `run:${platform}`, '--port', '8083', ...args], application)
+else {
+    // Regenerate native configuration from the refreshed app.json, including CocoaPods options.
+    // Reusing the staging directory must not retain an older native configuration.
+    runCommand('pnpm', ['--filter', '@triton42/universal', 'exec', 'expo', 'prebuild', '--platform', platform], workspace)
+    runCommand('pnpm', ['--filter', '@triton42/universal', 'exec', 'expo', `run:${platform}`, '--port', '8083', ...args], workspace)
+}
