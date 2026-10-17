@@ -5,6 +5,7 @@ import * as AccordionPrimitive from '@rn-primitives/accordion';
 import { ChevronDown } from 'lucide-react-native';
 import { Platform, Pressable, View } from 'react-native';
 import Animated, {
+  FadeInDown,
   FadeOutUp,
   LayoutAnimationConfig,
   LinearTransition,
@@ -97,13 +98,15 @@ function AccordionContent({
         className={cn(
           'overflow-hidden',
           Platform.select({
-            web: isExpanded ? 'animate-accordion-down' : 'animate-accordion-up',
+            web: isExpanded ? 'motion-safe:animate-accordion-down motion-reduce:animate-none' : 'motion-safe:animate-accordion-up motion-reduce:animate-none',
           })
         )}
         {...props}>
         <Animated.View
+          key={String(isExpanded)}
+          entering={isExpanded ? FadeInDown.duration(180).reduceMotion(ReduceMotion.System) : undefined}
           exiting={Platform.select({
-            native: FadeOutUp.duration(200).reduceMotion(ReduceMotion.System),
+            native: FadeOutUp.duration(140).reduceMotion(ReduceMotion.System),
           })}
           className={cn('pb-4', className)}>
           {children}

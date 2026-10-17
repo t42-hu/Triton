@@ -19,7 +19,7 @@ function TooltipContent({ className, sideOffset = 4, portalHost, side = 'top', .
     : FadeInUp.withInitialValues({ transform: [{ translateY: -5 }] }).reduceMotion(ReduceMotion.System);
   const contentClassName = cn(
     'bg-primary z-50 rounded-md px-3 py-2 sm:py-1.5',
-    Platform.select({ web: cn('animate-in fade-in-0 zoom-in-95 origin-(--radix-tooltip-content-transform-origin) w-fit text-balance', side === 'bottom' && 'slide-in-from-top-2', side === 'left' && 'slide-in-from-right-2', side === 'right' && 'slide-in-from-left-2', side === 'top' && 'slide-in-from-bottom-2') }),
+    Platform.select({ web: cn('animate-in fade-in-0 zoom-in-95 origin-(--radix-tooltip-content-transform-origin) w-fit text-balance duration-150 ease-out motion-reduce:animate-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95', side === 'bottom' && 'slide-in-from-top-2', side === 'left' && 'slide-in-from-right-2', side === 'right' && 'slide-in-from-left-2', side === 'top' && 'slide-in-from-bottom-2') }),
     className
   );
   return (

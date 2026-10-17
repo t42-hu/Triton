@@ -6,7 +6,7 @@ import * as SelectPrimitive from '@rn-primitives/select';
 import { Check, ChevronDown, ChevronUp, ChevronDownIcon, ChevronUpIcon } from 'lucide-react-native';
 import * as React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
-import { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
+import { FadeIn, FadeInDown, FadeOut, FadeOutUp, ReduceMotion } from 'react-native-reanimated';
 import { FullWindowOverlay as RNFullWindowOverlay } from 'react-native-screens';
 
 type Option = SelectPrimitive.Option;
@@ -54,7 +54,7 @@ function SelectTrigger({
       className={cn(
         'border-input hover:bg-accent/60 active:bg-accent bg-card flex h-11 flex-row items-center justify-between gap-2 rounded-lg border px-3 py-2',
         Platform.select({
-          web: 'focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:hover:bg-input/50 w-fit whitespace-nowrap text-sm outline-none transition-[color,box-shadow] focus-visible:ring-[3px] disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:shrink-0',
+          web: 'focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:hover:bg-input/50 w-fit whitespace-nowrap text-sm outline-none transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:ring-inset disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:shrink-0',
         }),
         props.disabled && 'opacity-50',
         Platform.OS === 'android' ? 'min-h-12' : Platform.OS === 'ios' ? 'min-h-11' : '',
@@ -86,7 +86,7 @@ function SelectContent({ className, children, position = 'popper', portalHost, .
   const { triggerPosition } = SelectPrimitive.useRootContext();
   const contentClassName = cn(
     'triton-select-content bg-popover border-border relative z-50 rounded-md border shadow-md shadow-black/5',
-    Platform.select({ web: cn('w-[var(--radix-select-trigger-width)] min-w-0 max-w-[var(--radix-select-trigger-width)] animate-in fade-in-0 zoom-in-95 origin-(--radix-select-content-transform-origin) max-h-52 overflow-y-auto overflow-x-hidden', props.side === 'bottom' && 'slide-in-from-top-2', props.side === 'top' && 'slide-in-from-bottom-2'), native: 'p-1' }),
+    Platform.select({ web: cn('w-[var(--radix-select-trigger-width)] min-w-0 max-w-[var(--radix-select-trigger-width)] animate-in fade-in-0 zoom-in-95 origin-(--radix-select-content-transform-origin) max-h-52 overflow-y-auto overflow-x-hidden duration-150 ease-out motion-reduce:animate-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95', props.side === 'bottom' && 'slide-in-from-top-2', props.side === 'top' && 'slide-in-from-bottom-2'), native: 'p-1' }),
     position === 'popper' && Platform.select({ web: cn(props.side === 'bottom' && 'translate-y-1', props.side === 'top' && '-translate-y-1') }),
     className
   );
@@ -102,15 +102,19 @@ function SelectContent({ className, children, position = 'popper', portalHost, .
             exiting={FadeOut.duration(90).reduceMotion(ReduceMotion.System)}
             as="Pressable">
             <TextClassContext.Provider value="text-popover-foreground">
-              <SelectPrimitive.Content
-                className={contentClassName}
-                position={position}
-                {...props}
-                style={StyleSheet.flatten([Platform.OS !== 'web' && triggerPosition ? { width: triggerPosition.width } : undefined, props.style])}>
-                <SelectScrollUpButton />
-                <SelectViewport position={position}>{children}</SelectViewport>
-                <SelectScrollDownButton />
-              </SelectPrimitive.Content>
+              <NativeOnlyAnimatedView
+                entering={FadeInDown.duration(160).reduceMotion(ReduceMotion.System)}
+                exiting={FadeOutUp.duration(120).reduceMotion(ReduceMotion.System)}>
+                <SelectPrimitive.Content
+                  className={contentClassName}
+                  position={position}
+                  {...props}
+                  style={StyleSheet.flatten([Platform.OS !== 'web' && triggerPosition ? { width: triggerPosition.width } : undefined, props.style])}>
+                  <SelectScrollUpButton />
+                  <SelectViewport position={position}>{children}</SelectViewport>
+                  <SelectScrollDownButton />
+                </SelectPrimitive.Content>
+              </NativeOnlyAnimatedView>
             </TextClassContext.Provider>
           </NativeOnlyAnimatedView>
         </SelectPrimitive.Overlay>

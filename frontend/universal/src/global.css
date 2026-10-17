@@ -69,6 +69,38 @@
   --ring: 221.6 60.3% 72.4%;
 }
 }
+
+@layer base {
+  html { text-size-adjust: 100%; }
+  body { background: hsl(var(--background)); }
+  ::selection { background: hsl(var(--primary) / 0.18); }
+  :focus-visible { outline: 3px solid hsl(var(--ring) / 0.55); outline-offset: 2px; }
+}
+
+@keyframes triton-accordion-open {
+  from { height: 0; opacity: 0; }
+  to { height: var(--radix-accordion-content-height); opacity: 1; }
+}
+
+@keyframes triton-accordion-close {
+  from { height: var(--radix-accordion-content-height); opacity: 1; }
+  to { height: 0; opacity: 0; }
+}
+
+@keyframes triton-workspace-enter {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .triton-workspace-panel { animation: triton-workspace-enter 240ms cubic-bezier(0.23, 1, 0.32, 1); }
+}
+
+@layer utilities {
+  .animate-accordion-down { animation: triton-accordion-open 200ms cubic-bezier(0.23, 1, 0.32, 1); }
+  .animate-accordion-up { animation: triton-accordion-close 160ms cubic-bezier(0.4, 0, 0.2, 1); }
+}
+
 :root {
   --font-display:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif, Apple Color Emoji, Segoe UI Emoji,
@@ -98,6 +130,7 @@
 .panel-scroll::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground));
 }
+
 
 /* Use the browser layout viewport so resizing never leaves the setup in a desktop frame. */
 .setup-viewport {

@@ -67,7 +67,7 @@ function DialogContent({
           <DialogPrimitive.Content
             forceMount={forceMount}
             className={cn(
-              'bg-card border-border z-50 mx-auto flex w-full max-w-[calc(100%-2rem)] flex-col gap-4 rounded-xl border-border border p-5 shadow-lg shadow-primary/5 sm:max-w-lg',
+              'bg-card border-border z-50 mx-auto flex w-full max-w-[calc(100%-2rem)] flex-col gap-4 rounded-2xl border-border border p-5 shadow-sm shadow-black/5 sm:max-w-lg',
               pickerMotion ? 'web:animate-in web:fade-in-0 web:zoom-in-95 web:slide-in-from-bottom-2 web:duration-200 web:ease-out web:motion-reduce:animate-none' : backwards ? 'web:animate-in web:fade-in-0 web:slide-in-from-left-6 web:duration-200 web:ease-out web:motion-reduce:animate-none' : 'web:animate-in web:fade-in-0 web:slide-in-from-right-6 web:duration-200 web:ease-out web:motion-reduce:animate-none',
               className
             )}

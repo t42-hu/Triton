@@ -49,7 +49,7 @@ function TimeInput({ label, value, onChange, max }: { label: string; value: stri
     event.preventDefault(); step(event.key === 'ArrowUp' ? 1 : -1);
   }
   return <View className="gap-2"><Text className="text-center text-sm text-muted-foreground">{label}</Text><View className="relative">
-    <input aria-label={label} role="spinbutton" aria-valuemin={0} aria-valuemax={max} aria-valuenow={Number(value)} type="text" inputMode="numeric" maxLength={2} value={value} onKeyDown={handleKey} onChange={event => onChange(event.currentTarget.value)} className="h-20 w-28 rounded-xl border border-input bg-muted/40 pl-3 pr-9 text-center text-3xl tabular-nums text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+    <input aria-label={label} role="spinbutton" aria-valuemin={0} aria-valuemax={max} aria-valuenow={Number(value)} type="text" inputMode="numeric" maxLength={2} value={value} onKeyDown={handleKey} onChange={event => onChange(event.currentTarget.value)} className="h-20 w-28 rounded-xl border border-input bg-muted/40 pl-3 pr-9 text-center text-3xl tabular-nums text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-inset focus:ring-primary/20" />
     <View className="absolute bottom-1 right-1 top-1 justify-center gap-1"><Button variant="ghost" accessibilityLabel={`${label} növelése`} onPress={() => step(1)} className="h-8 w-7 rounded-lg border-0 bg-transparent p-0"><Icon as={ChevronUp} size={16} className="text-primary" /></Button><Button variant="ghost" accessibilityLabel={`${label} csökkentése`} onPress={() => step(-1)} className="h-8 w-7 rounded-lg border-0 bg-transparent p-0"><Icon as={ChevronDown} size={16} className="text-primary" /></Button></View>
   </View></View>;
 }

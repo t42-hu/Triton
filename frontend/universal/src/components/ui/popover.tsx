@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import * as PopoverPrimitive from '@rn-primitives/popover';
 import * as React from 'react';
 import { Platform, StyleSheet } from 'react-native';
-import { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
+import { FadeIn, FadeInDown, FadeOut, FadeOutUp, ReduceMotion } from 'react-native-reanimated';
 import { FullWindowOverlay as RNFullWindowOverlay } from 'react-native-screens';
 
 const Popover = PopoverPrimitive.Root;
@@ -12,6 +12,14 @@ const Popover = PopoverPrimitive.Root;
 const PopoverTrigger = PopoverPrimitive.Trigger;
 
 const FullWindowOverlay = Platform.OS === 'ios' ? RNFullWindowOverlay : React.Fragment;
+
+function getPopoverContentClassName(className: string | undefined, side: 'top' | 'bottom' | 'left' | 'right' | undefined) {
+  return cn(
+    'bg-popover border-border outline-hidden z-50 w-72 rounded-md border p-4 shadow-md shadow-black/5',
+    Platform.select({ web: cn('animate-in fade-in-0 zoom-in-95 origin-(--radix-popover-content-transform-origin) cursor-auto duration-150 ease-out motion-reduce:animate-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95', side === 'bottom' && 'slide-in-from-top-2', side === 'top' && 'slide-in-from-bottom-2') }),
+    className
+  );
+}
 
 function PopoverContent({
   className,
@@ -22,11 +30,7 @@ function PopoverContent({
   }: React.ComponentProps<typeof PopoverPrimitive.Content> & {
     portalHost?: string;
   }) {
-  const contentClassName = cn(
-    'bg-popover border-border outline-hidden z-50 w-72 rounded-md border p-4 shadow-md shadow-black/5',
-    Platform.select({ web: cn('animate-in fade-in-0 zoom-in-95 origin-(--radix-popover-content-transform-origin) cursor-auto', props.side === 'bottom' && 'slide-in-from-top-2', props.side === 'top' && 'slide-in-from-bottom-2') }),
-    className
-  );
+  const contentClassName = getPopoverContentClassName(className, props.side);
   return (
     <PopoverPrimitive.Portal hostName={portalHost}>
       <FullWindowOverlay>
@@ -38,12 +42,16 @@ function PopoverContent({
             exiting={FadeOut.reduceMotion(ReduceMotion.System)}
             as="Pressable">
             <TextClassContext.Provider value="text-popover-foreground">
-              <PopoverPrimitive.Content
-                align={align}
-                sideOffset={sideOffset}
-                className={contentClassName}
-                {...props}
-              />
+              <NativeOnlyAnimatedView
+                entering={FadeInDown.duration(160).reduceMotion(ReduceMotion.System)}
+                exiting={FadeOutUp.duration(120).reduceMotion(ReduceMotion.System)}>
+                <PopoverPrimitive.Content
+                  align={align}
+                  sideOffset={sideOffset}
+                  className={contentClassName}
+                  {...props}
+                />
+              </NativeOnlyAnimatedView>
             </TextClassContext.Provider>
           </NativeOnlyAnimatedView>
         </PopoverPrimitive.Overlay>

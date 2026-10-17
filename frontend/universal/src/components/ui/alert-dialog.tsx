@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import * as AlertDialogPrimitive from '@rn-primitives/alert-dialog';
 import * as React from 'react';
 import { Platform, StyleSheet, View, useWindowDimensions, type ViewProps } from 'react-native';
-import { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
+import { FadeIn, FadeInDown, FadeOut, FadeOutUp, ReduceMotion } from 'react-native-reanimated';
 import { FullWindowOverlay as RNFullWindowOverlay } from 'react-native-screens';
 
 const AlertDialog = AlertDialogPrimitive.Root;
@@ -59,17 +59,21 @@ function AlertDialogContent({
   return (
     <AlertDialogPortal hostName={portalHost}>
       <AlertDialogOverlay style={{ paddingTop: viewport.top + 8, paddingBottom: viewport.bottom + 8 }}>
+        <NativeOnlyAnimatedView
+          entering={FadeInDown.duration(180).reduceMotion(ReduceMotion.System)}
+          exiting={FadeOutUp.duration(120).reduceMotion(ReduceMotion.System)}>
         <AlertDialogPrimitive.Content
           className={cn(
             'bg-background border-border z-50 flex w-full max-w-[calc(100%-2rem)] flex-col gap-4 rounded-lg border p-6 shadow-lg shadow-black/5 sm:max-w-lg',
             Platform.select({
-              web: 'animate-in fade-in-0 zoom-in-95 duration-200',
+              web: 'animate-in fade-in-0 zoom-in-95 duration-200 ease-out motion-reduce:animate-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
             }),
             className
           )}
           {...props}
           style={StyleSheet.flatten([{ width: Math.min(width - 64, 512), maxWidth: 512, maxHeight: viewport.height }, props.style])}
         />
+        </NativeOnlyAnimatedView>
       </AlertDialogOverlay>
     </AlertDialogPortal>
   );

@@ -13,7 +13,7 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
-import { FadeIn, ReduceMotion } from 'react-native-reanimated';
+import { FadeIn, FadeInDown, FadeInRight, FadeOut, FadeOutLeft, FadeOutUp, ReduceMotion } from 'react-native-reanimated';
 import { FullWindowOverlay as RNFullWindowOverlay } from 'react-native-screens';
 
 const ContextMenu = ContextMenuPrimitive.Root;
@@ -64,12 +64,14 @@ function ContextMenuSubContent({
   ...props
 }: React.ComponentProps<typeof ContextMenuPrimitive.SubContent>) {
   return (
-    <NativeOnlyAnimatedView entering={FadeIn.reduceMotion(ReduceMotion.System)}>
+    <NativeOnlyAnimatedView
+      entering={FadeInRight.duration(160).reduceMotion(ReduceMotion.System)}
+      exiting={FadeOutLeft.duration(120).reduceMotion(ReduceMotion.System)}>
       <ContextMenuPrimitive.SubContent
         className={cn(
           'bg-popover border-border overflow-hidden rounded-md border p-1 shadow-lg shadow-black/5',
           Platform.select({
-            web: 'animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 fade-in-0 data-[state=closed]:zoom-out-95 zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-(--radix-context-menu-content-transform-origin) z-50 min-w-[8rem]',
+            web: 'animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 fade-in-0 data-[state=closed]:zoom-out-95 zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-(--radix-context-menu-content-transform-origin) z-50 min-w-[8rem] duration-150 ease-out motion-reduce:animate-none',
           }),
           className
         )}
@@ -100,7 +102,7 @@ function ContextMenuContent({
   }) {
   const contentClassName = cn(
     'bg-popover border-border min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-lg shadow-black/5',
-    Platform.select({ web: cn('animate-in fade-in-0 zoom-in-95 max-h-(--radix-context-menu-content-available-height) origin-(--radix-context-menu-content-transform-origin) z-50 cursor-default', props.side === 'bottom' && 'slide-in-from-top-2', props.side === 'top' && 'slide-in-from-bottom-2') }),
+    Platform.select({ web: cn('animate-in fade-in-0 zoom-in-95 max-h-(--radix-context-menu-content-available-height) origin-(--radix-context-menu-content-transform-origin) z-50 cursor-default duration-150 ease-out motion-reduce:animate-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95', props.side === 'bottom' && 'slide-in-from-top-2', props.side === 'top' && 'slide-in-from-bottom-2') }),
     className
   );
   return (
@@ -110,9 +112,16 @@ function ContextMenuContent({
           style={resolveOverlayStyle(overlayStyle)}
           className={overlayClassName}
           asChild={Platform.OS !== 'web'}>
-          <NativeOnlyAnimatedView entering={FadeIn.reduceMotion(ReduceMotion.System)} as="Pressable">
+          <NativeOnlyAnimatedView
+            entering={FadeIn.duration(150).reduceMotion(ReduceMotion.System)}
+            exiting={FadeOut.duration(100).reduceMotion(ReduceMotion.System)}
+            as="Pressable">
             <TextClassContext.Provider value="text-popover-foreground">
-              <ContextMenuPrimitive.Content className={contentClassName} {...props} />
+              <NativeOnlyAnimatedView
+                entering={FadeInDown.duration(160).reduceMotion(ReduceMotion.System)}
+                exiting={FadeOutUp.duration(120).reduceMotion(ReduceMotion.System)}>
+                <ContextMenuPrimitive.Content className={contentClassName} {...props} />
+              </NativeOnlyAnimatedView>
             </TextClassContext.Provider>
           </NativeOnlyAnimatedView>
         </ContextMenuPrimitive.Overlay>

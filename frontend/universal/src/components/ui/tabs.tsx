@@ -3,7 +3,8 @@ import { cn } from '@/lib/utils';
 import * as TabsPrimitive from '@rn-primitives/tabs';
 import { Platform, type LayoutChangeEvent } from 'react-native';
 import { createContext, useContext, useState } from 'react';
-import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import Animated, { FadeInRight, FadeOutLeft, ReduceMotion, useAnimatedStyle } from 'react-native-reanimated';
+import { NativeOnlyAnimatedView } from '@/components/ui/native-only-animated-view';
 import { useMotionValue } from '@/hooks/use-motion-value';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
@@ -11,7 +12,7 @@ import { Colors } from '@/constants/theme';
 const SlidingTabsContext = createContext(false);
 
 /** A single selection surface slides between equally sized segments. */
-function SlidingTabsList({ values, children, ...props }: React.ComponentProps<typeof TabsPrimitive.List> & { values: string[] }) {
+function SlidingTabsList({ values, children, square = false, ...props }: React.ComponentProps<typeof TabsPrimitive.List> & { values: string[]; square?: boolean }) {
   const { value } = TabsPrimitive.useRootContext();
   const [width, setWidth] = useState(0);
   const progress = useMotionValue(Math.max(0, values.indexOf(value)));
@@ -20,7 +21,7 @@ function SlidingTabsList({ values, children, ...props }: React.ComponentProps<ty
   const indicatorStyle = useAnimatedStyle(() => ({ transform: [{ translateX: progress.value * (segmentWidth + 4) }] }));
   function measure(event: LayoutChangeEvent) { setWidth(event.nativeEvent.layout.width); props.onLayout?.(event); }
   return <SlidingTabsContext.Provider value><TabsList {...props} onLayout={measure}>
-    <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: 4, bottom: 4, left: 4, width: segmentWidth, borderRadius: 8, backgroundColor: theme.textSecondary }, indicatorStyle]} />
+    <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: 4, bottom: 4, left: 4, width: segmentWidth, borderRadius: square ? 0 : 8, backgroundColor: theme.textSecondary }, indicatorStyle]} />
     {children}
   </TabsList></SlidingTabsContext.Provider>;
 }
@@ -80,11 +81,28 @@ function TabsContent({
   className,
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.Content>) {
+  const { value } = TabsPrimitive.useRootContext();
+  const selected = value === props.value;
   return (
     <TabsPrimitive.Content
-      className={cn(Platform.select({ web: 'flex-1 outline-none' }), className)}
+      className={cn(
+        Platform.select({
+          web: cn(
+            'flex-1 outline-none',
+            selected && 'animate-in fade-in-0 slide-in-from-right-3 duration-200 ease-out motion-reduce:animate-none'
+          ),
+        }),
+        className
+      )}
       {...props}
-    />
+    >
+      <NativeOnlyAnimatedView
+        key={`${props.value}:${selected}`}
+        entering={selected ? FadeInRight.duration(200).reduceMotion(ReduceMotion.System) : undefined}
+        exiting={FadeOutLeft.duration(120).reduceMotion(ReduceMotion.System)}>
+        {props.children}
+      </NativeOnlyAnimatedView>
+    </TabsPrimitive.Content>
   );
 }
 

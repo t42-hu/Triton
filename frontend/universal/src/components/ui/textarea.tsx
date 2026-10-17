@@ -13,7 +13,7 @@ function Textarea({
       className={cn(
         'text-foreground border-input flex min-h-24 w-full flex-row rounded-lg border hover:border-primary/50 focus:border-primary bg-card px-3 py-2 text-base md:text-sm',
         Platform.select({
-          web: 'triton-textarea placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive field-sizing-content resize-y outline-none transition-[color,box-shadow] focus-visible:ring-[3px] disabled:cursor-not-allowed',
+          web: 'triton-textarea placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive field-sizing-content resize-y outline-none transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:ring-inset disabled:cursor-not-allowed',
         }),
         props.editable === false && 'opacity-50',
         className
