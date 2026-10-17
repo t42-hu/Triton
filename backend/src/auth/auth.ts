@@ -1,7 +1,10 @@
 import { applicationOrigin, trustedOrigins } from '@fullstack-starter/shared'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { twoFactor } from 'better-auth/plugins/two-factor'
+import { accountSecurity } from './account-security.js'
+import { PostgresPasswordChangeStore } from './password-change-store.js'
+import { emailLogin } from './email-login.js'
+import { PostgresEmailLoginStore } from './email-login-store.js'
 import { bearer, captcha } from 'better-auth/plugins'
 import { expo } from '@better-auth/expo'
 import type { DatabaseService } from '../database/database.service.js'
@@ -112,7 +115,12 @@ export const createAuth = (
             },
         },
         plugins: [
-            twoFactor({ issuer: 'Triton42' }),
+            accountSecurity(new PostgresPasswordChangeStore(databaseService.pool), mailService, mobileDomain ? `https://${mobileDomain}` : applicationOrigin(process.env)),
+            emailLogin(
+                new PostgresEmailLoginStore(databaseService.pool),
+                mailService,
+                mobileDomain ? `https://${mobileDomain}` : applicationOrigin(process.env),
+            ),
             ...(process.env.EXPO_AUTH_ENABLED === 'true' ? [expo()] : []),
             bearer({ requireSignature: true }),
             ...(turnstileSecret

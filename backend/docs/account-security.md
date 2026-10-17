@@ -1,14 +1,34 @@
 # Triton42 account controls
 
-The desktop sidebar account button and mobile Menu → Fiók open the account panel. Account name and image use the existing `/users/me` and `/profile-images/optimize` endpoints. Password changes revoke other sessions. Account deletion requires the current password and typed email confirmation in the UI; Better Auth deletes the user and database relationships cascade. The current image and files belonging to owned calendars are cleaned up after the database deletion succeeds (storage failures are logged), and the app removes the deleted account's local SQLite cache without touching other accounts or anonymous data.
+The desktop sidebar account button and mobile Menu → Fiók open the account panel. Account name and image use the existing `/users/me` and `/profile-images/optimize` endpoints. Password changes send a confirmation email and retain the current password until explicit email approval, regardless of the 2FA setting. Approval revokes other sessions; the initiating session stays signed in. Account deletion requires the current password and typed email confirmation in the UI; Better Auth deletes the user and database relationships cascade. The current image and files belonging to owned calendars are cleaned up after the database deletion succeeds (storage failures are logged), and the app removes the deleted account's local SQLite cache without touching other accounts or anonymous data.
 
-## Authenticator 2FA
+## Optional email two-factor authentication
 
-Apply `0004_account_two_factor.sql` through the migration runner before deploying the new backend. It only adds the user flag and the Better Auth `two_factor` table, including verification and lockout fields. Authenticator secrets and recovery codes are encrypted by Better Auth.
+Email 2FA defaults to enabled. Password sign-in requires a fresh email approval when enabled; verified users can disable or re-enable it in Account → Security using their current password. Registration always verifies email ownership. The setting is a read-only user field outside the dedicated, password-protected `/two-factor/email/settings` endpoint. The password response revokes its provisional session before any bearer token can be exposed. The email contains a single-use button valid for ten minutes. Clicking it approves only that attempt; the browser or native app that started it polls with its independent signed challenge cookie and receives the session. Opening the email on another device works without sending a session token through the email URL. Cancellation, replacement and expiry invalidate the attempt; a mail delivery failure leaves the user signed out. Trusted-device bypasses, authenticator enrollment and recovery-code login have been replaced by this flow. Existing signed-in sessions are preserved.
 
-Enrollment requires the current password, displays a locally generated QR code/manual key and recovery codes, and activates only after a valid authenticator code. Login remains unauthenticated until the second factor succeeds. Native apps hold the short-lived challenge cookie in memory and persist the signed bearer session in SecureStore only after verification. Recovery codes are single-use; new codes invalidate the old set.
+Challenges use the existing `verification` table with separate hashed device and email secrets. Approval and session claiming are atomic. Migration `0009_email_security` preserves existing accounts’ effective email protection and sets the default for new accounts to enabled. Native apps retain the short-lived challenge cookie in SecureStore so approval survives an app restart, and store the signed bearer only after approval. Native requests send the configured API origin explicitly; cookie-bearing approval polling remains subject to Better Auth’s Origin/CSRF validation. Web requests leave Origin and HttpOnly cookies to the browser.
 
-Authenticator codes and recovery codes need no SMTP. The existing mail service supports `MAIL_PROVIDER=smtp` (Nodemailer/provider SMTP), `ses` (AWS SES API), and `disabled`. Mailpit is available for local development. Email OTP would need an explicit delivery handler; it is not enabled here.
+The shared running backend uses Resend SMTP from the main, Git-ignored `.env` file with `Triton42 <noreply@triton42.hu>` as sender. No separate provider environment file is required. A real setup email was accepted by SMTP and shown as Delivered in the Resend dashboard. Mailpit remains available only for isolated development tests. Resend Free uses the existing SMTP transport after verifying `triton42.hu` in the Resend dashboard. Configure sending DNS records from Resend in Cloudflare, keep click/open tracking disabled for login links, and use a sending-only API key restricted to the verified domain:
+
+```dotenv
+MAIL_PROVIDER=smtp
+MAIL_FROM="Triton42 <noreply@triton42.hu>"
+SMTP_HOST=smtp.resend.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=resend
+SMTP_PASSWORD=<resend-sending-api-key>
+```
+
+Localhost and `triton42.hu` share this backend transport; localhost is not a sender domain and needs no Resend domain entry. Activate the complete settings only after sender verification and an SMTP delivery check. The Free quota is shared by all environments, including login and password-reset emails.
+
+The email approval URL uses `MOBILE_APP_DOMAIN` when configured so it remains reachable without the web site's Cloudflare Access login. Otherwise it uses the application origin.
+
+## Email confirmation for password changes
+
+`/auth/change-password` validates the authoritative session and current password, hashes the proposed password, stores a ten-minute pending request, and sends an email. It never immediately updates the credential, even when 2FA is disabled. Only the latest request can be used. Raw new passwords are never stored.
+
+The email opens `/auth/password-change/confirm`; GET shows a confirmation form so email scanners cannot apply a password. Its explicit POST atomically checks expiry, single use, the unchanged current password hash and account email, then updates the credential, revokes other sessions, and invalidates pending login/password-change challenges. SMTP failure, replacement, expiry or an intervening password reset leaves the current password unchanged. Tokens are random 256-bit values, stored only as SHA-256 identifiers.
 
 ## Cloudflare Turnstile
 
@@ -33,6 +53,8 @@ TEST_APP_URL=http://localhost:4042 TEST_ORIGIN=http://localhost:3042 node backen
 pnpm --filter @triton42/universal test
 ```
 
-The HTTP check creates its own account and covers account image upload/removal, rename, calendar data deletion, TOTP enrollment, password-only session rejection, invalid code rejection, recovery-code login and reuse rejection, bearer issuance, password change, and account deletion. App tests cover deletion cache isolation. Do not run the HTTP fixture against real user accounts.
+The HTTP check creates its own account and covers account image upload/removal, rename, calendar data deletion, email approval, password-only session rejection, link reuse rejection, bearer issuance, password change, and account deletion. App tests cover deletion cache isolation. Do not run the HTTP fixture against real user accounts.
 
-Final native installation and visual verification are deferred while the other T3 session retains device control at the user's request. The initial account bundle was installed preserving existing app data; the final QR/cache updates are staged separately.
+Email login endpoint tests are in `backend/test/email-login.test.mjs`. The Postgres atomicity test uses a connection-local temporary verification table and runs with `TEST_EMAIL_STORE_DB=true` against a development database. It never changes the application verification table.
+
+The account security handler tests cover optional 2FA, protected settings, deferred password changes with 2FA on/off, form submission, replay and SMTP failure. `password-change-store.test.mjs` uses temporary tables to verify PostgreSQL atomicity, expiry, replacement, stale passwords, changed email and session revocation without modifying real accounts.

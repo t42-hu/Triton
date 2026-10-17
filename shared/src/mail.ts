@@ -16,6 +16,18 @@ export const MailSchema = z
         subject: z.string().trim().min(1),
         text: z.string().trim().min(1).optional(),
         html: z.string().trim().min(1).optional(),
+        attachments: z
+            .array(
+                z.object({
+                    filename: z.string().min(1),
+                    content: z.string().min(1),
+                    encoding: z.literal('base64'),
+                    contentType: z.string().min(1),
+                    cid: z.string().min(1),
+                    contentDisposition: z.literal('inline'),
+                }),
+            )
+            .optional(),
     })
     .superRefine((mail, ctx) => {
         if (!mail.text && !mail.html) {

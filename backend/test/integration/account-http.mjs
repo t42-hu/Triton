@@ -1,6 +1,5 @@
 import sharp from 'sharp'
 import assert from 'node:assert/strict'
-import { createHmac } from 'node:crypto'
 // Run only against a disposable development/test environment with CAPTCHA disabled.
 const base = (process.env.TEST_APP_URL || 'http://localhost:4042').replace(/\/$/, '') + '/api'
 let cookie = ''
@@ -27,21 +26,29 @@ async function call(path, body, auth = true) {
     if (issued) bearer = issued
     return { r, data }
 }
-function totp(secret) {
-    let bits = ''
-    for (const c of secret.toUpperCase())
-        bits += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'.indexOf(c).toString(2).padStart(5, '0')
-    const bytes = Buffer.from(bits.match(/.{8}/g).map((b) => parseInt(b, 2)))
-    const step = Buffer.alloc(8)
-    step.writeBigUInt64BE(BigInt(Math.floor(Date.now() / 30000)))
-    const h = createHmac('sha1', bytes).update(step).digest()
-    const offset = h[19] & 15
-    return String((h.readUInt32BE(offset) & 0x7fffffff) % 1000000).padStart(6, '0')
+async function approveLatestEmail(email) {
+    const inbox = process.env.TEST_MAILPIT_URL || 'http://localhost:8025'
+    const messages = await (await fetch(`${inbox}/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`)).json()
+    assert.ok(messages.messages.length, 'Expected a login email in Mailpit')
+    const message = await (await fetch(`${inbox}/api/v1/message/${messages.messages[0].ID}`)).json()
+    const url = new URL(message.Text.match(/https?:\/\/[^\s]+\/api\/auth\/two-factor\/email\/approve\?token=[^\s]+/)[0])
+    const target = new URL(url.pathname + url.search, base)
+    const approved = await fetch(target)
+    assert.equal(approved.status, 200)
+    assert.equal(approved.headers.get('set-auth-token'), null)
+    assert.equal((await fetch(target)).status, 400, 'Email links must be single-use')
+    const result = await call('/auth/two-factor/email/status', {})
+    assert.equal(result.r.status, 200)
+    assert.ok(result.r.headers.get('set-auth-token'))
 }
 const password = 'Account-Check-2026-42!'
 const email = `triton.account.${Date.now()}@example.test`
 let result = await call('/auth/sign-up/email', { email, password, name: 'Account check' })
 assert.equal(result.r.status, 200)
+assert.equal(result.data.twoFactorRedirect, true)
+assert.equal(result.r.headers.get('set-auth-token'), null)
+assert.equal((await call('/auth/get-session')).data, null)
+await approveLatestEmail(email)
 result = await call('/calendar/calendars', { name: 'Account deletion fixture' })
 assert.equal(result.r.status, 201)
 const calendarId = result.data.id
@@ -89,39 +96,35 @@ profile = await fetch(base + '/users/me', {
 })
 assert.equal(profile.status, 200)
 assert.equal((await profile.json()).profileImage, null)
-result = await call('/auth/two-factor/enable', { password })
-assert.equal(result.r.status, 200)
-const codes = result.data.backupCodes
-const secret = new URL(result.data.totpURI).searchParams.get('secret')
-result = await call('/auth/two-factor/verify-totp', { code: totp(secret) })
-assert.equal(result.r.status, 200)
-result = await call('/auth/get-session')
-assert.equal(result.data.user.twoFactorEnabled, true)
 await call('/auth/sign-out', {})
 cookie = ''
 bearer = ''
 result = await call('/auth/sign-in/email', { email, password })
 assert.equal(result.data.twoFactorRedirect, true)
 assert.equal(result.r.headers.get('set-auth-token'), null)
-result = await call('/auth/get-session')
-assert.equal(result.data, null)
-result = await call('/auth/two-factor/verify-totp', {
-    code: String((Number(totp(secret)) + 1) % 1000000).padStart(6, '0'),
-})
-assert.notEqual(result.r.status, 200)
-result = await call('/auth/two-factor/verify-backup-code', { code: codes[0] })
-assert.equal(result.r.status, 200)
-assert.ok(result.r.headers.get('set-auth-token'))
-result = await call('/auth/two-factor/verify-backup-code', { code: codes[0] })
-assert.notEqual(result.r.status, 200, 'Recovery codes must be single-use')
+assert.equal((await call('/auth/get-session')).data, null)
+assert.equal((await call('/auth/two-factor/email/status', {})).data.pending, true)
+await approveLatestEmail(email)
 result = await call('/auth/change-password', {
     currentPassword: password,
     newPassword: password + '2',
     revokeOtherSessions: true,
 })
 assert.equal(result.r.status, 200)
+assert.equal(result.data.pending, true)
+const inbox = process.env.TEST_MAILPIT_URL || 'http://localhost:8025'
+const messages = await (await fetch(`${inbox}/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`)).json()
+const message = await (await fetch(`${inbox}/api/v1/message/${messages.messages[0].ID}`)).json()
+const confirmation = new URL(message.Text.match(/https?:\/\/[^\s]+\/api\/auth\/password-change\/confirm\?token=[^\s]+/)[0])
+const target = new URL(confirmation.pathname + confirmation.search, base)
+assert.equal((await fetch(target)).status, 200)
+// The explicit POST is required; scanning the link must leave the old password valid.
+assert.equal((await call('/auth/two-factor/email/settings', { enabled: false, password })).r.status, 200)
+const confirm = () => fetch(target, { method: 'POST', headers: { Origin: process.env.TEST_ORIGIN || 'http://localhost:3042', 'Content-Type': 'application/x-www-form-urlencoded' }, body: '' })
+assert.equal((await confirm()).status, 200)
+assert.equal((await confirm()).status, 400)
 result = await call('/auth/delete-user', { password: password + '2' })
 assert.equal(result.r.status, 200)
 console.log(
-    'PASS: avatar upload/removal, rename, account data cascade, TOTP enrollment, password-only session denied, incorrect OTP denied, recovery login, bearer issuance, password change, disposable account deletion.',
+    'PASS: avatar upload/removal, rename, account data cascade, email approval, password-only session denied, single-use links, bearer issuance, password change, disposable account deletion.',
 )

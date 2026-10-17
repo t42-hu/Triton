@@ -68,6 +68,25 @@ export class MailService {
         }
 
         try {
+            if (mail.attachments?.length) {
+                const message = await nodemailer
+                    .createTransport({
+                        streamTransport: true,
+                        buffer: true,
+                        newline: 'windows',
+                    })
+                    .sendMail({ ...mail, from: fromAddress })
+                if (!Buffer.isBuffer(message.message)) throw new Error('Expected a buffered MIME email.')
+                return await this.client.send(
+                    new SendEmailCommand({
+                        FromEmailAddress: fromAddress,
+                        Destination: destination,
+                        ReplyToAddresses: normalizeAddresses(mail.replyTo),
+                        ConfigurationSetName: process.env.SES_CONFIGURATION_SET || undefined,
+                        Content: { Raw: { Data: message.message } },
+                    }),
+                )
+            }
             return await this.client.send(
                 new SendEmailCommand({
                     FromEmailAddress: fromAddress,

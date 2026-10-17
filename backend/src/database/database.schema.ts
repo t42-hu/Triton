@@ -73,7 +73,7 @@ export const user = pgTable(
         emailVerified: boolean('email_verified').default(false).notNull(),
         role: text('role').default('user').notNull(),
         profileImage: text('profile_image'),
-        twoFactorEnabled: boolean('two_factor_enabled').default(false).notNull(),
+        twoFactorEnabled: boolean('two_factor_enabled').default(true).notNull(),
         createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
         updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
     },
