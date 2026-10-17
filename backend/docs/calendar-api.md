@@ -88,3 +88,10 @@ Normalized occurrences and metadata are stored in the existing PostgreSQL tables
 Web calls same-origin `/api`. Native defaults to `https://triton42.hu/api`; development previews may set `EXPO_PUBLIC_API_URL` to the local backend. Android enables cleartext HTTP only for a configured local development endpoint. Development cookie hosts are restricted to the application host and `TRITON_WEB_ORIGIN` (default `http://localhost:3042`); production keeps the configured HTTPS origin. Signed native bearer sessions are enabled.
 
 The public domain currently has a Cloudflare Access gate. Native clients cannot use a browser-only Access login; make the authenticated application API reachable through an approved Access policy before distributing public mobile builds. Local previews use the same backend at port 4042 without altering the public Access policy.
+
+
+## Server-managed subscriptions
+
+`POST /api/calendar-subscriptions/refresh` requests a server check for the authenticated owner's active ICS connections. It returns `{ status, results }`, sharing the worker's leases and a one-minute manual cooldown. Background checks run independently of clients and Redis. Each connection is checked about every 15 minutes; failures retain the last successful events and use bounded backoff. Subscription source content and base events become server-managed after the first successful check. Clients edit overrides or disconnect the source instead of rewriting imported event data.
+
+Public sharing supports `ETag` / `If-None-Match` and 304 responses. Stable UID, LAST-MODIFIED and SEQUENCE describe published changes; downloads do not synchronously fetch upstream networks. Internal share dependencies are refreshed by the worker after source changes. Circular or excessively long subscription chains are rejected. External consumers retain control of their own polling schedule.

@@ -20,6 +20,7 @@ export function testEnvironment(project, port, scanner = false) {
         VIRUS_SCAN_ENABLED: String(scanner),
         MAIL_FROM: 'Fullstack Test <noreply@example.test>',
         RATE_LIMIT_MAX_REQUESTS: '1000',
+        CALENDAR_SUBSCRIPTIONS_ENABLED: 'false',
         // Signature verification is entirely local; this is not a usable provider key.
         STRIPE_SECRET_KEY: 'sk_test_isolated_not_a_real_key',
         STRIPE_WEBHOOK_SECRET: `whsec_${randomBytes(32).toString('hex')}`,

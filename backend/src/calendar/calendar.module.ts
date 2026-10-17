@@ -13,10 +13,14 @@ import { CalendarActions } from './calendar.actions.js'
 import { CalendarFiles } from './calendar.files.js'
 import { CalendarSync } from './calendar.sync.js'
 import { CalendarSharing } from './calendar-sharing.js'
+import { CalendarSubscriptionHealth } from './calendar-subscription-health.js'
+import { CalendarSubscriptionsController } from './calendar-subscriptions.controller.js'
+import { CalendarSubscriptions } from './calendar-subscriptions.js'
+import { CalendarDownload } from './calendar-download.js'
 import { CalendarSharingController } from './calendar-sharing.controller.js'
 @Module({
     imports: [DatabaseModule, StorageModule, VirusScannerModule],
-    controllers: [CalendarSharingController, CalendarController, CalendarActionsController, CalendarFilesController, CalendarSyncController],
-    providers: [CalendarSharing, CalendarService, CalendarActions, CalendarFiles, CalendarSync],
+    controllers: [CalendarSubscriptionsController, CalendarSharingController, CalendarController, CalendarActionsController, CalendarFilesController, CalendarSyncController],
+    providers: [CalendarSubscriptionHealth, CalendarSubscriptions, CalendarDownload, CalendarSharing, CalendarService, CalendarActions, CalendarFiles, CalendarSync],
 })
 export class CalendarModule {}

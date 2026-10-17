@@ -1,5 +1,5 @@
 export type SharedEvent = { id: string; category: string; title: string; location: string; notes: string;
-    kind: string; starts_at: Date | null; ends_at: Date | null; start_date: string | null; end_date: string | null }
+    updated_at?: Date; version?: number; kind: string; starts_at: Date | null; ends_at: Date | null; start_date: string | null; end_date: string | null }
 function escapeText(value: string) {
     return value.replace(/\\/g, '\\\\').replace(/\r\n|\r|\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;')
 }
@@ -18,7 +18,7 @@ export function serializeSharedCalendar(name: string, events: SharedEvent[], now
     const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Triton42//Shared timetable//HU','CALSCALE:GREGORIAN',`X-WR-CALNAME:${escapeText(name)}`]
     for (const event of events) {
         if (event.kind === 'allDay' ? !event.start_date || !event.end_date : !event.starts_at || !event.ends_at) continue
-        lines.push('BEGIN:VEVENT',`UID:${encodeURIComponent(event.id)}@triton42.hu`,`DTSTAMP:${utcDate(now)}`,
+        lines.push('BEGIN:VEVENT',`UID:${encodeURIComponent(event.id)}@triton42.hu`,`DTSTAMP:${utcDate(event.updated_at ?? now)}`,`LAST-MODIFIED:${utcDate(event.updated_at ?? now)}`,`SEQUENCE:${event.version ?? 1}`,
             ...(event.kind === 'allDay' ? [`DTSTART;VALUE=DATE:${event.start_date!.replace(/-/g,'')}`,`DTEND;VALUE=DATE:${event.end_date!.replace(/-/g,'')}`] :
                 [`DTSTART:${utcDate(event.starts_at!)}`,`DTEND:${utcDate(event.ends_at!)}`]),
             `SUMMARY:${escapeText(event.title)}`,`LOCATION:${escapeText(event.location)}`,`DESCRIPTION:${escapeText(event.notes)}`,

@@ -88,20 +88,20 @@ export class CalendarSharing {
             const share = rows[0]
             if (!share) throw new NotFoundException('A megosztási link nem érhető el.')
             const selection = share.selection ?? { categories: ['lesson','event','work','assignment','test','exam'], sourceIds: null, includeManual: true }
-            const events = await db.query<SharedEvent>(`SELECT e.id, e.category,
-                COALESCE(o.title,e.title) AS title, COALESCE(o.location,e.location) AS location,
-                COALESCE(o.notes,e.notes) AS notes,
-                CASE WHEN o.starts_at IS NOT NULL THEN 'timed' WHEN o.start_date IS NOT NULL THEN 'allDay' ELSE e.kind END AS kind,
-                COALESCE(o.starts_at,e.starts_at) AS starts_at,
-                COALESCE(o.ends_at,e.ends_at) AS ends_at,
-                COALESCE(o.start_date,e.start_date) AS start_date,
-                COALESCE(o.end_date,e.end_date) AS end_date
-                FROM calendar_event e LEFT JOIN calendar_source src ON src.id=e.source_id AND src.calendar_id=e.calendar_id LEFT JOIN user_event_override o ON o.event_id=e.id AND o.user_id=$2 AND o.occurrence_key='' AND o.deleted_at IS NULL
-                WHERE e.calendar_id=$1 AND e.deleted_at IS NULL AND COALESCE(o.hidden,false)=false
+            const events = await db.query<SharedEvent>(`SELECT e.id, e.category, GREATEST(e.updated_at,COALESCE(o.updated_at,e.updated_at)) AS updated_at, e.version+COALESCE(o.version,0) AS version,
+                COALESCE(CASE WHEN o.deleted_at IS NULL THEN o.title END,e.title) AS title, COALESCE(CASE WHEN o.deleted_at IS NULL THEN o.location END,e.location) AS location,
+                COALESCE(CASE WHEN o.deleted_at IS NULL THEN o.notes END,e.notes) AS notes,
+                CASE WHEN o.deleted_at IS NULL AND o.starts_at IS NOT NULL THEN 'timed' WHEN o.deleted_at IS NULL AND o.start_date IS NOT NULL THEN 'allDay' ELSE e.kind END AS kind,
+                COALESCE(CASE WHEN o.deleted_at IS NULL THEN o.starts_at END,e.starts_at) AS starts_at,
+                COALESCE(CASE WHEN o.deleted_at IS NULL THEN o.ends_at END,e.ends_at) AS ends_at,
+                COALESCE(CASE WHEN o.deleted_at IS NULL THEN o.start_date END,e.start_date) AS start_date,
+                COALESCE(CASE WHEN o.deleted_at IS NULL THEN o.end_date END,e.end_date) AS end_date
+                FROM calendar_event e LEFT JOIN calendar_source src ON src.id=e.source_id AND src.calendar_id=e.calendar_id LEFT JOIN user_event_override o ON o.event_id=e.id AND o.user_id=$2 AND o.occurrence_key=''
+                WHERE e.calendar_id=$1 AND e.deleted_at IS NULL AND COALESCE(CASE WHEN o.deleted_at IS NULL THEN o.hidden END,false)=false
                 AND e.category=ANY($3::text[]) AND (e.source_id IS NULL OR src.deleted_at IS NULL)
                 AND (($4::boolean AND (e.source_id IS NULL OR src.format='manual')) OR
                     (src.format<>'manual' AND ($5::text[] IS NULL OR e.source_id=ANY($5::text[]))))
-                ORDER BY COALESCE(o.starts_at,e.starts_at),COALESCE(o.start_date,e.start_date),e.id`, [share.calendar_id, share.owner_user_id, selection.categories, selection.includeManual, selection.sourceIds])
+                ORDER BY COALESCE(CASE WHEN o.deleted_at IS NULL THEN o.starts_at END,e.starts_at),COALESCE(CASE WHEN o.deleted_at IS NULL THEN o.start_date END,e.start_date),e.id`, [share.calendar_id, share.owner_user_id, selection.categories, selection.includeManual, selection.sourceIds])
             return serializeSharedCalendar(share.name, events.rows)
         }, false)
     }

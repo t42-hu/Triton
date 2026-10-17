@@ -9,6 +9,8 @@ import { CalendarService } from './calendar/calendar.service.js'
 import { CalendarActions } from './calendar/calendar.actions.js'
 import { CalendarSync } from './calendar/calendar.sync.js'
 import { CalendarFiles } from './calendar/calendar.files.js'
+import { CalendarSubscriptionsController } from './calendar/calendar-subscriptions.controller.js'
+import { CalendarSubscriptions } from './calendar/calendar-subscriptions.js'
 import { CalendarSharingController } from './calendar/calendar-sharing.controller.js'
 import { CalendarSharing } from './calendar/calendar-sharing.js'
 import { Module } from '@nestjs/common'
@@ -57,6 +59,7 @@ import { VirusScannerService } from './virusscanner/virusscanner.service.js'
         CalendarSyncController,
         CalendarFilesController,
         CalendarSharingController,
+        CalendarSubscriptionsController,
     ],
     providers: [
         DatabaseService,
@@ -73,6 +76,7 @@ import { VirusScannerService } from './virusscanner/virusscanner.service.js'
         CalendarSync,
         CalendarFiles,
         CalendarSharing,
+        CalendarSubscriptions,
     ].map((provide) => ({ provide, useValue: {} })),
 })
 class ApiContractModule {}
@@ -537,6 +541,7 @@ addOperation(
     undefined,
     [idParameter],
 )
+addOperation('post', 'calendar-subscriptions/refresh', 'refreshCalendarSubscriptions', 'Request server-side checks for your calendar subscriptions', z.object({ status:z.enum(['success','failed','skipped']), results:z.array(z.object({sourceId:z.string(),status:z.enum(['success','failed','skipped']),changed:z.boolean().optional()})) }), undefined, undefined, 201)
 operations['get /api/calendar-share/{id}/{token}/calendar.ics'] = {
     operationId: 'downloadSharedCalendar',
     tags: ['calendar'],
@@ -545,6 +550,7 @@ operations['get /api/calendar-share/{id}/{token}/calendar.ics'] = {
     parameters: [idParameter, { in: 'path', name: 'token', required: true, schema: { type: 'string' } }],
     responses: {
         200: { description: 'Shared iCalendar feed', content: { 'text/calendar': { schema: { type: 'string' } } } },
+        304: { description: 'The shared calendar has not changed' },
         400: problem,
         404: problem,
     },

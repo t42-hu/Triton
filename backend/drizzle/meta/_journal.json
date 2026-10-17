@@ -71,6 +71,20 @@
       "when": 1792085062612,
       "tag": "0009_email_security",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792090419789,
+      "tag": "0010_calendar_subscriptions",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792092439223,
+      "tag": "0011_subscription_guard",
+      "breakpoints": true
     }
   ]
 }

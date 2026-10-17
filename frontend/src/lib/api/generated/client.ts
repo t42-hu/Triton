@@ -47,6 +47,7 @@ import type {
     PullSyncChangesParams,
     PushSyncMutations201,
     PushSyncMutationsBody,
+    RefreshCalendarSubscriptions201,
     RegisterSyncDevice201,
     RegisterSyncDeviceBody,
     ResetNativeAuth201,
@@ -1374,5 +1375,21 @@ export const downloadSharedCalendar = async (
     return generatedApiRequest<string>(getDownloadSharedCalendarUrl(id, token), {
         ...options,
         method: 'GET',
+    })
+}
+
+export const getRefreshCalendarSubscriptionsUrl = () => {
+    return `/api/calendar-subscriptions/refresh`
+}
+
+/**
+ * @summary Request server-side checks for your calendar subscriptions
+ */
+export const refreshCalendarSubscriptions = async (
+    options?: Parameters<typeof generatedApiRequest>[1],
+): Promise<RefreshCalendarSubscriptions201> => {
+    return generatedApiRequest<RefreshCalendarSubscriptions201>(getRefreshCalendarSubscriptionsUrl(), {
+        ...options,
+        method: 'POST',
     })
 }

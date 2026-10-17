@@ -102,7 +102,12 @@ export function encodeRow(resource: CalendarResource, row: DomainRow): DomainRow
     const result: DomainRow = {}
     for (const [key, col] of Object.entries(columns(resource))) {
         const value = row[col.name]
-        result[key] = value instanceof Date ? value.toISOString() : typeof value === 'bigint' ? value.toString() : value
+        result[key] =
+            value instanceof Date
+                ? encodeDate(value, col.getSQLType() === 'date')
+                : typeof value === 'bigint'
+                  ? value.toString()
+                  : value
     }
     // Object keys never confer public access and must not escape API responses.
     delete result.storageKey
@@ -120,4 +125,10 @@ export function decodeInput(resource: CalendarResource, input: DomainRow): Domai
 }
 export function inputSchema(resource: CalendarResource): z.ZodObject<z.ZodRawShape> {
     return CalendarResourceSchemas[resource]
+}
+
+/** PostgreSQL DATE values are local calendar days, not UTC instants. */
+function encodeDate(value: Date, dayOnly: boolean): string {
+    if (!dayOnly) return value.toISOString()
+    return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`
 }

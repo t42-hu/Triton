@@ -880,3 +880,17 @@ export const calendarSourceContent = pgTable('calendar_source_content', {
     contentHash: text('content_hash').notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
+
+// Private worker state; never part of the device snapshot or public calendar API.
+export const calendarSubscriptionJob = pgTable('calendar_subscription_job', {
+    sourceId: text('source_id').primaryKey().references(() => calendarSource.id, { onDelete: 'cascade' }),
+    nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }).notNull().defaultNow(),
+    leaseUntil: timestamp('lease_until', { withTimezone: true }),
+    leaseToken: text('lease_token'),
+    generation: integer('generation').notNull().default(0),
+    failures: integer('failures').notNull().default(0),
+    etag: text('etag'),
+    lastModified: text('last_modified'),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    upstreamShareId: text('upstream_share_id').references(() => calendarShare.id, { onDelete: 'set null' }),
+}, t => [index('calendar_subscription_due_idx').on(t.nextAttemptAt), index('calendar_subscription_upstream_idx').on(t.upstreamShareId)])

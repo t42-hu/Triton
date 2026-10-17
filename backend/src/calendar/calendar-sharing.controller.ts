@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { Body, Controller, Delete, Get, Header, Param, Post, Res, UseInterceptors } from '@nestjs/common'
 import { AllowAnonymous, Session, type UserSession } from '@thallesp/nestjs-better-auth'
 import type { Response } from 'express'
@@ -22,6 +23,9 @@ export class CalendarSharingController {
     @Header('Referrer-Policy', 'no-referrer')
     async download(@Param('id') id: string, @Param('token') token: string, @Res() response: Response) {
         const content = await this.sharing.download(parse(z.uuid(), id), token)
+        const etag = `"${createHash('sha256').update(content).digest('hex')}"`
+        response.setHeader('ETag',etag)
+        if (response.req.headers['if-none-match'] === etag) { response.status(304).end(); return }
         response.send(content)
     }
 }

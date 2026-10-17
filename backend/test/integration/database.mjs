@@ -8,6 +8,7 @@ import { runMigrations } from '../../dist/database/migrations.js'
 import { PaymentService } from '../../dist/payment/payment.service.js'
 import * as schema from '../../dist/database/database.schema.js'
 import { verifyCalendarBackend } from './calendar-backend.mjs'
+import { verifyCalendarSubscriptions } from './calendar-subscriptions.mjs'
 import { verifyCalendarSchema } from './calendar-schema.mjs'
 
 const url = new URL(process.env.TEST_DATABASE_URL || 'invalid:')
@@ -34,9 +35,12 @@ try {
         'calendar_event',
         'calendar_invitation',
         'calendar_member',
+        'calendar_share',
         'calendar_source',
         'calendar_source_connection',
+        'calendar_source_content',
         'calendar_source_revision',
+        'calendar_subscription_job',
         'event_attachment',
         'event_exception',
         'event_recurrence',
@@ -52,6 +56,7 @@ try {
         'sync_cursor',
         'sync_mutation',
         'sync_snapshot',
+        'two_factor',
         'user',
         'user_calendar_preference',
         'user_color_preset',
@@ -70,6 +75,7 @@ try {
     ])
     await verifyCalendarSchema(pool)
     await verifyCalendarBackend(pool)
+    await verifyCalendarSubscriptions(pool)
     console.log('PASS concurrent migrations and clean schema')
     await pool.query(
         'INSERT INTO "user" (id,name,email,created_at,updated_at) VALUES ($1,$2,$3,now(),now()),($4,$2,$5,now(),now())',

@@ -77,7 +77,7 @@ export async function verifyWorkspaceCommitHttp(pool, origin, secret, prefix) {
             ],
             contents: [{ sourceId: ids.source, content: 'PRIVATE RAW CONTENT' }],
         }
-        await request(owner, 'POST', 'sync/commit', body, 201)
+        const firstCommit = await request(owner, 'POST', 'sync/commit', body, 201)
         assert.equal(
             (await pool.query('SELECT content FROM calendar_source_content WHERE source_id=$1', [ids.source])).rows[0]
                 .content,
@@ -121,7 +121,8 @@ export async function verifyWorkspaceCommitHttp(pool, origin, secret, prefix) {
             (await pool.query('SELECT count(*) FROM schedule_profile WHERE id=$1', [profileId])).rows[0].count,
             '0',
         )
-        await request(owner, 'POST', 'sync/commit', body, 201)
+        const replayed = await request(owner, 'POST', 'sync/commit', body, 201)
+        assert.deepEqual(replayed, firstCommit, 'replaying a source upload returns its final content version')
         assert.equal(
             (await pool.query('SELECT count(*) FROM calendar_event WHERE id=$1', [ids.event])).rows[0].count,
             '1',

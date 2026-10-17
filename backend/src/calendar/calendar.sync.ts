@@ -283,7 +283,14 @@ export class CalendarSync {
                     version: expected,
                     name: source!.name,
                 })
-                if (mutation) mutation.record = updated
+                if (mutation) {
+                    mutation.record = updated
+                    // A lost response must replay the final version, including the content write.
+                    await db.query(
+                        'UPDATE sync_mutation SET result=$4 WHERE user_id=$1 AND device_id=$2 AND client_mutation_id=$3',
+                        [userId, body.deviceId, mutation.clientMutationId, JSON.stringify(updated)],
+                    )
+                }
             }
             return result
         })
